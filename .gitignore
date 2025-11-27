@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# development documentation (DO NOT COMMIT)
+PROJECT_ROADMAP.md
+DEVELOPMENT_NOTES.md
+TODO.md
+**/dev-docs/
+**/developer-notes/
