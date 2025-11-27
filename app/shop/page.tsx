@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { ProductCardSkeleton } from "@/components/ui/Skeleton";
 import { Sidebar } from "@/components/shop/Sidebar";
 import { Crown, Sparkles, Filter, X, Search } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ function ShopContent() {
     const [bestSellersCount, setBestSellersCount] = useState(4);
     const [newArrivalsCount, setNewArrivalsCount] = useState(4);
     const [searchTerm, setSearchTerm] = useState(urlSearchTerm || ""); // 초기값을 URL 검색어로 설정
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (urlSearchTerm) {
@@ -41,6 +43,7 @@ function ShopContent() {
 
     useEffect(() => {
         const fetchProducts = async () => {
+            setIsLoading(true);
             const { data, error } = await supabase
                 .from('products')
                 .select('*')
@@ -51,6 +54,7 @@ function ShopContent() {
             } else {
                 setProducts(data || []);
             }
+            setIsLoading(false);
         };
 
         fetchProducts();
@@ -226,17 +230,26 @@ function ShopContent() {
                                     </h1>
 
                                     <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
-                                        {BEST_SELLERS.slice(0, bestSellersCount).map((product) => (
-                                            <ProductCard
-                                                key={product.id}
-                                                id={product.id}
-                                                brand={product.brand}
-                                                name={product.name}
-                                                price={product.price}
-                                                imageUrl={product.images?.[0]}
-                                                aspectRatio="aspect-[1000/1618]"
-                                            />
-                                        ))}
+                                        {isLoading ? (
+                                            // 로딩 중 스켈레톤 표시
+                                            [...Array(4)].map((_, index) => (
+                                                <ProductCardSkeleton key={index} aspectRatio="aspect-[1000/1618]" />
+                                            ))
+                                        ) : (
+                                            // 실제 상품 표시
+                                            BEST_SELLERS.slice(0, bestSellersCount).map((product, idx) => (
+                                                <ProductCard
+                                                    key={product.id}
+                                                    id={product.id}
+                                                    brand={product.brand}
+                                                    name={product.name}
+                                                    price={product.price}
+                                                    imageUrl={product.images?.[0]}
+                                                    aspectRatio="aspect-[1000/1618]"
+                                                    index={idx}
+                                                />
+                                            ))
+                                        )}
                                     </div>
 
                                     {bestSellersCount < BEST_SELLERS.length && (
@@ -260,17 +273,26 @@ function ShopContent() {
                                     </h2>
 
                                     <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
-                                        {NEW_ARRIVALS.slice(0, newArrivalsCount).map((product) => (
-                                            <ProductCard
-                                                key={product.id}
-                                                id={product.id}
-                                                brand={product.brand}
-                                                name={product.name}
-                                                price={product.price}
-                                                imageUrl={product.images?.[0]}
-                                                aspectRatio="aspect-square"
-                                            />
-                                        ))}
+                                        {isLoading ? (
+                                            // 로딩 중 스켈레톤 표시
+                                            [...Array(4)].map((_, index) => (
+                                                <ProductCardSkeleton key={index} aspectRatio="aspect-square" />
+                                            ))
+                                        ) : (
+                                            // 실제 상품 표시
+                                            NEW_ARRIVALS.slice(0, newArrivalsCount).map((product, idx) => (
+                                                <ProductCard
+                                                    key={product.id}
+                                                    id={product.id}
+                                                    brand={product.brand}
+                                                    name={product.name}
+                                                    price={product.price}
+                                                    imageUrl={product.images?.[0]}
+                                                    aspectRatio="aspect-square"
+                                                    index={idx}
+                                                />
+                                            ))
+                                        )}
                                     </div>
 
                                     {newArrivalsCount < NEW_ARRIVALS.length && (

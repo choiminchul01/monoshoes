@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Heart, Minus, Plus, ChevronDown, ChevronUp, X } from "lucide-react";
+import { motion } from "framer-motion";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -10,6 +11,8 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { getColorHex } from "@/lib/colorUtils";
+import { useToast } from "@/context/ToastContext";
+import { Button } from "@/components/ui/button";
 
 type ProductDetails = {
     colors?: { name: string; value: string }[];
@@ -40,56 +43,62 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const [openAccordion, setOpenAccordion] = useState<string | null>("details");
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [showLoginModal, setShowLoginModal] = useState(false);
     const [productId, setProductId] = useState<string | null>(null);
 
     const { addToCart } = useCart();
     const { isInWishlist, toggleWishlist } = useWishlist();
     const { user } = useAuth();
     const router = useRouter();
+    const toast = useToast();
+    const [isAddingToCart, setIsAddingToCart] = useState(false);
+    const [isBuyingNow, setIsBuyingNow] = useState(false);
 
     useEffect(() => {
         const fetchProductData = async () => {
-            const resolvedParams = await params;
-            const id = resolvedParams.id;
+            try {
+                const resolvedParams = await params;
+                const id = resolvedParams.id;
 
-            setLoading(true);
+                setLoading(true);
 
-            const { data: productData, error: productError } = await supabase
-                .from("products")
-                .select("*")
-                .eq("id", id)
-                .single();
+                const { data: productData, error: productError } = await supabase
+                    .from("products")
+                    .select("*")
+                    .eq("id", id)
+                    .single();
 
-            if (productError || !productData) {
-                console.error("Error fetching product:", productError);
+                if (productError || !productData) {
+                    console.error("Error fetching product:", productError);
+                    setLoading(false);
+                    return;
+                }
+
+                const foundProduct = productData as Product;
+                setProduct(foundProduct);
+                setProductId(foundProduct.id);
+
+                if (foundProduct.details?.colors && foundProduct.details.colors.length > 0) {
+                    setSelectedColor(foundProduct.details.colors[0]);
+                }
+                if (foundProduct.details?.sizes && foundProduct.details.sizes.length > 0) {
+                    setSelectedSize(foundProduct.details.sizes[0]);
+                }
+
+                const { data: relatedData, error: relatedError } = await supabase
+                    .from("products")
+                    .select("*")
+                    .eq("category", foundProduct.category)
+                    .neq("id", foundProduct.id)
+                    .limit(4);
+
+                if (!relatedError && relatedData) {
+                    setRelatedProducts(relatedData as Product[]);
+                }
+            } catch (error) {
+                console.error("Error in fetchProductData:", error);
+            } finally {
                 setLoading(false);
-                return;
             }
-
-            const foundProduct = productData as Product;
-            setProduct(foundProduct);
-            setProductId(foundProduct.id);
-
-            if (foundProduct.details?.colors && foundProduct.details.colors.length > 0) {
-                setSelectedColor(foundProduct.details.colors[0]);
-            }
-            if (foundProduct.details?.sizes && foundProduct.details.sizes.length > 0) {
-                setSelectedSize(foundProduct.details.sizes[0]);
-            }
-
-            const { data: relatedData, error: relatedError } = await supabase
-                .from("products")
-                .select("*")
-                .eq("category", foundProduct.category)
-                .neq("id", foundProduct.id)
-                .limit(4);
-
-            if (!relatedError && relatedData) {
-                setRelatedProducts(relatedData as Product[]);
-            }
-
-            setLoading(false);
         };
 
         fetchProductData();
@@ -107,15 +116,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         setOpenAccordion(openAccordion === section ? null : section);
     };
 
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
+        if (!product) return;
+
         if (product.details?.colors && product.details.colors.length > 0 && !selectedColor) {
-            alert("Please select a color");
+            toast.error("색상을 선택해주세요.");
             return;
         }
         if (product.details?.sizes && product.details.sizes.length > 0 && !selectedSize) {
-            alert("Please select a size");
+            toast.error("사이즈를 선택해주세요.");
             return;
         }
+
+        setIsAddingToCart(true);
+        // UX를 위한 인위적 지연
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         addToCart({
             id: product.id,
@@ -127,16 +142,44 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             quantity: quantity,
             brand: product.brand,
         });
-        alert("Added to cart!");
+
+        toast.success("장바구니에 담겼습니다!");
+        setIsAddingToCart(false);
     };
 
-    const handleBuyNow = () => {
-        handleAddToCart();
+    const handleBuyNow = async () => {
+        if (!product) return;
+
+        if (product.details?.colors && product.details.colors.length > 0 && !selectedColor) {
+            toast.error("색상을 선택해주세요.");
+            return;
+        }
+        if (product.details?.sizes && product.details.sizes.length > 0 && !selectedSize) {
+            toast.error("사이즈를 선택해주세요.");
+            return;
+        }
+
+        setIsBuyingNow(true);
+
+        addToCart({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.images?.[0] || "/placeholder-product.jpg",
+            color: selectedColor?.name,
+            size: selectedSize || undefined,
+            quantity: quantity,
+            brand: product.brand,
+        });
+
+        toast.success("주문 페이지로 이동합니다.");
+        router.push("/checkout");
     };
 
     const handleWishlistClick = async () => {
         if (!user) {
-            setShowLoginModal(true);
+            toast.error("로그인이 필요합니다.");
+            router.push('/login');
             return;
         }
 
@@ -144,57 +187,55 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         try {
             await toggleWishlist(productId);
+            if (isInWishlist(productId)) {
+                toast.info("위시리스트에서 제거되었습니다.");
+            } else {
+                toast.success("위시리스트에 추가되었습니다.");
+            }
         } catch (error) {
             console.error("Error toggling wishlist:", error);
-            alert("찜하기에 실패했습니다. 다시 시도해주세요.");
+            toast.error("작업에 실패했습니다.");
         }
     };
 
     return (
         <div className="container mx-auto px-4 py-12">
-            {/* Login Modal */}
-            {showLoginModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg max-w-md w-full p-8 relative">
-                        <button
-                            onClick={() => setShowLoginModal(false)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                        <div className="text-center space-y-6">
-                            <Heart className="w-16 h-16 mx-auto text-[#C41E3A]" />
-                            <h2 className="text-2xl font-bold text-gray-900">로그인이 필요합니다</h2>
-                            <p className="text-gray-600">찜하기 기능을 사용하려면 로그인이 필요합니다.</p>
-                            <div className="flex flex-col gap-3">
-                                <button
-                                    onClick={() => router.push("/login")}
-                                    className="w-full h-12 bg-black text-white font-bold tracking-wider hover:bg-gray-800 transition-colors uppercase"
-                                >
-                                    로그인
-                                </button>
-                                <button
-                                    onClick={() => router.push("/signup")}
-                                    className="w-full h-12 border border-black text-black font-bold tracking-wider hover:bg-black hover:text-white transition-colors uppercase"
-                                >
-                                    회원가입
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <div className="flex flex-col lg:flex-row gap-16">
                 {/* Left: Image Gallery */}
                 <div className="w-full lg:w-5/12 space-y-4">
-                    <div className="relative aspect-[3/4] w-full max-h-[50vh] lg:max-h-none bg-gray-50 overflow-hidden mx-auto">
+                    {/* Main Image with Swipe */}
+                    <motion.div
+                        className="relative aspect-[3/4] w-full max-h-[50vh] lg:max-h-none bg-gray-50 overflow-hidden mx-auto cursor-grab active:cursor-grabbing"
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.2}
+                        onDragEnd={(e, { offset, velocity }) => {
+                            const swipe = offset.x;
+                            const swipeVelocity = velocity.x;
+
+                            // 스와이프 임계값
+                            const swipeThreshold = 50;
+                            const velocityThreshold = 500;
+
+                            if (product.images && product.images.length > 1) {
+                                if (swipe < -swipeThreshold || swipeVelocity < -velocityThreshold) {
+                                    // 왼쪽으로 스와이프 - 다음 이미지
+                                    setCurrentImageIndex((prev) =>
+                                        prev < product.images.length - 1 ? prev + 1 : prev
+                                    );
+                                } else if (swipe > swipeThreshold || swipeVelocity > velocityThreshold) {
+                                    // 오른쪽으로 스와이프 - 이전 이미지
+                                    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : prev));
+                                }
+                            }
+                        }}
+                    >
                         {product.images && product.images.length > 0 ? (
                             <Image
                                 src={product.images[currentImageIndex]}
                                 alt={product.name}
                                 fill
-                                className="object-cover"
+                                className="object-cover pointer-events-none"
                                 priority
                             />
                         ) : (
@@ -202,14 +243,35 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 No Image
                             </div>
                         )}
-                    </div>
+
+                        {/* Swipe Indicators (Dots) - 모바일에서만 표시 */}
+                        {product.images && product.images.length > 1 && (
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 lg:hidden">
+                                {product.images.map((_, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => setCurrentImageIndex(index)}
+                                        className={`w-2 h-2 rounded-full transition-all ${currentImageIndex === index
+                                            ? "bg-white w-6"
+                                            : "bg-white/50"
+                                            }`}
+                                        aria-label={`이미지 ${index + 1}로 이동`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
+
+                    {/* Thumbnail Grid - 데스크톱에서만 표시 */}
                     {product.images && product.images.length > 1 && (
-                        <div className="grid grid-cols-4 gap-4">
+                        <div className="hidden lg:grid grid-cols-4 gap-4">
                             {product.images.map((img, index) => (
                                 <button
                                     key={index}
                                     onClick={() => setCurrentImageIndex(index)}
-                                    className={`relative aspect-[3/4] bg-gray-50 overflow-hidden transition-all ${currentImageIndex === index ? "ring-1 ring-black opacity-100" : "opacity-70 hover:opacity-100"
+                                    className={`relative aspect-[3/4] bg-gray-50 overflow-hidden transition-all ${currentImageIndex === index
+                                        ? "ring-1 ring-black opacity-100"
+                                        : "opacity-70 hover:opacity-100"
                                         }`}
                                 >
                                     <Image
@@ -320,12 +382,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
                         {/* Actions */}
                         <div className="grid grid-cols-[1fr_auto] gap-4 pt-4">
-                            <button
+                            <Button
                                 onClick={handleAddToCart}
+                                disabled={!product.is_available}
+                                isLoading={isAddingToCart}
+                                loadingText="담는 중..."
                                 className="h-14 bg-black text-white text-sm font-bold tracking-widest hover:bg-gray-800 transition-colors uppercase"
                             >
-                                Add to Cart
-                            </button>
+                                {product.is_available ? "Add to Cart" : "Out of Stock"}
+                            </Button>
 
                             <button
                                 onClick={handleWishlistClick}
@@ -343,12 +408,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 />
                             </button>
 
-                            <button
+                            <Button
                                 onClick={handleBuyNow}
-                                className="h-14 border border-black text-black text-sm font-bold tracking-widest hover:bg-black hover:text-white transition-colors uppercase"
+                                disabled={!product.is_available}
+                                isLoading={isBuyingNow}
+                                loadingText="처리 중..."
+                                className="h-14 border border-black bg-white text-black text-sm font-bold tracking-widest hover:bg-gray-50 transition-colors uppercase"
                             >
                                 Buy Now
-                            </button>
+                            </Button>
                         </div>
 
                         {/* Accordions */}
@@ -406,7 +474,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <div className="mt-32">
                     <h3 className="text-xl font-light tracking-tight mb-12 text-center">YOU MAY ALSO LIKE</h3>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
-                        {relatedProducts.map((product) => (
+                        {relatedProducts.map((product, idx) => (
                             <ProductCard
                                 key={product.id}
                                 id={product.id}
@@ -415,6 +483,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 price={product.price}
                                 imageUrl={product.images?.[0]}
                                 aspectRatio="aspect-[3/4]"
+                                index={idx}
                             />
                         ))}
                     </div>

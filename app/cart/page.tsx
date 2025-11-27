@@ -4,11 +4,18 @@ import { useCart } from "@/context/CartContext";
 import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
+import { useToast } from "@/context/ToastContext";
 
 export default function CartPage() {
     const { cartItems, removeFromCart, updateQuantity, cartTotal } = useCart();
+    const toast = useToast();
     const shippingCost = cartTotal > 500000 ? 0 : 3000;
     const finalTotal = cartTotal + shippingCost;
+
+    const handleRemove = (id: string, color?: string, size?: string) => {
+        removeFromCart(id, color || "", size || "");
+        toast.info("상품이 장바구니에서 삭제되었습니다.");
+    };
 
     if (cartItems.length === 0) {
         return (
@@ -61,7 +68,7 @@ export default function CartPage() {
                                                 </h2>
                                             </div>
                                             <button
-                                                onClick={() => removeFromCart(item.id, item.color, item.size)}
+                                                onClick={() => handleRemove(item.id, item.color, item.size)}
                                                 className="text-gray-400 hover:text-red-500 transition-colors"
                                             >
                                                 <Trash2 className="w-5 h-5" />

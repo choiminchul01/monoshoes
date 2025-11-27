@@ -12,6 +12,7 @@ import { usePathname } from "next/navigation";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import { ToastProvider } from "@/context/ToastContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -25,18 +26,20 @@ export default function RootLayout({
   const isLandingPage = pathname === "/";
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased`}>
+    <html lang="en">
+      <body className="font-sans antialiased">
         <AuthProvider>
           <WishlistProvider>
             <CartProvider>
-              <CursorSparkle />
-              {!isLandingPage && <Header />}
-              <main className={isLandingPage ? "min-h-screen" : "min-h-screen pt-20"}>
-                {children}
-              </main>
-              {!isLandingPage && <Footer />}
-              {!isLandingPage && <KakaoButton />}
+              <ToastProvider>
+                <CursorSparkle />
+                {!isLandingPage && <Header />}
+                <main className={isLandingPage ? "min-h-screen" : "min-h-screen pt-20"}>
+                  {children}
+                </main>
+                {!isLandingPage && <Footer />}
+                {!isLandingPage && <KakaoButton />}
+              </ToastProvider>
             </CartProvider>
           </WishlistProvider>
         </AuthProvider>
