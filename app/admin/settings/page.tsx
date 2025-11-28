@@ -102,14 +102,14 @@ export default function AdminSettingsPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">제주/도서산간 추가 배송비</label>
                             <input
                                 type="text"
-                                value="0원 (무료)"
+                                value="5,000원"
                                 disabled
                                 className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed font-medium"
                             />
                         </div>
                     </div>
                     <p className="text-xs text-gray-500 mt-4">
-                        * 현재 정책상 모든 고객에게 배송비가 무료로 제공됩니다. 결제 페이지 및 영수증에 '배송비: 무료'로 표기됩니다.
+                        * 현재 정책상 기본 배송비는 무료입니다. 단, 제주 및 도서산간 지역은 5,000원의 추가 배송비가 발생합니다.
                     </p>
                 </div>
             </div>
