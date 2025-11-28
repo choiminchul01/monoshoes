@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Download, RefreshCw, Trash2, Eye, Search } from "lucide-react";
 import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import TrackingNumberModal from "@/components/admin/TrackingNumberModal";
 import OrderDetailModal from "@/components/admin/OrderDetailModal";
@@ -230,7 +231,11 @@ export default function OrdersPage() {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "주문목록");
         ws["!cols"] = Array(11).fill({ wch: 15 });
-        XLSX.writeFile(wb, `주문목록_${new Date().toISOString().split("T")[0]}.xlsx`);
+
+        const fileName = `주문목록_${new Date().toISOString().split("T")[0]}.xlsx`;
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, fileName);
     };
 
     if (!isMounted) return null;
