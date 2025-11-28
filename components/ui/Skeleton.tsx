@@ -85,3 +85,76 @@ export function ProductDetailImageSkeleton() {
         </div>
     );
 }
+
+/**
+ * OrderCardSkeleton - 주문 카드 스켈레톤
+ */
+export function OrderCardSkeleton() {
+    return (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-start justify-between mb-4">
+                {/* 주문 번호 */}
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                </div>
+
+                {/* 상태 배지 */}
+                <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+
+            {/* 상품 정보 */}
+            <div className="flex gap-4 mb-4">
+                <Skeleton className="w-20 h-20" />
+                <div className="flex-1 space-y-2">
+                    <Skeleton className="hML4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                </div>
+            </div>
+
+            {/* 하단 */}
+            <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-9 w-20" />
+            </div>
+        </div>
+    );
+}
+
+/**
+ * DashboardStatSkeleton - 대시보드 통계 카드 스켈레톤
+ */
+export function DashboardStatSkeleton() {
+    return (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+                {/* 타이틀 */}
+                <Skeleton className="h-4 w-24" />
+
+                {/* 아이콘 */}
+                <Skeleton variant="circle" className="w-10 h-10" />
+            </div>
+
+            {/* 값 */}
+            <Skeleton className="h-8 w-32 mb-2" />
+
+            {/* 서브타이틀 */}
+            <Skeleton className="h-3 w-20" />
+        </div>
+    );
+}
+
+/**
+ * TableRowSkeleton - 테이블 행 스켈레톤
+ */
+export function TableRowSkeleton({ columns = 5 }: { columns?: number }) {
+    return (
+        <tr>
+            {Array.from({ length: columns }).map((_, index) => (
+                <td key={index} className="px-6 py-4">
+                    <Skeleton className="h-4 w-full" />
+                </td>
+            ))}
+        </tr>
+    );
+}
