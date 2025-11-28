@@ -46,7 +46,7 @@ export default function LoginPage() {
                         </Link>
                     </p>
                 </div>
-                <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+                <form className="mt-8 space-y-6" onSubmit={handleLogin} autoComplete="off">
                     <div className="space-y-4">
                         <div>
                             <label htmlFor="email" className="sr-only">이메일</label>

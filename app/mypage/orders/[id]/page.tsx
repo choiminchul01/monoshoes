@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { ArrowLeft, Package } from 'lucide-react';
+import { ArrowLeft, Package, Truck, Copy, Check } from 'lucide-react';
 
 type Order = {
     id: string;
@@ -21,6 +21,8 @@ type Order = {
     final_amount: number;
     payment_status: string;
     order_status: string;
+    tracking_number?: string;
+    shipping_company?: string;
     created_at: string;
 };
 
@@ -41,6 +43,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [orderId, setOrderId] = useState<string>('');
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         params.then((resolvedParams) => {
@@ -50,7 +53,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
     useEffect(() => {
         if (!authLoading && !user) {
-            router.push('/login?redirectTo=/mypage');
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/mypage';
+            router.push(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
         }
     }, [user, authLoading, router]);
 
@@ -116,6 +120,26 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             case 'shipped': return '배송중';
             case 'delivered': return '배송완료';
             default: return status;
+        }
+    };
+
+    const getTrackingUrl = (company: string, trackingNumber: string) => {
+        const urls: { [key: string]: string } = {
+            'CJ대한통운': `https://www.cjlogistics.com/ko/tool/parcel/tracking?gnbInvcNo=${trackingNumber}`,
+            '우체국택배': `https://service.epost.go.kr/trace.RetrieveRegiPrclDeliv.comm?sid1=${trackingNumber}`,
+            '한진택배': `https://www.hanjin.com/kor/CMS/DeliveryMgr/WaybillResult.do?mCode=MN038&schLang=KR&wblnumText2=${trackingNumber}`,
+            '롯데택배': `https://www.lotteglogis.com/home/reservation/tracking/index?InvNo=${trackingNumber}`,
+        };
+        return urls[company] || '#';
+    };
+
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('복사 실패:', err);
         }
     };
 
@@ -222,6 +246,56 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                                 {order.shipping_address_detail}
                             </p>
                         </div>
+
+                        {/* Tracking Information */}
+                        {(order.payment_status === 'shipped' || order.payment_status === 'delivered') && order.tracking_number && order.shipping_company && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Truck className="w-5 h-5 text-blue-600" />
+                                        <h3 className="font-bold text-blue-900">배송 추적</h3>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div>
+                                            <p className="text-xs text-blue-700 mb-1">택배사</p>
+                                            <p className="font-medium text-blue-900">{order.shipping_company}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-blue-700 mb-1">송장번호</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-mono font-medium text-blue-900 flex-1">{order.tracking_number}</p>
+                                                <button
+                                                    onClick={() => copyToClipboard(order.tracking_number!)}
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-white border border-blue-300 text-blue-700 text-xs font-medium rounded hover:bg-blue-50 transition-colors"
+                                                >
+                                                    {copied ? (
+                                                        <>
+                                                            <Check className="w-3 h-3" />
+                                                            <span>복사됨</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Copy className="w-3 h-3" />
+                                                            <span>복사</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="pt-2">
+                                            <a
+                                                href={getTrackingUrl(order.shipping_company, order.tracking_number)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block w-full text-center px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                            >
+                                                배송 조회하기
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -134,7 +134,7 @@ export default function AdminLoginPage() {
                         <h2 className="text-3xl font-bold tracking-tight text-gray-900">Admin Login</h2>
                         <p className="mt-2 text-sm text-gray-600">관리자 전용 로그인</p>
                     </div>
-                    <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+                    <form className="mt-8 space-y-6" onSubmit={handleLogin} autoComplete="off">
                         <div className="space-y-4">
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">Admin Email</label>

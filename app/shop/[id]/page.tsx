@@ -77,6 +77,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 setProduct(foundProduct);
                 setProductId(foundProduct.id);
 
+                // Debug: Log product data
+                console.log('🛍️ Product loaded:', foundProduct);
+                console.log('📋 Product details:', foundProduct.details);
+                console.log('🎨 Colors:', foundProduct.details?.colors);
+                console.log('📏 Sizes:', foundProduct.details?.sizes);
+
                 if (foundProduct.details?.colors && foundProduct.details.colors.length > 0) {
                     setSelectedColor(foundProduct.details.colors[0]);
                 }
@@ -317,18 +323,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             {product.details?.colors && product.details.colors.length > 0 && (
                                 <div className="space-y-4">
                                     <span className="text-xs font-bold text-gray-900 tracking-widest uppercase block">
-                                        Color: {selectedColor?.name}
+                                        Color
                                     </span>
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-wrap gap-3">
                                         {product.details.colors.map((color) => (
                                             <button
                                                 key={color.name}
                                                 onClick={() => setSelectedColor(color)}
-                                                className={`w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center transition-all ${selectedColor?.name === color.name ? "ring-1 ring-black ring-offset-2" : ""
+                                                className={`min-w-[3rem] h-10 px-3 border text-sm font-medium transition-all ${selectedColor?.name === color.name
+                                                    ? "border-black bg-black text-white"
+                                                    : "border-gray-200 text-gray-900 hover:border-black"
                                                     }`}
-                                                style={{ backgroundColor: getColorHex(color.name) }}
-                                                aria-label={color.name}
-                                            />
+                                            >
+                                                {color.name.split('#')[0].trim()}
+                                            </button>
                                         ))}
                                     </div>
                                 </div>

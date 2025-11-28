@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AddressSearchModal } from "@/components/ui/AddressSearchModal";
 
 export default function CheckoutPage() {
     const router = useRouter();
@@ -21,7 +22,8 @@ export default function CheckoutPage() {
     const finalTotal = cartTotal + shippingCost - couponDiscount;
 
     const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false);
-    const [isSameAsOrderer, setIsSameAsOrderer] = useState(false);
+    const [isSameAsOrderer, setIsSameAsOrderer] = useState(true); // Changed to true for better UX
+    const [isSubmitting, setIsSubmitting] = useState(false); // Prevent duplicate submissions
 
     // Form State
     const [formData, setFormData] = useState({
@@ -37,12 +39,40 @@ export default function CheckoutPage() {
         shippingPostalCode: "",
         shippingAddress: "",
         shippingAddressDetail: "",
-        shippingMemo: ""
+        shippingMemo: "",
+        customsId: "" // Added Customs ID
     });
+
+    // Address Search State
+    const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+    const [addressTarget, setAddressTarget] = useState<'customer' | 'shipping'>('customer');
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const openAddressSearch = (target: 'customer' | 'shipping') => {
+        setAddressTarget(target);
+        setIsAddressModalOpen(true);
+    };
+
+    const handleAddressComplete = (data: { zonecode: string; address: string }) => {
+        if (addressTarget === 'customer') {
+            setFormData(prev => ({
+                ...prev,
+                customerPostalCode: data.zonecode,
+                customerAddress: data.address,
+                customerAddressDetail: '' // Reset detail address
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                shippingPostalCode: data.zonecode,
+                shippingAddress: data.address,
+                shippingAddressDetail: '' // Reset detail address
+            }));
+        }
     };
 
     const handleApplyCoupon = () => {
@@ -67,95 +97,129 @@ export default function CheckoutPage() {
     };
 
     const handleCheckout = async () => {
-        // Validation
-        if (!formData.customerName || !formData.customerEmail || !formData.customerPhone) {
-            alert("주문자 정보(이름, 이메일, 연락처)는 필수 입력 사항입니다.");
+        // Prevent duplicate submissions
+        if (isSubmitting) {
             return;
         }
 
-        if (!isSameAsOrderer && (!formData.shippingName || !formData.shippingPhone || !formData.shippingAddress)) {
-            alert("배송지 정보(이름, 연락처, 주소)를 입력해주세요.");
-            return;
+        setIsSubmitting(true);
+
+        try {
+            console.log('🚀 handleCheckout called at:', new Date().toISOString());
+            console.log('📦 Cart items:', cartItems);
+            console.log('💰 Cart total:', cartTotal, 'Shipping:', shippingCost, 'Final:', finalTotal);
+
+            // Validation
+            if (!formData.customerName || !formData.customerEmail || !formData.customerPhone) {
+                alert("주문자 정보(이름, 이메일, 연락처)는 필수 입력 사항입니다.");
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (!isSameAsOrderer && (!formData.shippingName || !formData.shippingPhone || !formData.shippingAddress)) {
+                alert("배송지 정보(이름, 연락처, 주소)를 입력해주세요.");
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Customs ID Validation
+            const customsIdRegex = /^P\d{12}$/;
+            if (!customsIdRegex.test(formData.customsId)) {
+                alert("개인통관고유부호를 올바르게 입력해주세요. (P로 시작하는 13자리 숫자)");
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Generate order number
+            const orderNumber = "ES" + Date.now().toString().slice(-8);
+
+            // Prepare order data
+            const orderData = {
+                order_number: orderNumber,
+                customer_name: formData.customerName,
+                customer_email: formData.customerEmail,
+                customer_phone: formData.customerPhone,
+                customer_postal_code: formData.customerPostalCode,
+                customer_address: formData.customerAddress,
+                customer_address_detail: formData.customerAddressDetail,
+                customer_memo: formData.customerMemo,
+                shipping_same_as_customer: isSameAsOrderer,
+                shipping_name: isSameAsOrderer ? formData.customerName : formData.shippingName,
+                shipping_phone: isSameAsOrderer ? formData.customerPhone : formData.shippingPhone,
+                shipping_postal_code: isSameAsOrderer ? formData.customerPostalCode : formData.shippingPostalCode,
+                shipping_address: isSameAsOrderer ? formData.customerAddress : formData.shippingAddress,
+                shipping_address_detail: isSameAsOrderer ? formData.customerAddressDetail : formData.shippingAddressDetail,
+                shipping_memo: isSameAsOrderer ? formData.customerMemo : formData.shippingMemo,
+                customs_id: formData.customsId, // Include Customs ID
+                total_amount: cartTotal,
+                discount_amount: couponDiscount,
+                shipping_cost: shippingCost,
+                final_amount: finalTotal,
+                coupon_code: appliedCoupon?.code || null,
+                payment_status: 'pending' as const,
+                order_status: 'pending' as const
+            };
+
+            // Save order to Supabase
+            const { supabase } = await import('@/lib/supabase');
+
+            const { data: order, error: orderError } = await supabase
+                .from('orders')
+                .insert([orderData])
+                .select()
+                .single();
+
+            if (orderError) {
+                console.error('Order save failed (details):', orderError);
+                alert(`주문 처리 중 오류가 발생했습니다: ${orderError.message}`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            console.log('✅ Order saved successfully:', order.id, order.order_number);
+            console.log('📋 Order data:', orderData);
+
+            // Validate product IDs are UUIDs before inserting order items
+            const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+            if (cartItems.some(item => !uuidRegex.test(item.id))) {
+                console.error('Invalid product IDs in cart:', cartItems.map(i => i.id));
+                alert('주문 처리 중 오류가 발생했습니다: 제품 ID가 올바르지 않습니다.');
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Save order items
+            const orderItems = cartItems.map(item => ({
+                order_id: order.id,
+                product_id: item.id,
+                product_name: item.name,
+                product_brand: item.brand,
+                quantity: item.quantity,
+                price: item.price,
+                color: item.color,
+                size: item.size,
+                image: item.image,
+            }));
+
+            const { error: itemsError } = await supabase
+                .from('order_items')
+                .insert(orderItems);
+
+            if (itemsError) {
+                console.error('주문 상품 저장 실패:', itemsError);
+                alert(`주문 처리 중 오류가 발생했습니다: ${itemsError.message}`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Clear cart and navigate to order complete page
+            clearCart();
+            router.push(`/order-complete?orderNumber=${orderNumber}`);
+        } catch (error) {
+            console.error('Checkout error:', error);
+            alert('주문 처리 중 오류가 발생했습니다.');
+            setIsSubmitting(false);
         }
-
-        // Generate order number
-        const orderNumber = "ES" + Date.now().toString().slice(-8);
-
-        // Prepare order data
-        const orderData = {
-            order_number: orderNumber,
-            customer_name: formData.customerName,
-            customer_email: formData.customerEmail,
-            customer_phone: formData.customerPhone,
-            customer_postal_code: formData.customerPostalCode,
-            customer_address: formData.customerAddress,
-            customer_address_detail: formData.customerAddressDetail,
-            customer_memo: formData.customerMemo,
-            shipping_same_as_customer: isSameAsOrderer,
-            shipping_name: isSameAsOrderer ? formData.customerName : formData.shippingName,
-            shipping_phone: isSameAsOrderer ? formData.customerPhone : formData.shippingPhone,
-            shipping_postal_code: isSameAsOrderer ? formData.customerPostalCode : formData.shippingPostalCode,
-            shipping_address: isSameAsOrderer ? formData.customerAddress : formData.shippingAddress,
-            shipping_address_detail: isSameAsOrderer ? formData.customerAddressDetail : formData.shippingAddressDetail,
-            shipping_memo: isSameAsOrderer ? formData.customerMemo : formData.shippingMemo,
-            total_amount: cartTotal,
-            discount_amount: couponDiscount,
-            shipping_cost: shippingCost,
-            final_amount: finalTotal,
-            coupon_code: appliedCoupon?.code || null,
-            payment_status: 'pending' as const,
-            order_status: 'pending' as const
-        };
-
-        // Save order to Supabase
-        const { supabase } = await import('@/lib/supabase');
-
-        const { data: order, error: orderError } = await supabase
-            .from('orders')
-            .insert([orderData])
-            .select()
-            .single();
-
-        if (orderError) {
-            console.error('Order save failed (details):', orderError);
-            alert(`주문 처리 중 오류가 발생했습니다: ${orderError.message}`);
-            return;
-        }
-
-        // Validate product IDs are UUIDs before inserting order items
-        const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
-        if (cartItems.some(item => !uuidRegex.test(item.id))) {
-            console.error('Invalid product IDs in cart:', cartItems.map(i => i.id));
-            alert('주문 처리 중 오류가 발생했습니다: 제품 ID가 올바르지 않습니다.');
-            return;
-        }
-
-        // Save order items
-        const orderItems = cartItems.map(item => ({
-            order_id: order.id,
-            product_id: item.id,
-            product_name: item.name,
-            product_brand: item.brand,
-            quantity: item.quantity,
-            price: item.price,
-            color: item.color,
-            size: item.size,
-            image: item.image,
-        }));
-
-        const { error: itemsError } = await supabase
-            .from('order_items')
-            .insert(orderItems);
-
-        if (itemsError) {
-            console.error('주문 상품 저장 실패:', itemsError);
-            alert(`주문 처리 중 오류가 발생했습니다: ${itemsError.message}`);
-            return;
-        }
-
-        // Clear cart and navigate to order complete page
-        clearCart();
-        router.push(`/order-complete?orderNumber=${orderNumber}`);
     };
 
     // Calculate original total (with 20% markup for display purposes)
@@ -163,9 +227,16 @@ export default function CheckoutPage() {
     const totalDiscount = originalTotal - cartTotal;
 
     return (
-        <div className="min-h-screen bg-white flex flex-col lg:flex-row" >
+        <div className="min-h-screen bg-white flex flex-col lg:flex-row">
+            {/* Address Search Modal */}
+            <AddressSearchModal
+                isOpen={isAddressModalOpen}
+                onClose={() => setIsAddressModalOpen(false)}
+                onComplete={handleAddressComplete}
+            />
+
             {/* Left Column: Information & Payment */}
-            < div className="w-full lg:w-1/2 flex justify-end order-2 lg:order-1" >
+            <div className="w-full lg:w-1/2 flex justify-end order-2 lg:order-1">
                 <div className="w-full max-w-[600px] px-4 py-8 lg:px-8 lg:py-16">
                     {/* Logo (Mobile only) */}
                     <div className="lg:hidden mb-6 text-center">
@@ -277,21 +348,31 @@ export default function CheckoutPage() {
                                 placeholder="연락처 (예: 010-1234-5678)"
                                 className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm"
                             />
-                            <input
-                                type="text"
-                                name="customerPostalCode"
-                                value={formData.customerPostalCode}
-                                onChange={handleInputChange}
-                                placeholder="우편번호 (예: 06234)"
-                                className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm"
-                            />
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    name="customerPostalCode"
+                                    value={formData.customerPostalCode}
+                                    onChange={handleInputChange}
+                                    placeholder="우편번호"
+                                    readOnly
+                                    className="flex-1 h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm bg-gray-50"
+                                />
+                                <button
+                                    onClick={() => openAddressSearch('customer')}
+                                    className="px-4 h-12 bg-black text-white text-sm font-bold rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
+                                >
+                                    주소 검색
+                                </button>
+                            </div>
                             <input
                                 type="text"
                                 name="customerAddress"
                                 value={formData.customerAddress}
                                 onChange={handleInputChange}
-                                placeholder="주소 (예: 서울특별시 강남구 테헤란로 123)"
-                                className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm"
+                                placeholder="주소"
+                                readOnly
+                                className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm bg-gray-50"
                             />
                             <input
                                 type="text"
@@ -350,21 +431,31 @@ export default function CheckoutPage() {
                                     placeholder="수령인 연락처 (예: 010-1234-5678)"
                                     className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm bg-white"
                                 />
-                                <input
-                                    type="text"
-                                    name="shippingPostalCode"
-                                    value={formData.shippingPostalCode}
-                                    onChange={handleInputChange}
-                                    placeholder="우편번호 (예: 06234)"
-                                    className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm bg-white"
-                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        name="shippingPostalCode"
+                                        value={formData.shippingPostalCode}
+                                        onChange={handleInputChange}
+                                        placeholder="우편번호"
+                                        readOnly
+                                        className="flex-1 h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm bg-gray-100"
+                                    />
+                                    <button
+                                        onClick={() => openAddressSearch('shipping')}
+                                        className="px-4 h-12 bg-black text-white text-sm font-bold rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
+                                    >
+                                        주소 검색
+                                    </button>
+                                </div>
                                 <input
                                     type="text"
                                     name="shippingAddress"
                                     value={formData.shippingAddress}
                                     onChange={handleInputChange}
-                                    placeholder="주소 (예: 서울특별시 강남구 테헤란로 123)"
-                                    className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm bg-white"
+                                    placeholder="주소"
+                                    readOnly
+                                    className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm bg-gray-100"
                                 />
                                 <input
                                     type="text"
@@ -384,6 +475,28 @@ export default function CheckoutPage() {
                                 />
                             </div>
                         )}
+
+                        {/* Customs ID Input (Always shown in Shipping Section) */}
+                        <div className="mt-4">
+                            <label htmlFor="customsId" className="block text-sm font-medium text-gray-700 mb-1">
+                                개인통관고유부호 <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="customsId"
+                                value={formData.customsId}
+                                onChange={handleInputChange}
+                                placeholder="P로 시작하는 13자리 숫자 (예: P123456789012)"
+                                className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm"
+                                maxLength={13}
+                            />
+                            <p className="mt-1 text-xs text-gray-500">
+                                * 해외 배송을 위해 필수 입력 사항입니다.
+                                <a href="https://unipass.customs.go.kr/csp/persIndex.do" target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-600 underline">
+                                    발급받기
+                                </a>
+                            </p>
+                        </div>
                     </section>
 
                     {/* Coupon Section */}
@@ -458,11 +571,71 @@ export default function CheckoutPage() {
                             </div>
                         </div>
                     </section>
+
+                    {/* Mobile Checkout Summary & Button (Below Payment Method) */}
+                    <section className="lg:hidden mb-10">
+                        <div className="border border-gray-200 rounded-md p-6 bg-gray-50">
+                            <h3 className="text-base font-bold text-gray-900 mb-4">결제 금액</h3>
+                            <div className="space-y-3">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">상품 원가</span>
+                                    <span className="text-gray-400 line-through">{originalTotal.toLocaleString()}원</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">상품 할인</span>
+                                    <span className="font-medium text-red-600">-{totalDiscount.toLocaleString()}원</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">상품 금액</span>
+                                    <span className="font-medium text-gray-900">{cartTotal.toLocaleString()}원</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">배송비</span>
+                                    <span className="font-medium text-gray-900">
+                                        {shippingCost === 0 ? "무료" : `${shippingCost.toLocaleString()}원`}
+                                    </span>
+                                </div>
+                                {appliedCoupon && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">쿠폰 할인</span>
+                                        <span className="font-medium text-red-600">-{couponDiscount.toLocaleString()}원</span>
+                                    </div>
+                                )}
+                                {shippingCost > 0 && (
+                                    <p className="text-xs text-gray-500">* 50만원 이상 구매 시 배송비 무료</p>
+                                )}
+
+                                <div className="border-t-2 border-gray-300 pt-4 mt-4">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm text-gray-600">총 할인 금액</span>
+                                        <span className="text-base font-bold text-red-600">
+                                            -{(totalDiscount + couponDiscount).toLocaleString()}원
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center mb-6">
+                                        <span className="text-base font-bold text-gray-900">최종 결제금액</span>
+                                        <div className="text-right">
+                                            <span className="text-2xl font-bold text-gray-900">{finalTotal.toLocaleString()}</span>
+                                            <span className="text-sm text-gray-600 ml-1">원</span>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={handleCheckout}
+                                        disabled={isSubmitting}
+                                        className="w-full h-14 bg-black text-white text-base font-bold rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    >
+                                        {isSubmitting ? '처리 중...' : `${finalTotal.toLocaleString()}원 결제하기`}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
-            </div >
+            </div>
 
             {/* Right Column: Order Summary (Desktop) */}
-            < div className="hidden lg:block w-full lg:w-1/2 bg-gray-50 border-l border-gray-200 order-1 lg:order-2 h-screen sticky top-0 overflow-y-auto" >
+            <div className="hidden lg:block w-full lg:w-1/2 bg-gray-50 border-l border-gray-200 order-1 lg:order-2 h-screen sticky top-0 overflow-y-auto">
                 <div className="w-full max-w-[500px] px-10 py-16 ml-12">
                     <h2 className="text-lg font-bold tracking-wide mb-6">주문 상품</h2>
                     <div className="space-y-6">
@@ -534,16 +707,16 @@ export default function CheckoutPage() {
                             </div>
                         </div>
 
-                        {/* Payment Button moved here */}
                         <button
                             onClick={handleCheckout}
-                            className="w-full h-14 bg-black text-white text-sm font-bold rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center"
+                            disabled={isSubmitting}
+                            className="w-full h-14 bg-black text-white text-sm font-bold rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
-                            {finalTotal.toLocaleString()}원 결제하기
+                            {isSubmitting ? '처리 중...' : `${finalTotal.toLocaleString()}원 결제하기`}
                         </button>
                     </div>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }

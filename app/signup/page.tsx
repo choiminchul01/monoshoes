@@ -72,7 +72,7 @@ export default function SignupPage() {
                         </Link>
                     </p>
                 </div>
-                <form className="mt-8 space-y-6" onSubmit={handleSignup}>
+                <form className="mt-8 space-y-6" onSubmit={handleSignup} autoComplete="off">
                     <div className="space-y-4">
                         <div>
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">이름</label>

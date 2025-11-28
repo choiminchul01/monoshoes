@@ -24,6 +24,7 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname();
   const isLandingPage = pathname === "/";
+  const isAdminPage = pathname?.startsWith("/admin");
 
   return (
     <html lang="en">
@@ -33,12 +34,12 @@ export default function RootLayout({
             <CartProvider>
               <ToastProvider>
                 <CursorSparkle />
-                {!isLandingPage && <Header />}
-                <main className={isLandingPage ? "min-h-screen" : "min-h-screen pt-20"}>
+                {!isLandingPage && !isAdminPage && <Header />}
+                <main className={isLandingPage || isAdminPage ? "min-h-screen" : "min-h-screen pt-20"}>
                   {children}
                 </main>
-                {!isLandingPage && <Footer />}
-                {!isLandingPage && <KakaoButton />}
+                {!isLandingPage && !isAdminPage && <Footer />}
+                {!isLandingPage && !isAdminPage && <KakaoButton />}
               </ToastProvider>
             </CartProvider>
           </WishlistProvider>

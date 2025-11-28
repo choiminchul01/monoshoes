@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Trash2, Edit, Plus, Upload, X } from "lucide-react";
 import Image from "next/image";
+import AdminSearch from "@/components/admin/AdminSearch";
+import Pagination from "@/components/ui/Pagination";
 
 type Product = {
     id: string;
@@ -57,6 +59,12 @@ export default function AdminProductsPage() {
     const [showBrandSuggestions, setShowBrandSuggestions] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+    const [isContinue, setIsContinue] = useState(false);
+
+    // Pagination & Search State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
+    const itemsPerPage = 10;
 
     // 중복 제거된 브랜드 목록 생성 및 정렬
     const uniqueBrands = Array.from(new Set(products.map(p => p.brand))).sort();
@@ -64,6 +72,29 @@ export default function AdminProductsPage() {
     // 입력된 값에 따라 필터링된 브랜드 목록
     const filteredBrands = uniqueBrands.filter(brand =>
         brand.toLowerCase().startsWith((formData.brand || "").toLowerCase())
+    );
+
+    // 검색 및 페이지네이션 로직
+    const getFilteredProducts = () => {
+        let result = products;
+
+        if (searchTerm) {
+            const lowerTerm = searchTerm.toLowerCase();
+            result = result.filter(p =>
+                p.name.toLowerCase().includes(lowerTerm) ||
+                p.brand.toLowerCase().includes(lowerTerm) ||
+                p.category.toLowerCase().includes(lowerTerm)
+            );
+        }
+
+        return result;
+    };
+
+    const filteredProducts = getFilteredProducts();
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+    const currentProducts = filteredProducts.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
     );
 
     useEffect(() => {
@@ -214,17 +245,25 @@ export default function AdminProductsPage() {
                     .insert([productData]);
 
                 if (error) throw error;
-                alert("상품이 추가되었습니다");
+
+                if (isContinue) {
+                    alert("상품이 추가되었습니다. 다음 상품을 입력해주세요.");
+                    resetForm();
+                    // 모달 유지
+                } else {
+                    alert("상품이 추가되었습니다");
+                    setShowModal(false);
+                    resetForm();
+                }
             }
 
-            setShowModal(false);
-            resetForm();
             fetchProducts();
         } catch (error) {
             console.error("Error:", error);
             alert("오류가 발생했습니다");
         } finally {
             setUploading(false);
+            setIsContinue(false);
         }
     };
 
@@ -293,22 +332,33 @@ export default function AdminProductsPage() {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <h1 className="text-3xl font-bold">상품 관리</h1>
-                <button
-                    onClick={() => {
-                        resetForm();
-                        setShowModal(true);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    상품 추가
-                </button>
+                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <AdminSearch
+                        value={searchTerm}
+                        onChange={(val) => {
+                            setSearchTerm(val);
+                            setCurrentPage(1); // 검색 시 1페이지로 리셋
+                        }}
+                        placeholder="상품명, 브랜드, 카테고리 검색..."
+                    />
+                    <button
+                        onClick={() => {
+                            resetForm();
+                            setShowModal(true);
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+                    >
+                        <Plus className="w-4 h-4" />
+                        상품 추가
+                    </button>
+                </div>
             </div>
 
             <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
-                <table className="w-full">
+                {/* Desktop Table View */}
+                <table className="w-full hidden md:table">
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이미지</th>
@@ -326,13 +376,17 @@ export default function AdminProductsPage() {
                             <tr>
                                 <td colSpan={8} className="px-6 py-4 text-center">로딩 중...</td>
                             </tr>
-                        ) : products.length === 0 ? (
+                        ) : currentProducts.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="px-6 py-4 text-center">등록된 상품이 없습니다.</td>
+                                <td colSpan={8} className="px-6 py-4 text-center">검색 결과가 없습니다.</td>
                             </tr>
                         ) : (
-                            products.map((product) => (
-                                <tr key={product.id} className="hover:bg-gray-50">
+                            currentProducts.map((product) => (
+                                <tr
+                                    key={product.id}
+                                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                    onClick={() => handleEdit(product)}
+                                >
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="relative w-16 h-16">
                                             {product.images && product.images[0] ? (
@@ -359,7 +413,7 @@ export default function AdminProductsPage() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                                             <button
                                                 onClick={() => handleEdit(product)}
                                                 className="text-indigo-600 hover:text-indigo-900"
@@ -379,15 +433,98 @@ export default function AdminProductsPage() {
                         )}
                     </tbody>
                 </table>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden">
+                    {loading ? (
+                        <div className="p-8 text-center text-gray-500">로딩 중...</div>
+                    ) : currentProducts.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">검색 결과가 없습니다.</div>
+                    ) : (
+                        <div className="divide-y divide-gray-200">
+                            {currentProducts.map((product) => (
+                                <div
+                                    key={product.id}
+                                    className="p-4 flex gap-4 active:bg-gray-50"
+                                    onClick={() => handleEdit(product)}
+                                >
+                                    {/* Thumbnail */}
+                                    <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                                        {product.images && product.images[0] ? (
+                                            <img
+                                                src={product.images[0]}
+                                                alt={product.name}
+                                                className="absolute inset-0 w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                                                No Img
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="text-base font-bold text-gray-900 truncate pr-2">{product.name}</h3>
+                                                <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${product.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                    {product.is_available ? '판매중' : '품절'}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-500 mt-0.5">{product.brand} | {product.category}</p>
+                                        </div>
+
+                                        <div className="flex justify-between items-end mt-2">
+                                            <div>
+                                                <p className="text-lg font-bold text-gray-900">₩{product.price.toLocaleString()}</p>
+                                                <p className="text-xs text-gray-500">재고: {product.stock}개</p>
+                                            </div>
+                                            <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    onClick={() => handleEdit(product)}
+                                                    className="p-2 text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(product.id)}
+                                                    className="p-2 text-red-600 bg-red-50 rounded-full hover:bg-red-100"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
+
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
 
             {showModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold">
+                                {editingProduct ? "상품 수정" : "상품 추가"}
+                            </h2>
+                            <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
                         <form onSubmit={handleSubmit}>
                             {/* 이미지 업로드 섹션 */}
                             <div className="mb-6">
                                 <label className="block text-sm font-medium mb-2">상품 이미지</label>
+                                <p className="text-xs text-gray-500 mb-2">※ 첫 번째 이미지가 대표 이미지(썸네일)로 사용됩니다.</p>
 
                                 {/* 업로드 버튼 */}
                                 <div className="flex items-center gap-4 mb-4">
@@ -504,6 +641,11 @@ export default function AdminProductsPage() {
                                     onChange={(e) => setFormData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                 />
+                                {formData.price > 0 && (
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        {formData.price.toLocaleString()}원
+                                    </p>
+                                )}
                             </div>
 
                             {/* 카테고리 */}
@@ -566,24 +708,31 @@ export default function AdminProductsPage() {
                                 <div className="flex gap-2 mb-2">
                                     <input
                                         type="text"
-                                        placeholder="색상명 (예: Black)"
+                                        placeholder="색상명 (예: 블랙, 화이트, Red)"
                                         id="colorNameInput"
                                         className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-                                    />
-                                    <input
-                                        type="color"
-                                        id="colorValueInput"
-                                        className="h-9 w-9 p-0 border-0 rounded"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                const input = e.currentTarget;
+                                                if (input.value) {
+                                                    setFormData({
+                                                        ...formData,
+                                                        colors: [...formData.colors, { name: input.value, value: input.value }]
+                                                    });
+                                                    input.value = '';
+                                                }
+                                            }
+                                        }}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => {
                                             const nameInput = document.getElementById('colorNameInput') as HTMLInputElement;
-                                            const valueInput = document.getElementById('colorValueInput') as HTMLInputElement;
                                             if (nameInput.value) {
                                                 setFormData({
                                                     ...formData,
-                                                    colors: [...formData.colors, { name: nameInput.value, value: valueInput.value }]
+                                                    colors: [...formData.colors, { name: nameInput.value, value: nameInput.value }]
                                                 });
                                                 nameInput.value = '';
                                             }
@@ -596,7 +745,6 @@ export default function AdminProductsPage() {
                                 <div className="flex flex-wrap gap-2">
                                     {formData.colors.map((color, index) => (
                                         <div key={index} className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-full border">
-                                            <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: color.value }}></div>
                                             <span className="text-sm">{color.name}</span>
                                             <button
                                                 type="button"
@@ -747,8 +895,18 @@ export default function AdminProductsPage() {
                                     disabled={uploading}
                                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                                 >
-                                    {uploading ? "저장 중..." : (editingProduct ? "수정" : "추가")}
+                                    {uploading ? "저장 중..." : (editingProduct ? "수정 완료" : "상품 추가")}
                                 </button>
+                                {!editingProduct && (
+                                    <button
+                                        type="submit"
+                                        disabled={uploading}
+                                        onClick={() => setIsContinue(true)}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                    >
+                                        {uploading ? "저장 중..." : "저장 후 계속 추가"}
+                                    </button>
+                                )}
                             </div>
                         </form>
                     </div>
