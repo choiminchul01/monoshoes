@@ -15,6 +15,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const { user, loading } = useAuth();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showShopConfirm, setShowShopConfirm] = useState(false);
+    const [counts, setCounts] = useState({ orders: 0, products: 0 });
 
     useEffect(() => {
         if (!loading) {
@@ -22,9 +23,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 router.push('/admin-login');
             } else if (user.email?.toLowerCase() !== ADMIN_EMAIL) {
                 router.push('/');
+            } else {
+                fetchNotificationCounts();
             }
         }
     }, [user, loading, router]);
+
+    const fetchNotificationCounts = async () => {
+        try {
+            // Pending Orders
+            const { count: pendingOrders } = await supabase
+                .from('orders')
+                .select('*', { count: 'exact', head: true })
+                .eq('payment_status', 'pending');
+
+            // Low Stock Products
+            const { count: lowStock } = await supabase
+                .from('products')
+                .select('*', { count: 'exact', head: true })
+                .lt('stock', 5);
+
+            setCounts({
+                orders: pendingOrders || 0,
+                products: lowStock || 0
+            });
+        } catch (error) {
+            console.error("Error fetching notification counts:", error);
+        }
+    };
 
     const handleLogout = async () => {
         setShowLogoutConfirm(false);
@@ -46,11 +72,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     const navItems = [
-        { href: '/admin', label: '대시보드', icon: Home },
-        { href: '/admin/orders', label: '주문 관리', icon: ShoppingCart },
-        { href: '/admin/products', label: '상품 관리', icon: Package },
-        { href: '/admin/customers', label: '고객 관리', icon: Users },
-        { href: '/admin/settings', label: '설정', icon: Settings },
+        { href: '/admin', label: '대시보드', icon: Home, badge: 0 },
+        { href: '/admin/orders', label: '주문 관리', icon: ShoppingCart, badge: counts.orders },
+        { href: '/admin/products', label: '상품 관리', icon: Package, badge: counts.products },
+        { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0 },
+        { href: '/admin/settings', label: '설정', icon: Settings, badge: 0 },
     ];
 
     return (
@@ -79,13 +105,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors relative ${isActive
                                     ? 'bg-black text-white'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 <Icon className="w-4 h-4" />
                                 <span>{item.label}</span>
+                                {item.badge > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">
+                                        {item.badge > 9 ? '9+' : item.badge}
+                                    </span>
+                                )}
                             </Link>
                         );
                     })}
@@ -106,13 +137,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                                className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${isActive
                                     ? 'bg-black text-white'
                                     : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                             >
-                                <Icon className="w-5 h-5" />
-                                <span>{item.label}</span>
+                                <div className="flex items-center gap-3">
+                                    <Icon className="w-5 h-5" />
+                                    <span>{item.label}</span>
+                                </div>
+                                {item.badge > 0 && (
+                                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {item.badge}
+                                    </span>
+                                )}
                             </Link>
                         );
                     })}

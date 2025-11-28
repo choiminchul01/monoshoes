@@ -125,7 +125,17 @@ export default function AdminDashboard() {
 
     return (
         <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8">대시보드</h1>
+            <div className="flex items-center gap-3 mb-8">
+                <h1 className="text-3xl font-bold">대시보드</h1>
+                {(stats.pendingOrders > 0 || stats.lowStockCount > 0) && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border-2 border-red-200 rounded-full">
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                        <span className="text-sm font-bold text-red-700">
+                            알림 {stats.pendingOrders + stats.lowStockCount}건
+                        </span>
+                    </div>
+                )}
+            </div>
 
             {/* Top Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -228,9 +238,9 @@ export default function AdminDashboard() {
                                     <div className="text-right">
                                         <p className="text-sm font-bold">{order.final_amount.toLocaleString()}원</p>
                                         <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${order.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
-                                                order.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                    order.payment_status === 'shipped' ? 'bg-purple-100 text-purple-700' :
-                                                        'bg-gray-100 text-gray-600'
+                                            order.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                order.payment_status === 'shipped' ? 'bg-purple-100 text-purple-700' :
+                                                    'bg-gray-100 text-gray-600'
                                             }`}>
                                             {order.payment_status === 'pending' && '입금대기'}
                                             {order.payment_status === 'paid' && '입금완료'}
