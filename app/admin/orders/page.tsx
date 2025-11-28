@@ -311,8 +311,8 @@ export default function OrdersPage() {
                     <button
                         key={status}
                         onClick={() => setFilter(status)}
-                        className={`px-4 py-2 rounded-lg transition-colors ${filter === status
-                            ? "bg-black text-white"
+                        className={`px-4 py-2 rounded-lg font-bold transition-colors ${filter === status
+                            ? "bg-green-100 text-green-900 border border-green-300"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                             }`}
                     >

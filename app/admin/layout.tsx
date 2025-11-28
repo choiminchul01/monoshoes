@@ -106,14 +106,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 key={item.href}
                                 href={item.href}
                                 className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-w-[60px] ${isActive
-                                    ? 'bg-black text-white'
+                                    ? 'bg-green-100 text-green-900 border border-green-300'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
-                                <Icon className="w-6 h-6" />
+                                <Icon className={`w-6 h-6 ${isActive ? 'text-green-800' : ''}`} />
                                 <span>{item.label}</span>
                                 {item.badge > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">
+                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-700 text-white text-[10px] flex items-center justify-center rounded-full">
                                         {item.badge > 9 ? '9+' : item.badge}
                                     </span>
                                 )}
@@ -138,16 +138,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${isActive
-                                    ? 'bg-black text-white'
+                                    ? 'bg-green-100 text-green-900 border border-green-300'
                                     : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                             >
                                 <div className="flex items-center gap-3">
-                                    <Icon className="w-5 h-5" />
+                                    <Icon className={`w-5 h-5 ${isActive ? 'text-green-800' : 'text-gray-500'}`} />
                                     <span>{item.label}</span>
                                 </div>
                                 {item.badge > 0 && (
-                                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                    <span className="bg-green-700 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                                         {item.badge}
                                     </span>
                                 )}
@@ -197,8 +197,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </div>
             )}
-
-
 
             {/* Logout Confirmation Modal */}
             {showLogoutConfirm && (

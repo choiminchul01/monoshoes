@@ -203,11 +203,11 @@ export default function AdminDashboard() {
                             <div key={index} className="flex flex-col items-center flex-1 group">
                                 <div className="relative w-full flex justify-center items-end h-48 bg-gray-50 rounded-t-lg overflow-hidden group-hover:bg-gray-100 transition-colors">
                                     <div
-                                        className="w-full mx-1 md:mx-3 bg-black rounded-t opacity-80 group-hover:opacity-100 transition-all relative"
+                                        className="w-full mx-1 md:mx-3 bg-green-600 rounded-t opacity-80 group-hover:opacity-100 transition-all relative"
                                         style={{ height: `${(day.amount / maxRevenue) * 100}%` }}
                                     >
                                         {/* Tooltip */}
-                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-green-700 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                                             {day.amount.toLocaleString()}원
                                         </div>
                                     </div>
