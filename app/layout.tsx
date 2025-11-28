@@ -27,7 +27,7 @@ export default function RootLayout({
   const isAdminPage = pathname?.startsWith("/admin");
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <AuthProvider>
           <WishlistProvider>
