@@ -1,3 +1,5 @@
+import Link from "next/link";
+import Image from "next/image";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
@@ -17,7 +19,7 @@ interface ProductCardProps {
 
 export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "aspect-[1000/1618]", originalPrice, index = 0 }: ProductCardProps) {
     const { addToCart } = useCart();
-    const { toast } = useToast(); // useToast hook returns { toast } object or toast function depending on implementation, assuming standard context
+    const toast = useToast(); // useToast returns the context directly which has success, error methods
     const [isFlying, setIsFlying] = useState(false);
 
     const handleAddToCart = async (e: React.MouseEvent) => {
