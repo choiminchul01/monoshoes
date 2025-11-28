@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Trash2, Edit, Plus, Upload, X } from "lucide-react";
+import { Trash2, Edit, Plus, Upload, X, RefreshCw } from "lucide-react";
 import Image from "next/image";
 import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
@@ -334,41 +334,55 @@ export default function AdminProductsPage() {
 
     return (
         <div>
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                <div className="flex items-center gap-3">
+            {/* Title Row with Notification and Refresh */}
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+                <div className="flex items-center gap-4">
                     <h1 className="text-3xl font-bold">상품 관리</h1>
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${lowStockCount > 0
-                            ? 'bg-orange-50 border-orange-200'
-                            : 'bg-gray-50 border-gray-200'
+                        ? 'bg-orange-50 border-orange-200'
+                        : 'bg-gray-50 border-gray-200'
                         }`}>
                         <span className={`text-sm font-bold ${lowStockCount > 0
-                                ? 'text-orange-700'
-                                : 'text-gray-500'
+                            ? 'text-orange-700'
+                            : 'text-gray-500'
                             }`}>
                             재고부족 {lowStockCount}건
                         </span>
                     </div>
                 </div>
-                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                    <AdminSearch
-                        value={searchTerm}
-                        onChange={(val) => {
-                            setSearchTerm(val);
-                            setCurrentPage(1); // 검색 시 1페이지로 리셋
-                        }}
-                        placeholder="상품명, 브랜드, 카테고리 검색..."
-                    />
-                    <button
-                        onClick={() => {
-                            resetForm();
-                            setShowModal(true);
-                        }}
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-                    >
-                        <Plus className="w-4 h-4" />
-                        상품 추가
-                    </button>
-                </div>
+                <button
+                    onClick={fetchProducts}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                    <RefreshCw className="w-4 h-4" />
+                    새로고침
+                </button>
+            </div>
+
+            {/* Action Button Row */}
+            <div className="mb-6">
+                <button
+                    onClick={() => {
+                        resetForm();
+                        setShowModal(true);
+                    }}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                    <Plus className="w-4 h-4" />
+                    상품 추가
+                </button>
+            </div>
+
+            {/* Search Row */}
+            <div className="mb-6">
+                <AdminSearch
+                    value={searchTerm}
+                    onChange={(val) => {
+                        setSearchTerm(val);
+                        setCurrentPage(1);
+                    }}
+                    placeholder="상품명, 브랜드, 카테고리 검색..."
+                />
             </div>
 
             <div className="bg-white rounded-lg shadow overflow-hidden mb-8">

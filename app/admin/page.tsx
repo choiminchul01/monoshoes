@@ -125,19 +125,19 @@ export default function AdminDashboard() {
 
     return (
         <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-4 mb-8">
                 <h1 className="text-3xl font-bold">대시보드</h1>
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${(stats.pendingOrders + stats.lowStockCount) > 0
-                        ? 'bg-red-50 border-red-200'
-                        : 'bg-gray-50 border-gray-200'
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-gray-50 border-gray-200'
                     }`}>
                     <AlertCircle className={`w-4 h-4 ${(stats.pendingOrders + stats.lowStockCount) > 0
-                            ? 'text-red-600'
-                            : 'text-gray-400'
+                        ? 'text-red-600'
+                        : 'text-gray-400'
                         }`} />
                     <span className={`text-sm font-bold ${(stats.pendingOrders + stats.lowStockCount) > 0
-                            ? 'text-red-700'
-                            : 'text-gray-500'
+                        ? 'text-red-700'
+                        : 'text-gray-500'
                         }`}>
                         알림 {stats.pendingOrders + stats.lowStockCount}건
                     </span>

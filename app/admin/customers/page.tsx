@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Search, User, ShoppingBag, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, User, ShoppingBag, Calendar, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 
@@ -124,18 +124,28 @@ export default function AdminCustomersPage() {
 
     return (
         <div>
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            {/* Title Row with Refresh */}
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
                 <h1 className="text-3xl font-bold">고객 관리</h1>
-                <div className="w-full md:w-auto">
-                    <AdminSearch
-                        value={searchTerm}
-                        onChange={(val) => {
-                            setSearchTerm(val);
-                            setCurrentPage(1);
-                        }}
-                        placeholder="고객명, 전화번호 검색..."
-                    />
-                </div>
+                <button
+                    onClick={fetchCustomers}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                    <RefreshCw className="w-4 h-4" />
+                    새로고침
+                </button>
+            </div>
+
+            {/* Search Row */}
+            <div className="mb-6">
+                <AdminSearch
+                    value={searchTerm}
+                    onChange={(val) => {
+                        setSearchTerm(val);
+                        setCurrentPage(1);
+                    }}
+                    placeholder="고객명, 전화번호 검색..."
+                />
             </div>
 
             <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
@@ -215,9 +225,9 @@ export default function AdminCustomersPage() {
                                                                             <td className="px-4 py-2">{order.final_amount.toLocaleString()}원</td>
                                                                             <td className="px-4 py-2">
                                                                                 <span className={`px-2 py-0.5 rounded text-xs ${order.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
-                                                                                        order.payment_status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                                                                                            order.payment_status === 'delivered' ? 'bg-blue-100 text-blue-800' :
-                                                                                                'bg-yellow-100 text-yellow-800'
+                                                                                    order.payment_status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                                                                                        order.payment_status === 'delivered' ? 'bg-blue-100 text-blue-800' :
+                                                                                            'bg-yellow-100 text-yellow-800'
                                                                                     }`}>
                                                                                     {order.payment_status === 'paid' && '입금완료'}
                                                                                     {order.payment_status === 'shipped' && '배송중'}
