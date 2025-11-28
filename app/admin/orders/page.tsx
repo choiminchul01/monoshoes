@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Download, RefreshCw, Trash2, Eye, Search } from "lucide-react";
+import { Download, RefreshCw, Trash2, Eye, Search, Upload } from "lucide-react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import TrackingNumberModal from "@/components/admin/TrackingNumberModal";
 import OrderDetailModal from "@/components/admin/OrderDetailModal";
+import BulkTrackingModal from "@/components/admin/BulkTrackingModal";
 
 type Order = {
     id: string;
@@ -55,6 +56,8 @@ export default function OrdersPage() {
         show: boolean;
         orderId: string;
     }>({ show: false, orderId: "" });
+
+    const [showBulkModal, setShowBulkModal] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
@@ -253,6 +256,13 @@ export default function OrdersPage() {
                     >
                         <Download className="w-4 h-4" />
                         엑셀 내보내기
+                    </button>
+                    <button
+                        onClick={() => setShowBulkModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                        <Upload className="w-4 h-4" />
+                        운송장 일괄 업로드
                     </button>
                     <button
                         onClick={fetchOrders}
@@ -497,6 +507,12 @@ export default function OrdersPage() {
                 isOpen={detailModal.show}
                 onClose={() => setDetailModal({ show: false, orderId: "" })}
                 orderId={detailModal.orderId}
+            />
+
+            <BulkTrackingModal
+                isOpen={showBulkModal}
+                onClose={() => setShowBulkModal(false)}
+                onSuccess={fetchOrders}
             />
         </div>
     );
