@@ -366,7 +366,7 @@ export default function OrdersPage() {
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full">
+                        <table className="w-full hidden md:table">
                             <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
                                     <th className="px-6 py-3 text-left">
@@ -483,6 +483,117 @@ export default function OrdersPage() {
                                 ))}
                             </tbody>
                         </table>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden divide-y divide-gray-200">
+                            {filteredOrders.map((order) => (
+                                <div key={order.id} className="p-4 bg-white">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedOrders.includes(order.id)}
+                                                onChange={() => toggleOrderSelection(order.id)}
+                                                className="w-4 h-4 text-green-600 border-gray-300 rounded"
+                                            />
+                                            <span className="font-bold text-gray-900">{order.shipping_name}</span>
+                                        </div>
+                                        <span
+                                            className={`px-2 py-1 text-xs font-semibold rounded-full ${order.payment_status === "delivered"
+                                                ? "bg-blue-100 text-blue-800"
+                                                : order.payment_status === "shipped"
+                                                    ? "bg-purple-100 text-purple-800"
+                                                    : order.payment_status === "paid"
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-yellow-100 text-yellow-800"
+                                                }`}
+                                        >
+                                            {order.payment_status === "pending" && "입금대기"}
+                                            {order.payment_status === "paid" && "입금완료"}
+                                            {order.payment_status === "shipped" && "배송중"}
+                                            {order.payment_status === "delivered" && "배송완료"}
+                                        </span>
+                                    </div>
+
+                                    <div className="mb-3 text-sm text-gray-600 space-y-1 pl-6">
+                                        <div className="flex justify-between">
+                                            <span>주문번호:</span>
+                                            <span className="font-mono">{order.order_number}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>금액:</span>
+                                            <span className="font-bold text-gray-900">{order.final_amount.toLocaleString()}원</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>주문일:</span>
+                                            <span>{new Date(order.created_at).toLocaleDateString("ko-KR")}</span>
+                                        </div>
+                                        {order.tracking_number && (
+                                            <div className="flex justify-between text-xs text-gray-500">
+                                                <span>송장:</span>
+                                                <span>{order.shipping_company} {order.tracking_number}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex justify-end gap-2 pl-6">
+                                        <button
+                                            onClick={() => setDetailModal({ show: true, orderId: order.id })}
+                                            className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                                        >
+                                            상세보기
+                                        </button>
+
+                                        {order.payment_status === "pending" && (
+                                            <button
+                                                onClick={() =>
+                                                    setConfirmModal({
+                                                        show: true,
+                                                        title: "입금 확인",
+                                                        message: `주문번호: ${order.order_number}\n고객명: ${order.shipping_name}\n금액: ${order.final_amount.toLocaleString()}원\n\n입금을 확인하셨습니까?`,
+                                                        onConfirm: () => updatePaymentStatus(order.id, "paid"),
+                                                    })
+                                                }
+                                                className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                            >
+                                                입금확인
+                                            </button>
+                                        )}
+
+                                        {order.payment_status === "paid" && (
+                                            <button
+                                                onClick={() =>
+                                                    setTrackingModal({
+                                                        show: true,
+                                                        orderId: order.id,
+                                                        orderNumber: order.order_number,
+                                                    })
+                                                }
+                                                className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
+                                            >
+                                                송장입력
+                                            </button>
+                                        )}
+
+                                        {order.payment_status === "shipped" && (
+                                            <button
+                                                onClick={() =>
+                                                    setConfirmModal({
+                                                        show: true,
+                                                        title: "배송 완료 처리",
+                                                        message: `주문번호: ${order.order_number}\n\n배송이 완료되었습니까?\n배송 완료 후에는 반품/교환 처리가 제한될 수 있습니다.`,
+                                                        onConfirm: () => updatePaymentStatus(order.id, "delivered"),
+                                                    })
+                                                }
+                                                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                            >
+                                                배송완료
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
