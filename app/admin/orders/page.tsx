@@ -249,7 +249,8 @@ export default function OrdersPage() {
     return (
         <div>
             {/* Title Row with Notification and Refresh */}
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+            {/* Title Row with Notification and Refresh */}
+            <div className="flex flex-row justify-between items-center mb-6 gap-4">
                 <div className="flex items-center gap-4">
                     <h1 className="text-3xl font-bold">주문 관리</h1>
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${pendingCount > 0
@@ -274,17 +275,17 @@ export default function OrdersPage() {
             </div>
 
             {/* Action Buttons Row */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="grid grid-cols-2 gap-3 mb-6">
                 <button
                     onClick={exportToExcel}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-3 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                     <Download className="w-4 h-4" />
                     엑셀 내보내기
                 </button>
                 <button
                     onClick={() => setShowBulkModal(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-3 font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                     <Upload className="w-4 h-4" />
                     운송장 일괄 업로드
@@ -292,7 +293,7 @@ export default function OrdersPage() {
             </div>
 
             {/* Search Row */}
-            <div className="mb-4">
+            <div className="mb-8 mt-4">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input

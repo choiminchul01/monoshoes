@@ -125,7 +125,7 @@ export default function AdminCustomersPage() {
     return (
         <div>
             {/* Title Row with Refresh */}
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+            <div className="flex flex-row justify-between items-center mb-6 gap-4">
                 <h1 className="text-3xl font-bold">고객 관리</h1>
                 <button
                     onClick={fetchCustomers}
@@ -137,7 +137,7 @@ export default function AdminCustomersPage() {
             </div>
 
             {/* Search Row */}
-            <div className="mb-6">
+            <div className="mb-8 mt-4">
                 <AdminSearch
                     value={searchTerm}
                     onChange={(val) => {

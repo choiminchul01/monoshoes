@@ -105,12 +105,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors relative ${isActive
+                                className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-w-[60px] ${isActive
                                     ? 'bg-black text-white'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
-                                <Icon className="w-4 h-4" />
+                                <Icon className="w-6 h-6" />
                                 <span>{item.label}</span>
                                 {item.badge > 0 && (
                                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">

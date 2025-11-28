@@ -335,7 +335,7 @@ export default function AdminProductsPage() {
     return (
         <div>
             {/* Title Row with Notification and Refresh */}
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+            <div className="flex flex-row justify-between items-center mb-6 gap-4">
                 <div className="flex items-center gap-4">
                     <h1 className="text-3xl font-bold">상품 관리</h1>
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${lowStockCount > 0
@@ -366,7 +366,7 @@ export default function AdminProductsPage() {
                         resetForm();
                         setShowModal(true);
                     }}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-3 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
                     상품 추가
@@ -374,7 +374,7 @@ export default function AdminProductsPage() {
             </div>
 
             {/* Search Row */}
-            <div className="mb-6">
+            <div className="mb-8 mt-4">
                 <AdminSearch
                     value={searchTerm}
                     onChange={(val) => {
