@@ -337,13 +337,17 @@ export default function AdminProductsPage() {
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div className="flex items-center gap-3">
                     <h1 className="text-3xl font-bold">상품 관리</h1>
-                    {lowStockCount > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 border-2 border-orange-200 rounded-full">
-                            <span className="text-sm font-bold text-orange-700">
-                                재고부족 {lowStockCount}건
-                            </span>
-                        </div>
-                    )}
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${lowStockCount > 0
+                            ? 'bg-orange-50 border-orange-200'
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                        <span className={`text-sm font-bold ${lowStockCount > 0
+                                ? 'text-orange-700'
+                                : 'text-gray-500'
+                            }`}>
+                            재고부족 {lowStockCount}건
+                        </span>
+                    </div>
                 </div>
                 <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                     <AdminSearch

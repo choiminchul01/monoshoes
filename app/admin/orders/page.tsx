@@ -251,13 +251,17 @@ export default function OrdersPage() {
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
                     <h1 className="text-3xl font-bold">주문 관리</h1>
-                    {pendingCount > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 border-2 border-yellow-200 rounded-full">
-                            <span className="text-sm font-bold text-yellow-700">
-                                입금대기 {pendingCount}건
-                            </span>
-                        </div>
-                    )}
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${pendingCount > 0
+                            ? 'bg-yellow-50 border-yellow-200'
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                        <span className={`text-sm font-bold ${pendingCount > 0
+                                ? 'text-yellow-700'
+                                : 'text-gray-500'
+                            }`}>
+                            입금대기 {pendingCount}건
+                        </span>
+                    </div>
                 </div>
                 <div className="flex gap-3">
                     <button
