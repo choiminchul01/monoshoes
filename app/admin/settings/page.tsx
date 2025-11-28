@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Upload, Save, Trash2, Image as ImageIcon, CheckCircle } from "lucide-react";
+import { Upload, Save, Image as ImageIcon, CheckCircle } from "lucide-react";
 import Image from "next/image";
 
 export default function AdminSettingsPage() {
-    const [loading, setLoading] = useState(false);
     const [bannerUrl, setBannerUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
 
