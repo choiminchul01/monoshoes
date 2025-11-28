@@ -14,7 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
     const { user, loading } = useAuth();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-    const [showShopConfirm, setShowShopConfirm] = useState(false);
+
 
     useEffect(() => {
         if (!loading) {
@@ -32,10 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/admin-login');
     };
 
-    const handleGoToShop = () => {
-        setShowShopConfirm(false);
-        router.push('/');
-    };
+
 
     if (loading) {
         return <div className="flex items-center justify-center min-h-screen">로딩 중...</div>;
@@ -59,10 +56,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <header className="md:hidden bg-white border-b border-gray-200 p-4 flex justify-between items-center sticky top-0 z-50">
                 <h1 className="text-xl font-bold text-gray-900">ESSENTIA ADMIN</h1>
                 <div className="flex items-center gap-2">
-                    <button onClick={() => setShowShopConfirm(true)} className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors">
+                    <Link href="/" className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors">
                         <Store className="w-4 h-4" />
                         <span>쇼핑몰</span>
-                    </button>
+                    </Link>
                     <button onClick={() => setShowLogoutConfirm(true)} className="p-2 text-gray-500 hover:text-red-600 transition-colors" title="로그아웃">
                         <LogOut className="w-5 h-5" />
                     </button>
@@ -118,10 +115,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     })}
                 </nav>
                 <div className="p-4 border-t border-gray-200 space-y-2">
-                    <button onClick={() => setShowShopConfirm(true)} className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors w-full font-medium">
+                    <Link href="/" className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors w-full font-medium">
                         <Store className="w-4 h-4" />
                         <span>쇼핑몰로 이동</span>
-                    </button>
+                    </Link>
                     <button
                         onClick={() => setShowLogoutConfirm(true)}
                         className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full"
@@ -136,29 +133,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {children}
             </main>
 
-            {/* Go to Shop Confirmation Modal */}
-            {showShopConfirm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg p-6 max-w-sm w-full">
-                        <h3 className="text-lg font-bold mb-4">쇼핑몰로 이동</h3>
-                        <p className="text-gray-600 mb-6">관리자 페이지에서 나가시겠습니까?<br />쇼핑몰 메인 페이지로 이동합니다.</p>
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => setShowShopConfirm(false)}
-                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                            >
-                                취소
-                            </button>
-                            <button
-                                onClick={handleGoToShop}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                            >
-                                이동
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             {/* Logout Confirmation Modal */}
             {showLogoutConfirm && (
