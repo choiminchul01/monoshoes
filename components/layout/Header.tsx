@@ -32,7 +32,7 @@ export function Header() {
                 <div className="container mx-auto flex h-20 items-center justify-between px-4 gap-4">
                     {/* Mobile Menu Button */}
                     <button
-                        className="md:hidden p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
+                        className="md:hidden p-2.5 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                         onClick={toggleMobileMenu}
                     >
                         <Menu className="h-6 w-6" />
@@ -94,13 +94,13 @@ export function Header() {
 
                         {/* Mobile Search Icon (visible only on mobile) */}
                         <button
-                            className="md:hidden hover:text-gray-600 transition-colors mr-6"
+                            className="md:hidden hover:text-gray-600 transition-colors mr-6 p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center -m-2.5"
                             onClick={() => setIsSearchOpen(true)}
                         >
                             <Search className="h-6 w-6" />
                         </button>
 
-                        <Link href="/cart" className="hover:text-gray-600 transition-colors relative mr-8">
+                        <Link href="/cart" className="hover:text-gray-600 transition-colors relative mr-8 p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center -m-2.5">
                             <ShoppingBag className="h-6 w-6" />
                             {cartCount > 0 && (
                                 <span className="absolute -top-2 -right-2 bg-[#C41E3A] text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
@@ -158,7 +158,7 @@ export function Header() {
                             <div className="p-6 flex flex-col h-full">
                                 <div className="flex justify-between items-center mb-8">
                                     <span className="text-xl font-bold tracking-widest">MENU</span>
-                                    <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                                    <button onClick={() => setIsMobileMenuOpen(false)} className="p-2.5 hover:bg-gray-100 rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center">
                                         <X className="h-6 w-6" />
                                     </button>
                                 </div>
@@ -262,7 +262,7 @@ export function Header() {
                                 <div className="flex justify-end mb-4">
                                     <button
                                         onClick={() => setIsSearchOpen(false)}
-                                        className="p-2 hover:bg-gray-100 rounded-full"
+                                        className="p-2.5 hover:bg-gray-100 rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center"
                                     >
                                         <X className="h-8 w-8" />
                                     </button>
