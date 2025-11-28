@@ -126,7 +126,14 @@ export default function AdminCustomersPage() {
         <div>
             {/* Title Row with Refresh */}
             <div className="flex flex-row justify-between items-center mb-6 gap-4">
-                <h1 className="text-3xl font-bold">고객 관리</h1>
+                <div className="flex items-center gap-4">
+                    <h1 className="text-3xl font-bold">고객 관리</h1>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border-2 bg-blue-50 border-blue-200">
+                        <span className="text-sm font-bold text-blue-700">
+                            총 고객 {customers.length}명
+                        </span>
+                    </div>
+                </div>
                 <button
                     onClick={fetchCustomers}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
@@ -157,7 +164,82 @@ export default function AdminCustomersPage() {
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full">
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-4 p-4 bg-gray-50">
+                            {currentCustomers.map((customer) => (
+                                <div key={customer.id} className="bg-white p-4 rounded-lg shadow border border-gray-100">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                                <User className="w-4 h-4 text-gray-500" />
+                                                {customer.name}
+                                            </h3>
+                                            <p className="text-sm text-gray-500 mt-1">{customer.phone}</p>
+                                        </div>
+                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                            주문 {customer.totalOrders}건
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                                        <div className="bg-gray-50 p-2 rounded">
+                                            <span className="text-gray-500 block text-xs">총 결제금액</span>
+                                            <span className="font-bold">{customer.totalSpent.toLocaleString()}원</span>
+                                        </div>
+                                        <div className="bg-gray-50 p-2 rounded">
+                                            <span className="text-gray-500 block text-xs">최근 주문일</span>
+                                            <span>{new Date(customer.lastOrderDate).toLocaleDateString("ko-KR")}</span>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => toggleExpand(customer.id)}
+                                        className="w-full flex items-center justify-center gap-1 py-2 text-sm text-gray-500 hover:bg-gray-50 rounded transition-colors border border-gray-200"
+                                    >
+                                        {expandedCustomer === customer.id ? (
+                                            <>접기 <ChevronUp className="w-4 h-4" /></>
+                                        ) : (
+                                            <>주문 내역 보기 <ChevronDown className="w-4 h-4" /></>
+                                        )}
+                                    </button>
+
+                                    {expandedCustomer === customer.id && (
+                                        <div className="mt-3 pt-3 border-t border-gray-100">
+                                            <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
+                                                <ShoppingBag className="w-3 h-3" /> 주문 이력
+                                            </h4>
+                                            <div className="space-y-2">
+                                                {customer.orders.map(order => (
+                                                    <div key={order.id} className="bg-gray-50 p-3 rounded text-sm">
+                                                        <div className="flex justify-between mb-1">
+                                                            <span className="font-mono text-xs">{order.order_number}</span>
+                                                            <span className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString("ko-KR")}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="font-bold">{order.final_amount.toLocaleString()}원</span>
+                                                            <span className={`px-2 py-0.5 rounded text-xs ${order.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                                                                    order.payment_status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                                                                        order.payment_status === 'delivered' ? 'bg-blue-100 text-blue-800' :
+                                                                            'bg-yellow-100 text-yellow-800'
+                                                                }`}>
+                                                                {order.payment_status === 'paid' && '입금완료'}
+                                                                {order.payment_status === 'shipped' && '배송중'}
+                                                                {order.payment_status === 'delivered' && '배송완료'}
+                                                                {order.payment_status === 'pending' && '입금대기'}
+                                                                {order.payment_status === 'cancelled' && '취소'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <table className="w-full hidden md:table">
                             <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">고객명</th>
@@ -261,6 +343,6 @@ export default function AdminCustomersPage() {
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
             />
-        </div>
+        </div >
     );
 }
