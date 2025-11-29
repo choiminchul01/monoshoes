@@ -9,7 +9,7 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import { useRouter, notFound } from "next/navigation";
 import { getColorHex } from "@/lib/colorUtils";
 import { useToast } from "@/context/ToastContext";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             try {
                 const resolvedParams = await params;
                 const id = resolvedParams.id;
+
+                // UUID 유효성 검사
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                if (!uuidRegex.test(id)) {
+                    // console.error(`Invalid product ID format: ${id}`);
+                    // setLoading(false);
+                    // return;
+                    notFound(); // Redirect to 404 page
+                }
 
                 setLoading(true);
 

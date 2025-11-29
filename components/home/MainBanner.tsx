@@ -7,19 +7,19 @@ import Image from "next/image";
 const SLIDES = [
     {
         id: 1,
-        image: "https://placehold.co/1920x1080/png?text=ESSENTIA+COLLECTION+1",
+        image: "https://placehold.co/1920x800/png?text=ESSENTIA+COLLECTION+1",
         title: "NEW SEASON ARRIVALS",
         subtitle: "Discover the latest luxury trends.",
     },
     {
         id: 2,
-        image: "https://placehold.co/1920x1080/png?text=ESSENTIA+COLLECTION+2",
+        image: "https://placehold.co/1920x800/png?text=ESSENTIA+COLLECTION+2",
         title: "TIMELESS ELEGANCE",
         subtitle: "Classic pieces for your wardrobe.",
     },
     {
         id: 3,
-        image: "https://placehold.co/1920x1080/png?text=ESSENTIA+COLLECTION+3",
+        image: "https://placehold.co/1920x800/png?text=ESSENTIA+COLLECTION+3",
         title: "EXCLUSIVE OFFERS",
         subtitle: "Limited time special prices.",
     },
@@ -36,7 +36,7 @@ export function MainBanner() {
     }, []);
 
     return (
-        <div className="relative w-full h-[calc(100vh-4rem)] overflow-hidden bg-gray-100">
+        <div className="relative w-full h-[60vh] md:h-auto md:aspect-[2.4/1] overflow-hidden bg-gray-100">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={currentSlide}

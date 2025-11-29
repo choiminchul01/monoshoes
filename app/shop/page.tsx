@@ -84,22 +84,23 @@ function ShopContent() {
 
     const allFilteredProducts = filterProducts(products);
 
-    // Split into New Arrivals and Best Sellers (logic can be adjusted)
-    // For now, let's assume New Arrivals are recent products, and Best Sellers are older ones (or random for demo)
+    // Split into New Arrivals and Best Sellers
+    // Logic updated to ensure both sections are populated regardless of product dates
+    const sortedByDate = [...allFilteredProducts].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 
-    let NEW_ARRIVALS = allFilteredProducts
-        .filter(p => new Date(p.created_at) >= thirtyDaysAgo)
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    // New Arrivals: Top 4 newest products
+    let NEW_ARRIVALS = sortedByDate.slice(0, 4);
 
-    let BEST_SELLERS = allFilteredProducts
-        .filter(p => new Date(p.created_at) < thirtyDaysAgo);
+    // Best Sellers: The rest, or if not enough products, just show all/random
+    // For this demo, we'll use the remaining products, or if empty, reuse some products to fill the UI
+    let BEST_SELLERS = sortedByDate.slice(4);
 
-    // If not enough products for split, just show all in New Arrivals or duplicate logic as fallback
-    if (NEW_ARRIVALS.length === 0 && BEST_SELLERS.length === 0 && allFilteredProducts.length > 0) {
-        // If everything is filtered out by date logic but products exist, just show them in New Arrivals
-        NEW_ARRIVALS = allFilteredProducts;
-    } else if (NEW_ARRIVALS.length < 4 && BEST_SELLERS.length > 0) {
-        // Fallback: if few new arrivals, maybe show some best sellers there too? (Optional)
+    if (BEST_SELLERS.length === 0 && sortedByDate.length > 0) {
+        // If we have few products (<=4), show them in both or just split them differently
+        // Let's just duplicate them for visual fullness if the user wants to see both sections
+        BEST_SELLERS = sortedByDate;
     }
 
     const handleSearch = (e: React.FormEvent) => {
