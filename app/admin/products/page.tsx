@@ -6,6 +6,7 @@ import { Trash2, Edit, Plus, Upload, X, RefreshCw } from "lucide-react";
 import Image from "next/image";
 import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
+import { useToast } from "@/context/ToastContext";
 
 type Product = {
     id: string;
@@ -107,13 +108,6 @@ export default function AdminProductsPage() {
         }
     }, [isMounted]);
 
-    // 디버깅: 이미지 URL 확인
-    useEffect(() => {
-        if (products.length > 0) {
-            console.log('Admin - First product images:', products[0].images);
-        }
-    }, [products]);
-
     const fetchProducts = async () => {
         setLoading(true);
         const { data, error } = await supabase
@@ -201,7 +195,13 @@ export default function AdminProductsPage() {
         return uploadedUrls;
     };
 
+    const toast = useToast();
+    // ... (existing state)
+
+    // ... (existing useEffects and helper functions)
+
     const handleSubmit = async (e: React.FormEvent) => {
+        // ... (handleSubmit logic as implemented in previous step)
         e.preventDefault();
         setUploading(true);
 
@@ -237,7 +237,9 @@ export default function AdminProductsPage() {
                     .eq("id", editingProduct.id);
 
                 if (error) throw error;
-                alert("상품이 수정되었습니다");
+                toast.success("상품이 수정되었습니다");
+                setShowModal(false);
+                resetForm();
             } else {
                 // 추가
                 const { error } = await supabase
@@ -247,11 +249,11 @@ export default function AdminProductsPage() {
                 if (error) throw error;
 
                 if (isContinue) {
-                    alert("상품이 추가되었습니다. 다음 상품을 입력해주세요.");
+                    toast.success("상품이 추가되었습니다. 다음 상품을 입력해주세요.");
                     resetForm();
                     // 모달 유지
                 } else {
-                    alert("상품이 추가되었습니다");
+                    toast.success("상품이 추가되었습니다");
                     setShowModal(false);
                     resetForm();
                 }
@@ -260,7 +262,7 @@ export default function AdminProductsPage() {
             fetchProducts();
         } catch (error) {
             console.error("Error:", error);
-            alert("오류가 발생했습니다");
+            toast.error("오류가 발생했습니다");
         } finally {
             setUploading(false);
             setIsContinue(false);
@@ -300,11 +302,11 @@ export default function AdminProductsPage() {
             .eq("id", deleteTargetId);
 
         if (!error) {
-            alert("상품이 삭제되었습니다");
+            toast.success("상품이 삭제되었습니다");
             fetchProducts();
         } else {
             console.error("Delete error:", error);
-            alert(`삭제 실패: ${error.message}`);
+            toast.error(`삭제 실패: ${error.message}`);
         }
         setShowDeleteConfirm(false);
         setDeleteTargetId(null);
