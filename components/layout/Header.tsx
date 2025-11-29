@@ -39,7 +39,7 @@ export function Header() {
                     </button>
 
                     {/* Logo */}
-                    <Link href="/" className="text-3xl font-bold tracking-[0.15em] flex-shrink-0">
+                    <Link href="/" className="text-3xl font-bold tracking-[0.15em] flex-shrink-0 transition-all duration-500 ease-out hover:text-[#D4AF37] hover:scale-105">
                         ESSENTIA
                     </Link>
 

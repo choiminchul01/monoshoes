@@ -45,7 +45,7 @@ export default function LandingPage() {
             onClick={handleEnter}
         >
             {/* Animated Logo */}
-            <div className="text-center relative z-10 flex gap-2 md:gap-4">
+            <div className="text-center relative z-10 flex gap-1 md:gap-4 px-6 md:px-0">
                 {delays.length > 0 && LETTERS.map((letter, i) => (
                     <motion.div
                         key={i}
@@ -64,7 +64,7 @@ export default function LandingPage() {
                             opacity: { duration: 1.5, delay: delays[i], ease: "easeOut" }, // Fade in slower
                             color: { duration: 1.5, ease: "easeInOut" } // Smooth color transition
                         }}
-                        className="text-6xl md:text-8xl font-bold tracking-widest"
+                        className="text-5xl md:text-8xl font-bold tracking-widest"
                     >
                         <motion.span
                             animate={isLanded ? {
