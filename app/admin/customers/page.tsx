@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Search, User, ShoppingBag, Calendar, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import AdminSearch from "@/components/admin/AdminSearch";
@@ -218,9 +218,9 @@ export default function AdminCustomersPage() {
                                                         <div className="flex justify-between items-center">
                                                             <span className="font-bold">{order.final_amount.toLocaleString()}원</span>
                                                             <span className={`px-2 py-0.5 rounded text-xs ${order.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
-                                                                    order.payment_status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                                                                        order.payment_status === 'delivered' ? 'bg-blue-100 text-blue-800' :
-                                                                            'bg-yellow-100 text-yellow-800'
+                                                                order.payment_status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                                                                    order.payment_status === 'delivered' ? 'bg-blue-100 text-blue-800' :
+                                                                        'bg-yellow-100 text-yellow-800'
                                                                 }`}>
                                                                 {order.payment_status === 'paid' && '입금완료'}
                                                                 {order.payment_status === 'shipped' && '배송중'}
@@ -252,9 +252,8 @@ export default function AdminCustomersPage() {
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                                 {currentCustomers.map((customer) => (
-                                    <>
+                                    <React.Fragment key={customer.id}>
                                         <tr
-                                            key={customer.id}
                                             className={`hover:bg-gray-50 cursor-pointer transition-colors ${expandedCustomer === customer.id ? 'bg-gray-50' : ''}`}
                                             onClick={() => toggleExpand(customer.id)}
                                         >
@@ -330,7 +329,7 @@ export default function AdminCustomersPage() {
                                                 </td>
                                             </tr>
                                         )}
-                                    </>
+                                    </React.Fragment>
                                 ))}
                             </tbody>
                         </table>

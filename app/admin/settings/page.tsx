@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { uploadBannerAction, deleteBannerAction, fetchBannersAction } from "./actions";
 import { Upload, Save, Image as ImageIcon, CheckCircle } from "lucide-react";
 import Image from "next/image";
 
 export default function AdminSettingsPage() {
-    const [bannerUrl, setBannerUrl] = useState<string | null>(null);
-    const [uploading, setUploading] = useState(false);
+    // Banner slots state - array of 3 slots
+    const [bannerSlots, setBannerSlots] = useState<Array<{ url: string | null }>>([{ url: null }, { url: null }, { url: null }]);
+    const [uploading, setUploading] = useState<number | null>(null); // Track which slot is uploading
 
     // Site Settings State
     const [siteSettings, setSiteSettings] = useState({
@@ -26,59 +28,74 @@ export default function AdminSettingsPage() {
     const [savingSettings, setSavingSettings] = useState(false);
 
     useEffect(() => {
-        fetchBanner();
+        fetchBanners();
         fetchSiteSettings();
     }, []);
 
-    const fetchBanner = async () => {
-        // Fetch the list of files in the 'banners' bucket
-        const { data, error } = await supabase.storage
-            .from('banners')
-            .list('', { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
+    const fetchBanners = async () => {
+        try {
+            const result = await fetchBannersAction();
 
-        if (data && data.length > 0) {
-            const { data: { publicUrl } } = supabase.storage
-                .from('banners')
-                .getPublicUrl(data[0].name);
-            setBannerUrl(publicUrl);
+            if (result.success && result.banners) {
+                const newSlots = [...bannerSlots];
+                // Reset slots first
+                newSlots.forEach(slot => slot.url = null);
+
+                // Update slots with fetched URLs
+                Object.entries(result.banners).forEach(([key, url]) => {
+                    const index = parseInt(key) - 1;
+                    if (index >= 0 && index < 3) {
+                        newSlots[index] = { url: url as string };
+                    }
+                });
+
+                setBannerSlots(newSlots);
+            }
+        } catch (error) {
+            console.error("Failed to fetch banners:", error);
         }
     };
 
-    const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleBannerUpload = async (slotNumber: number, e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
 
         const file = e.target.files[0];
-        setUploading(true);
+        setUploading(slotNumber);
 
         try {
-            // 1. Delete existing files to keep it clean (optional, but good for single banner)
-            const { data: existingFiles } = await supabase.storage.from('banners').list();
-            if (existingFiles && existingFiles.length > 0) {
-                await supabase.storage.from('banners').remove(existingFiles.map(f => f.name));
-            }
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('slotNumber', slotNumber.toString());
 
-            // 2. Upload new file
-            const fileExt = file.name.split('.').pop();
-            const fileName = `main_banner_${Date.now()}.${fileExt}`;
+            const result = await uploadBannerAction(formData);
 
-            const { error: uploadError } = await supabase.storage
-                .from('banners')
-                .upload(fileName, file);
+            if (!result.success) throw new Error(result.error);
 
-            if (uploadError) throw uploadError;
-
-            // 3. Get Public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('banners')
-                .getPublicUrl(fileName);
-
-            setBannerUrl(publicUrl);
-            alert("메인 배너가 업데이트되었습니다.");
-        } catch (error) {
+            alert(`배너 ${slotNumber}번이 업로드되었습니다.`);
+            await fetchBanners();
+        } catch (error: any) {
             console.error("Banner upload failed:", error);
-            alert("배너 업로드 중 오류가 발생했습니다.");
+            alert(`배너 업로드 실패: ${error.message}`);
         } finally {
-            setUploading(false);
+            setUploading(null);
+            // Reset input value to allow re-uploading same file if needed
+            e.target.value = '';
+        }
+    };
+
+    const handleBannerDelete = async (slotNumber: number) => {
+        if (!confirm(`배너 ${slotNumber}번을 삭제하시겠습니까?`)) return;
+
+        try {
+            const result = await deleteBannerAction(slotNumber);
+
+            if (!result.success) throw new Error(result.error);
+
+            alert(`배너 ${slotNumber}번이 삭제되었습니다.`);
+            await fetchBanners();
+        } catch (error) {
+            console.error("Banner delete failed:", error);
+            alert("배너 삭제 중 오류가 발생했습니다.");
         }
     };
 
@@ -346,38 +363,58 @@ export default function AdminSettingsPage() {
                 <div className="space-y-6">
                     <div>
                         <p className="text-sm text-gray-500 mb-6 font-normal">
-                            쇼핑몰 메인 페이지 최상단에 노출되는 배너 이미지를 설정합니다.<br />
+                            쇼핑몰 메인 페이지 최상단에 슬라이드되는 배너 이미지입니다.<br />
+                            최대 3개까지 각 슬롯별로 관리할 수 있습니다.<br />
                             권장 사이즈: 1920 x 600 px (최대 5MB)
                         </p>
 
-                        <div className="border border-dashed border-green-200 rounded-xl p-12 text-center hover:bg-green-50/30 transition-all duration-300 relative group cursor-pointer">
-                            {bannerUrl ? (
-                                <div className="relative w-full aspect-[21/9] bg-gray-100 rounded-lg overflow-hidden mb-6 shadow-sm group-hover:shadow-md transition-all">
-                                    <Image
-                                        src={bannerUrl}
-                                        alt="Main Banner"
-                                        fill
-                                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-8 text-gray-300 group-hover:text-green-700 transition-colors">
-                                    <ImageIcon className="w-12 h-12 mb-4 stroke-1" />
-                                    <p className="font-normal">등록된 배너가 없습니다</p>
-                                </div>
-                            )}
+                        {/* 배너 슬롯 3개 */}
+                        <div className="grid grid-cols-1 gap-6">
+                            {[1, 2, 3].map((slotNumber) => (
+                                <div key={slotNumber} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="font-bold text-gray-900">배너 {slotNumber}번</h3>
+                                        {bannerSlots[slotNumber - 1]?.url && (
+                                            <button
+                                                onClick={() => handleBannerDelete(slotNumber)}
+                                                className="px-4 py-1.5 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-700 hover:text-white text-xs font-bold transition-all"
+                                            >
+                                                삭제
+                                            </button>
+                                        )}
+                                    </div>
 
-                            <label className="inline-flex items-center gap-2 px-8 py-3 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white hover:border-green-700 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 group/btn font-bold">
-                                <Upload className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-                                {uploading ? "업로드 중..." : "배너 이미지 변경"}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handleBannerUpload}
-                                    disabled={uploading}
-                                />
-                            </label>
+                                    {bannerSlots[slotNumber - 1]?.url ? (
+                                        <div className="relative w-full aspect-[2.4/1] bg-gray-100 rounded-lg overflow-hidden mb-4">
+                                            <Image
+                                                src={bannerSlots[slotNumber - 1].url!}
+                                                alt={`Banner ${slotNumber}`}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="relative w-full aspect-[2.4/1] bg-gray-50 rounded-lg flex items-center justify-center mb-4 border-2 border-dashed border-gray-200">
+                                            <div className="text-center text-gray-400">
+                                                <ImageIcon className="w-12 h-12 mx-auto mb-2 stroke-1" />
+                                                <p className="text-sm font-normal">배너 {slotNumber}번 슬롯</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-bold text-sm">
+                                        <Upload className="w-4 h-4" />
+                                        {uploading === slotNumber ? "업로드 중..." : bannerSlots[slotNumber - 1]?.url ? "이미지 변경" : "이미지 업로드"}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => handleBannerUpload(slotNumber, e)}
+                                            disabled={uploading === slotNumber}
+                                        />
+                                    </label>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Download, RefreshCw, Trash2, Eye, Search, Upload } from "lucide-react";
+import { Download, RefreshCw, Trash2, Eye, Search, Upload, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import TrackingNumberModal from "@/components/admin/TrackingNumberModal";
 import OrderDetailModal from "@/components/admin/OrderDetailModal";
 import BulkTrackingModal from "@/components/admin/BulkTrackingModal";
+import { useToast } from "@/context/ToastContext";
 
 type Order = {
     id: string;
@@ -31,6 +32,7 @@ type Order = {
 };
 
 export default function OrdersPage() {
+    const toast = useToast();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [filter, setFilter] = useState<string>("all");
@@ -83,6 +85,7 @@ export default function OrdersPage() {
             setOrders(data as Order[]);
         } else if (error) {
             console.error("주문 조회 실패:", error);
+            toast.error("주문 목록을 불러오는데 실패했습니다.");
         }
         setLoading(false);
     };
@@ -123,11 +126,12 @@ export default function OrdersPage() {
             .eq("id", orderId);
 
         if (!error) {
+            toast.success("주문 상태가 변경되었습니다.");
             await fetchOrders();
             setSelectedOrders([]);
         } else {
             console.error("상태 업데이트 실패:", error);
-            alert(`상태 업데이트에 실패했습니다\n에러: ${error.message || JSON.stringify(error)}`);
+            toast.error(`상태 업데이트 실패: ${error.message}`);
         }
     };
 
@@ -153,9 +157,9 @@ export default function OrdersPage() {
 
         if (fail > 0) {
             console.error("일괄 입금 확인 실패 목록:", errorMessages);
-            alert(`${success}건 입금 확인 완료, ${fail}건 실패\n\n실패 원인:\n${errorMessages.slice(0, 3).join("\n")}${errorMessages.length > 3 ? `\n...외 ${errorMessages.length - 3}건` : ""}`);
+            toast.warning(`${success}건 성공, ${fail}건 실패했습니다.`);
         } else {
-            alert(`${success}건 입금 확인 완료`);
+            toast.success(`${success}건의 입금 확인이 완료되었습니다.`);
         }
 
         await fetchOrders();
@@ -173,11 +177,11 @@ export default function OrdersPage() {
             .eq("id", trackingModal.orderId);
 
         if (!error) {
-            alert("송장번호가 입력되고 배송중 상태로 변경되었습니다");
+            toast.success("송장번호가 입력되고 배송중 상태로 변경되었습니다.");
             await fetchOrders();
         } else {
             console.error("송장 입력 실패:", error);
-            alert(`송장 입력에 실패했습니다\n에러: ${error.message || JSON.stringify(error)}`);
+            toast.error(`송장 입력 실패: ${error.message}`);
         }
 
         setTrackingModal({ show: false, orderId: "", orderNumber: "" });
@@ -210,7 +214,12 @@ export default function OrdersPage() {
             ok ? success++ : fail++;
         }
 
-        alert(`${success}건 삭제 완료${fail > 0 ? `, ${fail}건 실패` : ""}`);
+        if (fail > 0) {
+            toast.warning(`${success}건 삭제 완료, ${fail}건 실패`);
+        } else {
+            toast.success(`${success}건의 주문이 삭제되었습니다.`);
+        }
+
         setSelectedOrders([]);
         await fetchOrders();
     };
@@ -239,6 +248,7 @@ export default function OrdersPage() {
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         saveAs(blob, fileName);
+        toast.success("엑셀 파일이 다운로드되었습니다.");
     };
 
     if (!isMounted) return null;
@@ -248,7 +258,6 @@ export default function OrdersPage() {
 
     return (
         <div>
-            {/* Title Row with Notification and Refresh */}
             {/* Title Row with Notification and Refresh */}
             <div className="flex flex-row justify-between items-center mb-6 gap-4">
                 <div className="flex items-center gap-4">
@@ -269,7 +278,7 @@ export default function OrdersPage() {
                     onClick={fetchOrders}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                 >
-                    <RefreshCw className="w-4 h-4" />
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     새로고침
                 </button>
             </div>
@@ -378,7 +387,10 @@ export default function OrdersPage() {
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {loading ? (
-                    <div className="p-8 text-center text-gray-500">로딩 중...</div>
+                    <div className="p-12 flex flex-col items-center justify-center text-gray-500">
+                        <Loader2 className="w-8 h-8 animate-spin mb-2 text-green-600" />
+                        <p>주문 내역을 불러오는 중입니다...</p>
+                    </div>
                 ) : filteredOrders.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
                         {searchQuery ? "검색 결과가 없습니다" : "주문 내역이 없습니다"}

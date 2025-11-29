@@ -15,7 +15,7 @@ export function ClickRipple() {
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
             const newRipple: Ripple = {
-                id: Date.now(),
+                id: Date.now() + Math.random(),
                 x: e.clientX,
                 y: e.clientY,
             };
