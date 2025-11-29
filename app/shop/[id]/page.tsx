@@ -60,13 +60,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 const resolvedParams = await params;
                 const id = resolvedParams.id;
 
+                console.log("Product Detail Page - Received ID:", id);
+
                 // UUID 유효성 검사
                 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
                 if (!uuidRegex.test(id)) {
-                    // console.error(`Invalid product ID format: ${id}`);
-                    // setLoading(false);
-                    // return;
-                    notFound(); // Redirect to 404 page
+                    console.error(`Invalid UUID format: ${id}`);
+                    notFound();
+                    return;
                 }
 
                 setLoading(true);
@@ -77,8 +78,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     .eq("id", id)
                     .single();
 
-                if (productError || !productData) {
-                    console.error("Error fetching product:", productError);
+                if (productError) {
+                    console.error("Supabase Error fetching product:", productError);
+                }
+
+                if (!productData) {
+                    console.error("Product not found in database for ID:", id);
                     setLoading(false);
                     return;
                 }

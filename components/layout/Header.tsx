@@ -39,8 +39,15 @@ export function Header() {
                     </button>
 
                     {/* Logo */}
-                    <Link href="/" className="text-3xl font-bold tracking-[0.15em] flex-shrink-0 transition-all duration-500 ease-out hover:text-[#D4AF37] hover:scale-105">
-                        ESSENTIA
+                    <Link href="/" className="text-3xl font-bold tracking-[0.15em] flex-shrink-0 flex gap-0">
+                        {"ESSENTIA".split("").map((letter, i) => (
+                            <span
+                                key={i}
+                                className="transition-all duration-500 ease-out hover:text-[#D4AF37] hover:scale-110 inline-block"
+                            >
+                                {letter}
+                            </span>
+                        ))}
                     </Link>
 
                     {/* Desktop Navigation */}
@@ -110,7 +117,7 @@ export function Header() {
                         </Link>
 
                         {/* Auth Links */}
-                        <div className="flex items-center gap-4 text-sm font-medium border-l border-gray-200 pl-8">
+                        <div className="hidden md:flex items-center gap-4 text-sm font-medium border-l border-gray-200 pl-8">
                             {loading ? (
                                 <span className="text-gray-400">...</span>
                             ) : user ? (

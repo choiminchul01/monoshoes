@@ -7,7 +7,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { KakaoButton } from "@/components/ui/KakaoButton";
-import { CursorSparkle } from "@/components/ui/CursorSparkle";
+import { ClickRipple } from "@/components/ui/ClickRipple";
 import { usePathname } from "next/navigation";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -33,7 +33,7 @@ export default function RootLayout({
           <WishlistProvider>
             <CartProvider>
               <ToastProvider>
-                <CursorSparkle />
+                <ClickRipple />
                 {!isLandingPage && !isAdminPage && <Header />}
                 <main className={isLandingPage || isAdminPage ? "min-h-screen" : "min-h-screen pt-20"}>
                   {children}

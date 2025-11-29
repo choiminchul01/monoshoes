@@ -39,15 +39,14 @@ function ShopContent() {
         if (urlSearchTerm) {
             setSearchTerm(urlSearchTerm);
         }
-    }, [urlSearchTerm]);
 
-    useEffect(() => {
         const fetchProducts = async () => {
             setIsLoading(true);
             const { data, error } = await supabase
                 .from('products')
                 .select('*')
-                .eq('is_available', true);
+                .eq('is_available', true)
+                .order("created_at", { ascending: false });
 
             if (error) {
                 console.error('Error fetching products:', error);
@@ -58,7 +57,7 @@ function ShopContent() {
         };
 
         fetchProducts();
-    }, []);
+    }, [urlSearchTerm]);
 
     // Reset counts when filters change
     useEffect(() => {
