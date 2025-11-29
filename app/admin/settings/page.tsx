@@ -3,10 +3,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { uploadBannerAction, deleteBannerAction, fetchBannersAction } from "./actions";
-import { Upload, Save, Image as ImageIcon, CheckCircle } from "lucide-react";
+import { Upload, Save, Image as ImageIcon, CheckCircle, ChevronDown } from "lucide-react";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/context/ToastContext";
 
 export default function AdminSettingsPage() {
+    const toast = useToast();
+    // Accordion state - track which section is open
+    const [openSection, setOpenSection] = useState<'info' | 'shipping' | 'banner' | null>(null);
+
     // Banner slots state - array of 3 slots
     const [bannerSlots, setBannerSlots] = useState<Array<{ url: string | null }>>([{ url: null }, { url: null }, { url: null }]);
     const [uploading, setUploading] = useState<number | null>(null); // Track which slot is uploading
@@ -24,6 +30,8 @@ export default function AdminSettingsPage() {
         instagram_url: '',
         facebook_url: '',
         kakao_url: '',
+        shipping_cost: 0,
+        extra_shipping_cost: 0,
     });
     const [savingSettings, setSavingSettings] = useState(false);
 
@@ -60,6 +68,13 @@ export default function AdminSettingsPage() {
         if (!e.target.files || e.target.files.length === 0) return;
 
         const file = e.target.files[0];
+
+        // 10MB limit check
+        if (file.size > 10 * 1024 * 1024) {
+            alert("파일 크기는 10MB를 초과할 수 없습니다.");
+            e.target.value = '';
+            return;
+        }
         setUploading(slotNumber);
 
         try {
@@ -71,11 +86,11 @@ export default function AdminSettingsPage() {
 
             if (!result.success) throw new Error(result.error);
 
-            alert(`배너 ${slotNumber}번이 업로드되었습니다.`);
+            toast.success(`배너 ${slotNumber}번이 업로드되었습니다.`);
             await fetchBanners();
         } catch (error: any) {
             console.error("Banner upload failed:", error);
-            alert(`배너 업로드 실패: ${error.message}`);
+            toast.error(`배너 업로드 실패: ${error.message}`);
         } finally {
             setUploading(null);
             // Reset input value to allow re-uploading same file if needed
@@ -91,11 +106,11 @@ export default function AdminSettingsPage() {
 
             if (!result.success) throw new Error(result.error);
 
-            alert(`배너 ${slotNumber}번이 삭제되었습니다.`);
+            toast.success(`배너 ${slotNumber}번이 삭제되었습니다.`);
             await fetchBanners();
         } catch (error) {
             console.error("Banner delete failed:", error);
-            alert("배너 삭제 중 오류가 발생했습니다.");
+            toast.error("배너 삭제 중 오류가 발생했습니다.");
         }
     };
 
@@ -121,6 +136,8 @@ export default function AdminSettingsPage() {
                     instagram_url: data.instagram_url || '',
                     facebook_url: data.facebook_url || '',
                     kakao_url: data.kakao_url || '',
+                    shipping_cost: data.shipping_cost || 0,
+                    extra_shipping_cost: data.extra_shipping_cost || 0,
                 });
             }
         } catch (error) {
@@ -128,11 +145,18 @@ export default function AdminSettingsPage() {
         }
     };
 
-    const handleSettingsChange = (field: string, value: string) => {
+    const handleSettingsChange = (field: string, value: string | number) => {
         setSiteSettings(prev => ({ ...prev, [field]: value }));
     };
 
+    const formatCurrency = (amount: number) => {
+        if (amount === 0) return "무료";
+        return `${amount.toLocaleString()}원`;
+    };
+
     const handleSaveSettings = async () => {
+        if (!confirm("설정을 저장하시겠습니까?")) return;
+
         setSavingSettings(true);
         try {
             const { error } = await supabase
@@ -140,10 +164,10 @@ export default function AdminSettingsPage() {
                 .upsert({ id: 1, ...siteSettings, updated_at: new Date().toISOString() });
 
             if (error) throw error;
-            alert("쇼핑몰 정보가 저장되었습니다.");
+            toast.success("설정이 저장되었습니다.");
         } catch (error) {
             console.error("Failed to save settings:", error);
-            alert("저장 중 오류가 발생했습니다.");
+            toast.error("저장 중 오류가 발생했습니다.");
         } finally {
             setSavingSettings(false);
         }
@@ -157,267 +181,360 @@ export default function AdminSettingsPage() {
             </div>
 
             {/* 쇼핑몰 정보 관리 섹션 */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 p-8 mb-8">
-                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-50">
-                    <div className="w-1 h-6 bg-green-700 rounded-full"></div>
-                    <h2 className="text-xl font-bold tracking-tight text-gray-900">
-                        쇼핑몰 정보 관리
-                    </h2>
-                </div>
-
-                <div className="space-y-8">
-                    {/* Company Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">회사명</label>
-                            <input
-                                type="text"
-                                value={siteSettings.company_name}
-                                onChange={(e) => handleSettingsChange('company_name', e.target.value)}
-                                placeholder="회사명을 입력하세요"
-                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                            />
-                        </div>
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">대표자명</label>
-                            <input
-                                type="text"
-                                value={siteSettings.owner_name}
-                                onChange={(e) => handleSettingsChange('owner_name', e.target.value)}
-                                placeholder="대표자명을 입력하세요"
-                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                            />
-                        </div>
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">사업자등록번호</label>
-                            <input
-                                type="text"
-                                value={siteSettings.business_license}
-                                onChange={(e) => handleSettingsChange('business_license', e.target.value)}
-                                placeholder="000-00-00000"
-                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                            />
-                        </div>
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">통신판매업신고번호</label>
-                            <input
-                                type="text"
-                                value={siteSettings.mail_order_license}
-                                onChange={(e) => handleSettingsChange('mail_order_license', e.target.value)}
-                                placeholder="제0000-서울-00000호"
-                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                            />
-                        </div>
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-8 overflow-hidden">
+                <button
+                    onClick={() => setOpenSection(openSection === 'info' ? null : 'info')}
+                    className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-1 h-6 bg-green-700 rounded-full"></div>
+                        <h2 className="text-xl font-bold tracking-tight text-gray-900">
+                            쇼핑몰 정보 관리
+                        </h2>
                     </div>
+                    <motion.div
+                        animate={{ rotate: openSection === 'info' ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                    </motion.div>
+                </button>
 
-                    {/* Address */}
-                    <div className="group">
-                        <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">회사 주소</label>
-                        <input
-                            type="text"
-                            value={siteSettings.address}
-                            onChange={(e) => handleSettingsChange('address', e.target.value)}
-                            placeholder="주소를 입력하세요"
-                            className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                        />
-                    </div>
-
-                    {/* Contact Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">고객센터 전화</label>
-                            <input
-                                type="text"
-                                value={siteSettings.cs_phone}
-                                onChange={(e) => handleSettingsChange('cs_phone', e.target.value)}
-                                placeholder="010-0000-0000"
-                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                            />
-                        </div>
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">운영시간</label>
-                            <input
-                                type="text"
-                                value={siteSettings.cs_hours}
-                                onChange={(e) => handleSettingsChange('cs_hours', e.target.value)}
-                                placeholder="평일 10:00-18:00"
-                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                            />
-                        </div>
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">대표 이메일</label>
-                            <input
-                                type="email"
-                                value={siteSettings.cs_email}
-                                onChange={(e) => handleSettingsChange('cs_email', e.target.value)}
-                                placeholder="info@example.com"
-                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                            />
-                        </div>
-                    </div>
-
-                    {/* SNS Links */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">Instagram URL</label>
-                            <input
-                                type="url"
-                                value={siteSettings.instagram_url}
-                                onChange={(e) => handleSettingsChange('instagram_url', e.target.value)}
-                                placeholder="https://instagram.com/..."
-                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                            />
-                        </div>
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">Facebook URL</label>
-                            <input
-                                type="url"
-                                value={siteSettings.facebook_url}
-                                onChange={(e) => handleSettingsChange('facebook_url', e.target.value)}
-                                placeholder="https://facebook.com/..."
-                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                            />
-                        </div>
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">Kakao URL</label>
-                            <input
-                                type="url"
-                                value={siteSettings.kakao_url}
-                                onChange={(e) => handleSettingsChange('kakao_url', e.target.value)}
-                                placeholder="http://pf.kakao.com/..."
-                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Save Button */}
-                    <div className="flex justify-end pt-6 border-t border-gray-50">
-                        <button
-                            onClick={handleSaveSettings}
-                            disabled={savingSettings}
-                            className="flex items-center gap-2 px-8 py-3 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white hover:border-green-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold tracking-wide shadow-sm hover:shadow-md group"
+                <AnimatePresence>
+                    {openSection === 'info' && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
                         >
-                            <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                            {savingSettings ? '저장 중...' : '설정 저장'}
-                        </button>
-                    </div>
-                </div>
+                            <div className="px-8 pb-8 pt-4 border-t border-gray-100">
+                                <div className="space-y-8">
+                                    {/* Company Info */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">회사명</label>
+                                            <input
+                                                type="text"
+                                                value={siteSettings.company_name}
+                                                onChange={(e) => handleSettingsChange('company_name', e.target.value)}
+                                                placeholder="회사명을 입력하세요"
+                                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                            />
+                                        </div>
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">대표자명</label>
+                                            <input
+                                                type="text"
+                                                value={siteSettings.owner_name}
+                                                onChange={(e) => handleSettingsChange('owner_name', e.target.value)}
+                                                placeholder="대표자명을 입력하세요"
+                                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                            />
+                                        </div>
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">사업자등록번호</label>
+                                            <input
+                                                type="text"
+                                                value={siteSettings.business_license}
+                                                onChange={(e) => handleSettingsChange('business_license', e.target.value)}
+                                                placeholder="000-00-00000"
+                                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                            />
+                                        </div>
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">통신판매업신고번호</label>
+                                            <input
+                                                type="text"
+                                                value={siteSettings.mail_order_license}
+                                                onChange={(e) => handleSettingsChange('mail_order_license', e.target.value)}
+                                                placeholder="제0000-서울-00000호"
+                                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Address */}
+                                    <div className="group">
+                                        <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">회사 주소</label>
+                                        <input
+                                            type="text"
+                                            value={siteSettings.address}
+                                            onChange={(e) => handleSettingsChange('address', e.target.value)}
+                                            placeholder="주소를 입력하세요"
+                                            className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                        />
+                                    </div>
+
+                                    {/* Contact Info */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">고객센터 전화</label>
+                                            <input
+                                                type="text"
+                                                value={siteSettings.cs_phone}
+                                                onChange={(e) => handleSettingsChange('cs_phone', e.target.value)}
+                                                placeholder="010-0000-0000"
+                                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                            />
+                                        </div>
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">운영시간</label>
+                                            <input
+                                                type="text"
+                                                value={siteSettings.cs_hours}
+                                                onChange={(e) => handleSettingsChange('cs_hours', e.target.value)}
+                                                placeholder="평일 10:00-18:00"
+                                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                            />
+                                        </div>
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">대표 이메일</label>
+                                            <input
+                                                type="email"
+                                                value={siteSettings.cs_email}
+                                                onChange={(e) => handleSettingsChange('cs_email', e.target.value)}
+                                                placeholder="info@example.com"
+                                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* SNS Links */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">Instagram URL</label>
+                                            <input
+                                                type="url"
+                                                value={siteSettings.instagram_url}
+                                                onChange={(e) => handleSettingsChange('instagram_url', e.target.value)}
+                                                placeholder="https://instagram.com/..."
+                                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                            />
+                                        </div>
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">Facebook URL</label>
+                                            <input
+                                                type="url"
+                                                value={siteSettings.facebook_url}
+                                                onChange={(e) => handleSettingsChange('facebook_url', e.target.value)}
+                                                placeholder="https://facebook.com/..."
+                                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                            />
+                                        </div>
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-green-700 transition-colors">Kakao URL</label>
+                                            <input
+                                                type="url"
+                                                value={siteSettings.kakao_url}
+                                                onChange={(e) => handleSettingsChange('kakao_url', e.target.value)}
+                                                placeholder="http://pf.kakao.com/..."
+                                                className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Save Button */}
+                                    <div className="flex justify-end pt-6 border-t border-gray-50">
+                                        <button
+                                            onClick={handleSaveSettings}
+                                            disabled={savingSettings}
+                                            className="flex items-center gap-2 px-8 py-3 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white hover:border-green-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold tracking-wide shadow-sm hover:shadow-md group"
+                                        >
+                                            <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            {savingSettings ? '저장 중...' : '설정 저장'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* 배송비 설정 섹션 */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 p-8 mb-8">
-                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-50">
-                    <div className="w-1 h-6 bg-green-700 rounded-full"></div>
-                    <h2 className="text-xl font-bold tracking-tight text-gray-900">
-                        배송비 설정
-                    </h2>
-                </div>
-
-                <div className="bg-gray-50/50 p-8 rounded-xl border border-gray-100">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h3 className="font-bold text-lg text-gray-900">기본 배송비 정책</h3>
-                            <p className="text-sm text-gray-500 mt-1 font-normal">모든 상품 구매 시 적용되는 기본 배송비입니다.</p>
-                        </div>
-                        <span className="px-4 py-1.5 bg-white text-green-700 border border-green-200 text-xs font-bold rounded-full flex items-center gap-2 shadow-sm">
-                            <CheckCircle className="w-3 h-3" />
-                            적용 중
-                        </span>
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-8 overflow-hidden">
+                <button
+                    onClick={() => setOpenSection(openSection === 'shipping' ? null : 'shipping')}
+                    className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-1 h-6 bg-green-700 rounded-full"></div>
+                        <h2 className="text-xl font-bold tracking-tight text-gray-900">
+                            배송비 설정
+                        </h2>
                     </div>
+                    <motion.div
+                        animate={{ rotate: openSection === 'shipping' ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                    </motion.div>
+                </button>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">기본 배송비</label>
-                            <input
-                                type="text"
-                                value="0원 (무료)"
-                                disabled
-                                className="w-full px-0 py-2 border-b border-gray-200 bg-transparent text-gray-500 cursor-not-allowed font-normal"
-                            />
-                        </div>
-                        <div className="group">
-                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">제주/도서산간 추가 배송비</label>
-                            <input
-                                type="text"
-                                value="5,000원"
-                                disabled
-                                className="w-full px-0 py-2 border-b border-gray-200 bg-transparent text-gray-500 cursor-not-allowed font-normal"
-                            />
-                        </div>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-6 font-normal italic">
-                        * 현재 정책상 기본 배송비는 무료입니다. 단, 제주 및 도서산간 지역은 5,000원의 추가 배송비가 발생합니다.
-                    </p>
-                </div>
+                <AnimatePresence>
+                    {openSection === 'shipping' && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                        >
+                            <div className="px-8 pb-8 pt-4 border-t border-gray-100">
+                                <div className="bg-gray-50/50 p-8 rounded-xl border border-gray-100">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div>
+                                            <h3 className="font-bold text-lg text-gray-900">기본 배송비 정책</h3>
+                                            <p className="text-sm text-gray-500 mt-1 font-normal">모든 상품 구매 시 적용되는 기본 배송비입니다.</p>
+                                        </div>
+                                        <span className="px-4 py-1.5 bg-white text-green-700 border border-green-200 text-xs font-bold rounded-full flex items-center gap-2 shadow-sm">
+                                            <CheckCircle className="w-3 h-3" />
+                                            적용 중
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">기본 배송비</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    value={siteSettings.shipping_cost === 0 ? '' : siteSettings.shipping_cost}
+                                                    onChange={(e) => handleSettingsChange('shipping_cost', Number(e.target.value))}
+                                                    onFocus={(e) => e.target.select()}
+                                                    className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors font-normal text-gray-900"
+                                                    placeholder="0"
+                                                />
+                                                <div className="absolute right-0 top-2 text-sm text-green-700 font-bold pointer-events-none">
+                                                    {formatCurrency(siteSettings.shipping_cost)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="group">
+                                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">제주/도서산간 추가 배송비</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    value={siteSettings.extra_shipping_cost === 0 ? '' : siteSettings.extra_shipping_cost}
+                                                    onChange={(e) => handleSettingsChange('extra_shipping_cost', Number(e.target.value))}
+                                                    onFocus={(e) => e.target.select()}
+                                                    className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors font-normal text-gray-900"
+                                                    placeholder="0"
+                                                />
+                                                <div className="absolute right-0 top-2 text-sm text-green-700 font-bold pointer-events-none">
+                                                    {formatCurrency(siteSettings.extra_shipping_cost)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end pt-6 border-t border-gray-50 mt-8">
+                                        <button
+                                            onClick={handleSaveSettings}
+                                            disabled={savingSettings}
+                                            className="flex items-center gap-2 px-8 py-3 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white hover:border-green-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold tracking-wide shadow-sm hover:shadow-md group"
+                                        >
+                                            <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            {savingSettings ? '저장 중...' : '설정 저장'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* 메인 배너 설정 섹션 */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 p-8">
-                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-50">
-                    <div className="w-1 h-6 bg-green-700 rounded-full"></div>
-                    <h2 className="text-xl font-bold tracking-tight text-gray-900">
-                        메인 배너 관리
-                    </h2>
-                </div>
-
-                <div className="space-y-6">
-                    <div>
-                        <p className="text-sm text-gray-500 mb-6 font-normal">
-                            쇼핑몰 메인 페이지 최상단에 슬라이드되는 배너 이미지입니다.<br />
-                            최대 3개까지 각 슬롯별로 관리할 수 있습니다.<br />
-                            권장 사이즈: 1920 x 600 px (최대 5MB)
-                        </p>
-
-                        {/* 배너 슬롯 3개 */}
-                        <div className="grid grid-cols-1 gap-6">
-                            {[1, 2, 3].map((slotNumber) => (
-                                <div key={slotNumber} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="font-bold text-gray-900">배너 {slotNumber}번</h3>
-                                        {bannerSlots[slotNumber - 1]?.url && (
-                                            <button
-                                                onClick={() => handleBannerDelete(slotNumber)}
-                                                className="px-4 py-1.5 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-700 hover:text-white text-xs font-bold transition-all"
-                                            >
-                                                삭제
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {bannerSlots[slotNumber - 1]?.url ? (
-                                        <div className="relative w-full aspect-[2.4/1] bg-gray-100 rounded-lg overflow-hidden mb-4">
-                                            <Image
-                                                src={bannerSlots[slotNumber - 1].url!}
-                                                alt={`Banner ${slotNumber}`}
-                                                fill
-                                                className="object-cover"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="relative w-full aspect-[2.4/1] bg-gray-50 rounded-lg flex items-center justify-center mb-4 border-2 border-dashed border-gray-200">
-                                            <div className="text-center text-gray-400">
-                                                <ImageIcon className="w-12 h-12 mx-auto mb-2 stroke-1" />
-                                                <p className="text-sm font-normal">배너 {slotNumber}번 슬롯</p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-bold text-sm">
-                                        <Upload className="w-4 h-4" />
-                                        {uploading === slotNumber ? "업로드 중..." : bannerSlots[slotNumber - 1]?.url ? "이미지 변경" : "이미지 업로드"}
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => handleBannerUpload(slotNumber, e)}
-                                            disabled={uploading === slotNumber}
-                                        />
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
+                <button
+                    onClick={() => setOpenSection(openSection === 'banner' ? null : 'banner')}
+                    className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-1 h-6 bg-green-700 rounded-full"></div>
+                        <h2 className="text-xl font-bold tracking-tight text-gray-900">
+                            메인 배너 관리
+                        </h2>
                     </div>
-                </div>
+                    <motion.div
+                        animate={{ rotate: openSection === 'banner' ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                    </motion.div>
+                </button>
+
+                <AnimatePresence>
+                    {openSection === 'banner' && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                        >
+                            <div className="px-8 pb-8 pt-4 border-t border-gray-100">
+                                <div className="space-y-6">
+                                    <div>
+                                        <p className="text-sm text-gray-500 mb-6 font-normal">
+                                            쇼핑몰 메인 페이지 최상단에 슬라이드되는 배너 이미지입니다.<br />
+                                            최대 3개까지 각 슬롯별로 관리할 수 있습니다.<br />
+                                            권장 사이즈: 1920 x 800 px (최대 10MB)
+                                        </p>
+
+                                        {/* 배너 슬롯 3개 */}
+                                        <div className="grid grid-cols-1 gap-6">
+                                            {[1, 2, 3].map((slotNumber) => (
+                                                <div key={slotNumber} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <h3 className="font-bold text-gray-900">배너 {slotNumber}번</h3>
+                                                        {bannerSlots[slotNumber - 1]?.url && (
+                                                            <button
+                                                                onClick={() => handleBannerDelete(slotNumber)}
+                                                                className="px-4 py-1.5 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-700 hover:text-white text-xs font-bold transition-all"
+                                                            >
+                                                                삭제
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {bannerSlots[slotNumber - 1]?.url ? (
+                                                        <div className="relative w-full aspect-[2.4/1] bg-gray-100 rounded-lg overflow-hidden mb-4">
+                                                            <Image
+                                                                src={bannerSlots[slotNumber - 1].url!}
+                                                                alt={`Banner ${slotNumber}`}
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="relative w-full aspect-[2.4/1] bg-gray-50 rounded-lg flex items-center justify-center mb-4 border-2 border-dashed border-gray-200">
+                                                            <div className="text-center text-gray-400">
+                                                                <ImageIcon className="w-12 h-12 mx-auto mb-2 stroke-1" />
+                                                                <p className="text-sm font-normal">배너 {slotNumber}번 슬롯</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-bold text-sm">
+                                                        <Upload className="w-4 h-4" />
+                                                        {uploading === slotNumber ? "업로드 중..." : bannerSlots[slotNumber - 1]?.url ? "이미지 변경" : "이미지 업로드"}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={(e) => handleBannerUpload(slotNumber, e)}
+                                                            disabled={uploading === slotNumber}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

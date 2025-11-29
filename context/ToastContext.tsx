@@ -71,7 +71,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             {children}
 
             {/* Toast 컨테이너 - 화면 하단 중앙 */}
-            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2">
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2">
                 <AnimatePresence>
                     {toasts.map((toast) => (
                         <Toast
