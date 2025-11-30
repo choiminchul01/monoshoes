@@ -57,17 +57,34 @@ export default function AdminReviewsPage() {
     const fetchReviews = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            // Get reviews without join
+            const { data: reviewsData, error: reviewsError } = await supabase
                 .from("reviews")
-                .select(`
-                    *,
-                    product:products (id, name, image_url)
-                `)
+                .select("*")
                 .order("created_at", { ascending: false })
                 .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
 
-            if (error) throw error;
-            setReviews(data || []);
+            if (reviewsError) throw reviewsError;
+
+            // Get unique product IDs
+            const productIds = [...new Set(reviewsData?.map(r => r.product_id).filter(Boolean))];
+
+            // Fetch products separately
+            const { data: productsData } = await supabase
+                .from("products")
+                .select("id, name, image_url")
+                .in("id", productIds);
+
+            // Create product map
+            const productMap = new Map(productsData?.map(p => [p.id, p]) || []);
+
+            // Combine reviews with products
+            const reviewsWithProducts = reviewsData?.map(review => ({
+                ...review,
+                product: productMap.get(review.product_id) || null
+            })) || [];
+
+            setReviews(reviewsWithProducts);
         } catch (error) {
             console.error("Error fetching reviews:", error);
             toast.error("리뷰를 불러오는데 실패했습니다.");

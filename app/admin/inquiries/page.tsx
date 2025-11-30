@@ -42,12 +42,10 @@ export default function AdminInquiriesPage() {
     const fetchInquiries = async () => {
         setLoading(true);
         try {
+            // Build query without join
             let query = supabase
                 .from("inquiries")
-                .select(`
-                    *,
-                    user:user_id (email)
-                `)
+                .select("*")
                 .order("created_at", { ascending: false })
                 .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
 
