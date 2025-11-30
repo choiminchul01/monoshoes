@@ -78,9 +78,9 @@ export function Header() {
                             </Link>
                             <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 hidden group-hover:block w-48 z-50">
                                 <div className="bg-white/90 backdrop-blur-md border border-gray-100 shadow-lg p-4 flex flex-col gap-3 text-center">
-                                    <Link href="/notice" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">공지사항</Link>
-                                    <Link href="/faq" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">FAQ</Link>
-                                    <Link href="/inquiry" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">1:1 문의</Link>
+                                    <Link href="/cs?tab=notice" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">공지사항</Link>
+                                    <Link href="/cs?tab=faq" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">FAQ</Link>
+                                    <Link href="/cs?tab=inquiry" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">1:1 문의</Link>
                                     <Link href="/mypage" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">배송조회</Link>
                                 </div>
                             </div>
@@ -213,9 +213,9 @@ export function Header() {
                                     <div className="space-y-4">
                                         <span className="text-lg font-medium">C/S CENTER</span>
                                         <div className="pl-4 flex flex-col gap-3 text-sm text-gray-600">
-                                            <Link href="/notice" onClick={() => setIsMobileMenuOpen(false)}>공지사항</Link>
-                                            <Link href="/faq" onClick={() => setIsMobileMenuOpen(false)}>FAQ</Link>
-                                            <Link href="/inquiry" onClick={() => setIsMobileMenuOpen(false)}>1:1 문의</Link>
+                                            <Link href="/cs?tab=notice" onClick={() => setIsMobileMenuOpen(false)}>공지사항</Link>
+                                            <Link href="/cs?tab=faq" onClick={() => setIsMobileMenuOpen(false)}>FAQ</Link>
+                                            <Link href="/cs?tab=inquiry" onClick={() => setIsMobileMenuOpen(false)}>1:1 문의</Link>
                                         </div>
                                     </div>
                                 </div>

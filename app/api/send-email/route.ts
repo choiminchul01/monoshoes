@@ -1,7 +1,13 @@
 import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const getResend = () => {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+        throw new Error('RESEND_API_KEY is not defined');
+    }
+    return new Resend(apiKey);
+};
 
 export async function POST(request: Request) {
     try {
@@ -14,7 +20,7 @@ export async function POST(request: Request) {
 
         // TODO: 실제 이메일 템플릿을 더 예쁘게 꾸밀 수 있습니다.
         // 현재는 간단한 텍스트 기반으로 전송합니다.
-        const { data, error } = await resend.emails.send({
+        const { data, error } = await getResend().emails.send({
             from: 'Essentia <onboarding@resend.dev>', // Resend 기본 발신자 주소 (도메인 인증 전까지 사용)
             to: [email],
             subject: `[Essentia] 주문이 완료되었습니다. (주문번호: ${orderNumber})`,

@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { ArrowLeft, Package, Truck, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Package, Truck, Copy, Check, Star, X, Image as ImageIcon } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 
 type Order = {
     id: string;
@@ -28,22 +29,29 @@ type Order = {
 
 type OrderItem = {
     id: string;
+    product_id: string;
     product_name: string;
     product_brand: string;
     color: string;
     size: string;
     quantity: number;
     price: number;
+    has_review?: boolean; // Added for frontend logic
 };
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
+    const toast = useToast();
     const [order, setOrder] = useState<Order | null>(null);
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [orderId, setOrderId] = useState<string>('');
     const [copied, setCopied] = useState(false);
+
+    // Review Modal State
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [reviewTarget, setReviewTarget] = useState<{ productId: string, productName: string } | null>(null);
 
     useEffect(() => {
         params.then((resolvedParams) => {
@@ -97,7 +105,20 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             .eq('order_id', orderId);
 
         if (!itemsError && itemsData) {
-            setOrderItems(itemsData);
+            // Check for existing reviews
+            const { data: reviewsData } = await supabase
+                .from('reviews')
+                .select('product_id')
+                .eq('order_id', orderId);
+
+            const reviewedProductIds = new Set(reviewsData?.map(r => r.product_id) || []);
+
+            const itemsWithReviewStatus = itemsData.map(item => ({
+                ...item,
+                has_review: reviewedProductIds.has(item.product_id)
+            }));
+
+            setOrderItems(itemsWithReviewStatus);
         }
 
         setLoading(false);
@@ -141,6 +162,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         } catch (err) {
             console.error('복사 실패:', err);
         }
+    };
+
+    const openReviewModal = (productId: string, productName: string) => {
+        setReviewTarget({ productId, productName });
+        setIsReviewModalOpen(true);
     };
 
     if (authLoading || !user || loading) {
@@ -214,8 +240,22 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                                         {item.color} / {item.size} / 수량: {item.quantity}
                                     </p>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex flex-col items-end gap-2">
                                     <p className="font-bold">{item.price.toLocaleString()} KRW</p>
+                                    {order.payment_status === 'delivered' && (
+                                        item.has_review ? (
+                                            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
+                                                리뷰 작성완료
+                                            </span>
+                                        ) : (
+                                            <button
+                                                onClick={() => openReviewModal(item.product_id, item.product_name)}
+                                                className="text-xs font-medium text-white bg-black px-3 py-1.5 rounded hover:bg-gray-800 transition-colors"
+                                            >
+                                                리뷰 작성
+                                            </button>
+                                        )
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -298,6 +338,148 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                         )}
                     </div>
                 </div>
+            </div>
+
+            {/* Review Write Modal */}
+            {isReviewModalOpen && reviewTarget && (
+                <ReviewWriteModal
+                    isOpen={isReviewModalOpen}
+                    onClose={() => setIsReviewModalOpen(false)}
+                    orderId={orderId}
+                    productId={reviewTarget.productId}
+                    productName={reviewTarget.productName}
+                    onSuccess={() => {
+                        setIsReviewModalOpen(false);
+                        fetchOrderDetail(); // Refresh to show 'Written' status
+                    }}
+                />
+            )}
+        </div>
+    );
+}
+
+function ReviewWriteModal({ isOpen, onClose, orderId, productId, productName, onSuccess }: any) {
+    const toast = useToast();
+    const { user } = useAuth();
+    const [rating, setRating] = useState(5);
+    const [content, setContent] = useState("");
+    const [image, setImage] = useState<File | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user) {
+            toast.error("로그인이 필요합니다.");
+            return;
+        }
+        if (!content.trim()) {
+            toast.error("리뷰 내용을 입력해주세요.");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            let imageUrl = null;
+            if (image) {
+                const fileExt = image.name.split('.').pop();
+                const fileName = `${Date.now()}.${fileExt}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('review-images')
+                    .upload(fileName, image);
+                if (uploadError) throw uploadError;
+                const { data: { publicUrl } } = supabase.storage.from('review-images').getPublicUrl(fileName);
+                imageUrl = publicUrl;
+            }
+
+            const { error } = await supabase.from("reviews").insert({
+                user_id: user.id,
+                order_id: orderId,
+                product_id: productId,
+                author_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous',
+                rating,
+                content,
+                image_url: imageUrl,
+                is_admin_created: false
+            });
+
+            if (error) throw error;
+            toast.success("리뷰가 등록되었습니다.");
+            onSuccess();
+        } catch (error) {
+            console.error(error);
+            toast.error("리뷰 등록 중 오류가 발생했습니다.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg w-full max-w-md p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold">리뷰 작성</h2>
+                    <button onClick={onClose}><X className="w-6 h-6" /></button>
+                </div>
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-500 mb-1">상품명</p>
+                    <p className="font-medium">{productName}</p>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-2">평점</label>
+                        <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => setRating(star)}
+                                    className="focus:outline-none"
+                                >
+                                    <Star className={`w-8 h-8 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-2">내용</label>
+                        <textarea
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-black h-32 resize-none"
+                            placeholder="상품에 대한 솔직한 리뷰를 남겨주세요."
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-2">사진 첨부 (선택)</label>
+                        <div className="flex items-center gap-4">
+                            <label className="cursor-pointer flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                <ImageIcon className="w-5 h-5 text-gray-500" />
+                                <span className="text-sm text-gray-600">이미지 선택</span>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        if (e.target.files?.[0]) setImage(e.target.files[0]);
+                                    }}
+                                />
+                            </label>
+                            {image && (
+                                <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                                    <span className="text-sm text-gray-600 truncate max-w-[150px]">{image.name}</span>
+                                    <button onClick={() => setImage(null)} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full py-3 bg-black text-white font-bold rounded-lg hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
+                    >
+                        {isSubmitting ? "등록 중..." : "리뷰 등록하기"}
+                    </button>
+                </form>
             </div>
         </div>
     );

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Heart, Minus, Plus, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Heart, Minus, Plus, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { useCart } from "@/context/CartContext";
@@ -10,7 +10,6 @@ import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useRouter, notFound } from "next/navigation";
-import { getColorHex } from "@/lib/colorUtils";
 import { useToast } from "@/context/ToastContext";
 import { Button } from "@/components/ui/button";
 
@@ -32,6 +31,16 @@ type Product = {
     is_available: boolean;
     details?: ProductDetails;
     created_at: string;
+};
+
+type Review = {
+    id: string;
+    author_name: string;
+    rating: number;
+    content: string;
+    image_url: string | null;
+    created_at: string;
+    is_admin_created: boolean;
 };
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -60,8 +69,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 const resolvedParams = await params;
                 const id = resolvedParams.id;
 
-                console.log("Product Detail Page - Received ID:", id);
-
                 // UUID 유효성 검사
                 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
                 if (!uuidRegex.test(id)) {
@@ -78,12 +85,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     .eq("id", id)
                     .single();
 
-                if (productError) {
-                    console.error("Supabase Error fetching product:", productError);
-                }
-
-                if (!productData) {
-                    console.error("Product not found in database for ID:", id);
+                if (productError || !productData) {
+                    console.error("Product not found:", productError);
                     setLoading(false);
                     return;
                 }
@@ -99,14 +102,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     setSelectedSize(foundProduct.details.sizes[0]);
                 }
 
-                const { data: relatedData, error: relatedError } = await supabase
+                const { data: relatedData } = await supabase
                     .from("products")
                     .select("*")
                     .eq("category", foundProduct.category)
                     .neq("id", foundProduct.id)
                     .limit(4);
 
-                if (!relatedError && relatedData) {
+                if (relatedData) {
                     setRelatedProducts(relatedData as Product[]);
                 }
             } catch (error) {
@@ -515,6 +518,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
             </div>
 
+            {/* Reviews Section */}
+            {product && <ReviewSection productId={product.id} />}
+
             {/* Related Products */}
             {relatedProducts.length > 0 && (
                 <div className="mt-32">
@@ -531,6 +537,91 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 aspectRatio="aspect-[3/4]"
                                 index={idx}
                             />
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function ReviewSection({ productId }: { productId: string }) {
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchReviews = async () => {
+            const { data } = await supabase
+                .from("reviews")
+                .select("*")
+                .eq("product_id", productId)
+                .order("created_at", { ascending: false });
+            setReviews(data || []);
+            setLoading(false);
+        };
+        fetchReviews();
+    }, [productId]);
+
+    if (loading) return <div className="py-12 text-center text-gray-400">Loading reviews...</div>;
+
+    const averageRating = reviews.length > 0
+        ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length).toFixed(1)
+        : "0.0";
+
+    return (
+        <div className="mt-24 border-t border-gray-200 pt-16 max-w-4xl mx-auto">
+            <h3 className="text-2xl font-bold text-center mb-8 tracking-widest">REVIEWS ({reviews.length})</h3>
+
+            {reviews.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">아직 작성된 리뷰가 없습니다.</p>
+                </div>
+            ) : (
+                <div className="space-y-8">
+                    <div className="flex items-center justify-center gap-4 mb-12">
+                        <div className="text-5xl font-bold">{averageRating}</div>
+                        <div className="flex flex-col">
+                            <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                        key={star}
+                                        className={`w-5 h-5 ${star <= Math.round(Number(averageRating)) ? "fill-black text-black" : "text-gray-300"}`}
+                                    />
+                                ))}
+                            </div>
+                            <span className="text-sm text-gray-500 mt-1">Based on {reviews.length} reviews</span>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-6">
+                        {reviews.map((review) => (
+                            <div key={review.id} className="bg-white border border-gray-100 p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold">
+                                            {review.author_name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium">{review.author_name}</p>
+                                            <div className="flex gap-0.5">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <Star
+                                                        key={star}
+                                                        className={`w-3 h-3 ${star <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-gray-700 leading-relaxed mb-4 whitespace-pre-wrap">{review.content}</p>
+                                {review.image_url && (
+                                    <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-gray-100">
+                                        <Image src={review.image_url} alt="Review Image" fill className="object-cover" />
+                                    </div>
+                                )}
+                            </div>
                         ))}
                     </div>
                 </div>
