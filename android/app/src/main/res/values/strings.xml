@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Essentia</string>
+    <string name="title_activity_main">Essentia</string>
+    <string name="package_name">com.essentia.mall</string>
+    <string name="custom_url_scheme">com.essentia.mall</string>
+</resources>
