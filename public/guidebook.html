@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Essentia System Guidebook</title>
+    <style>
+        :root {
+            /* =========================================
+               [COLOR SETTINGS] 색상 설정
+               이곳의 값을 변경하면 전체 디자인이 바뀝니다.
+               ========================================= */
+            --primary-color: #000000;       /* 메인 배경색 (검정) */
+            --secondary-color: #1a1a1a;     /* 서브 배경색 (진한 회색) */
+            --accent-color: #D4AF37;        /* 포인트 색상 (골드) */
+            --text-color: #ffffff;          /* 기본 텍스트 색상 (흰색) */
+            --text-muted: #a0a0a0;          /* 보조 텍스트 색상 (회색) */
+            --border-color: #333333;        /* 테두리 색상 */
+            --success-color: #4ade80;       /* 성공/강조 (녹색) */
+            
+            /* 폰트 설정 */
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            background-color: var(--secondary-color);
+            border-right: 1px solid var(--border-color);
+            padding: 40px 20px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 15px;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 10px 15px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: rgba(212, 175, 55, 0.1);
+            color: var(--accent-color);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 60px 60px;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 42px;
+            margin-bottom: 20px;
+            font-weight: 300;
+            letter-spacing: -1px;
+        }
+
+        h2 {
+            font-size: 28px;
+            margin-top: 60px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--accent-color);
+            font-weight: 500;
+        }
+
+        h3 {
+            font-size: 20px;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+            color: var(--text-muted);
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        strong {
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        /* Components */
+        .card {
+            background-color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-color);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            background-color: rgba(212, 175, 55, 0.2);
+            color: var(--accent-color);
+            margin-right: 8px;
+        }
+
+        .code-block {
+            background-color: #111;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .highlight {
+            color: var(--accent-color);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                padding: 0;
+            }
+
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                padding: 20px;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 32px;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; padding: 0; }
+            body { background-color: white; color: black; }
+            h2 { color: black; border-bottom-color: #ddd; }
+            .card { border: 1px solid #ddd; page-break-inside: avoid; }
+            p, li { color: #333; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">
+                ESSENTIA <span>GUIDE</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="#intro" class="nav-link active">1. 시스템 소개</a></li>
+                <li class="nav-item"><a href="#admin" class="nav-link">2. 관리자 매뉴얼</a></li>
+                <li class="nav-item"><a href="#operation" class="nav-link">3. 운영 규칙</a></li>
+                <li class="nav-item"><a href="#tech" class="nav-link">4. 기술 가이드</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Intro Section -->
+            <section id="intro">
+                <h1>에센시아 시스템 가이드북</h1>
+                <p style="font-size: 1.2em; color: var(--accent-color);">Premium Shopping Mall Platform Guide</p>
+                <p>이 가이드북은 에센시아 쇼핑몰 시스템을 처음 접하는 분들도 쉽게 이해하고 운영할 수 있도록 작성되었습니다.</p>
+                
+                <div class="card">
+                    <h3>주요 특징 (Key Features)</h3>
+                    <ul>
+                        <li><strong>반응형 웹 (Responsive Web)</strong>: PC, 태블릿, 스마트폰 어디서든 최적화된 화면</li>
+                        <li><strong>실시간 관리 (Real-time Management)</strong>: 주문 및 재고 변경 사항 즉시 반영</li>
+                        <li><strong>통합 관리자 (Integrated Admin)</strong>: 상품, 주문, 고객, 리뷰 통합 관리</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Admin Section -->
+            <section id="admin">
+                <h2>2. 관리자 매뉴얼 (Admin Manual)</h2>
+                <p>쇼핑몰 운영의 핵심인 관리자 페이지 사용법입니다.<br>
+                <strong>접속 주소</strong>: <code>/admin-login</code></p>
+
+                <div class="card">
+                    <h3>2.1 대시보드 (Dashboard)</h3>
+                    <p>로그인 후 가장 먼저 보이는 화면입니다. 쇼핑몰의 현재 상태를 한눈에 파악할 수 있습니다.</p>
+                    <ul>
+                        <li><strong>오늘의 매출</strong>: 오늘 하루 동안의 총 판매 금액</li>
+                        <li><strong>주문 현황</strong>: 결제 완료, 배송 중 등 처리해야 할 주문 건수</li>
+                        <li><strong>알림</strong>: 재고 부족 상품, 신규 주문/리뷰 알림</li>
+                    </ul>
+                </div>
+
+                <div class="card" style="border-color: var(--accent-color);">
+                    <h3>2.2 주문 관리 (Order Management) <span class="badge">중요</span></h3>
+                    <p>고객의 주문을 확인하고 처리하는 가장 중요한 곳입니다.</p>
+                    <ol style="padding-left: 20px; color: var(--text-muted);">
+                        <li style="margin-bottom: 10px;"><strong>주문 확인</strong>: 새로운 주문은 '결제완료(Paid)' 상태로 표시됩니다.</li>
+                        <li style="margin-bottom: 10px;"><strong>배송 처리</strong>: 상품 발송 후 '배송중(Shipped)'으로 변경하고 송장 번호를 입력합니다.</li>
+                        <li style="margin-bottom: 10px;"><strong>완료 처리</strong>: 배송이 끝나면 '배송완료(Delivered)'로 변경합니다.</li>
+                    </ol>
+                    <p style="margin-top: 15px; font-size: 0.9em; color: var(--accent-color);">* 참고: 주문이 '결제완료' 상태가 되면 고객에게 1%의 포인트가 자동으로 적립됩니다.</p>
+                </div>
+
+                <div class="card">
+                    <h3>2.3 상품 및 쿠폰 관리</h3>
+                    <p><strong>상품 관리</strong></p>
+                    <ul>
+                        <li>상품 등록/수정 및 다중 이미지 업로드</li>
+                        <li>재고 5개 미만 시 '재고 부족' 알림 발생</li>
+                    </ul>
+                    <p><strong>쿠폰 관리</strong></p>
+                    <ul>
+                        <li>퍼센트(%) 또는 금액(원) 할인 쿠폰 생성</li>
+                        <li>유효 기간 및 최소 주문 금액 설정 가능</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Operation Section -->
+            <section id="operation">
+                <h2>3. 운영 규칙 (Operation Rules)</h2>
+                
+                <div class="card">
+                    <h3>3.1 포인트 정책 (Point Policy)</h3>
+                    <ul>
+                        <li><strong>적립 (Accumulation)</strong>: 결제 완료 시 결제 금액의 <strong>1%</strong> 자동 적립</li>
+                        <li><strong>사용 (Usage)</strong>: 1포인트 = 1원 (주문 시 현금처럼 사용 가능)</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>3.2 알림 시스템 (Notification System)</h3>
+                    <ul>
+                        <li><strong>재고 경고</strong>: 상품 재고 5개 미만 시 알림</li>
+                        <li><strong>신규 알림</strong>: 새 주문, 리뷰, 문의 등록 시 대시보드 알림</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Tech Section -->
+            <section id="tech">
+                <h2>4. 기술 가이드 (Technical Guide)</h2>
+                <p>개발자 및 시스템 유지보수 담당자를 위한 정보입니다.</p>
+
+                <div class="card">
+                    <h3>기술 스택 (Tech Stack)</h3>
+                    <ul>
+                        <li><strong>Framework</strong>: Next.js 14 (App Router)</li>
+                        <li><strong>Language</strong>: TypeScript</li>
+                        <li><strong>Database</strong>: Supabase (PostgreSQL)</li>
+                        <li><strong>Styling</strong>: Tailwind CSS</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>데이터 구조 (Database Structure)</h3>
+                    <div class="code-block">
+users      : 회원 정보
+products   : 상품 정보
+orders     : 주문 정보
+coupons    : 쿠폰 정보
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Simple scroll spy for navigation
+        const navLinks = document.querySelectorAll('.nav-link');
+        const sections = document.querySelectorAll('section');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - sectionHeight / 3)) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').includes(current)) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
