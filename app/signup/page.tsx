@@ -71,6 +71,9 @@ export default function SignupPage() {
                             로그인하기
                         </Link>
                     </p>
+                    <div className="mt-4 p-3 bg-blue-50 text-blue-800 text-sm rounded-lg font-medium">
+                        🎉 지금 가입하면 <span className="font-bold">5,000원 할인 쿠폰</span> 즉시 지급!
+                    </div>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSignup} autoComplete="off">
                     <div className="space-y-4">

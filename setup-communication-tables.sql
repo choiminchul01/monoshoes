@@ -57,18 +57,33 @@ ALTER TABLE notices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
 
 -- Reviews Policies
+DROP POLICY IF EXISTS "Public reviews are viewable by everyone" ON reviews;
 CREATE POLICY "Public reviews are viewable by everyone" ON reviews FOR SELECT USING (true);
-CREATE POLICY "Users can create reviews" ON reviews FOR INSERT WITH CHECK (auth.uid() = user_id OR auth.role() = 'service_role'); -- Admin uses service role or specific logic
+
+DROP POLICY IF EXISTS "Users can create reviews" ON reviews;
+CREATE POLICY "Users can create reviews" ON reviews FOR INSERT WITH CHECK (auth.uid() = user_id OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Users can update own reviews" ON reviews;
 CREATE POLICY "Users can update own reviews" ON reviews FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own reviews" ON reviews;
 CREATE POLICY "Users can delete own reviews" ON reviews FOR DELETE USING (auth.uid() = user_id);
 
 -- Inquiries Policies
+DROP POLICY IF EXISTS "Users can view own inquiries" ON inquiries;
 CREATE POLICY "Users can view own inquiries" ON inquiries FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create inquiries" ON inquiries;
 CREATE POLICY "Users can create inquiries" ON inquiries FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own inquiries" ON inquiries;
 CREATE POLICY "Users can update own inquiries" ON inquiries FOR UPDATE USING (auth.uid() = user_id);
 
 -- Notices & FAQs Policies (Public Read, Admin Write)
+DROP POLICY IF EXISTS "Notices are viewable by everyone" ON notices;
 CREATE POLICY "Notices are viewable by everyone" ON notices FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "FAQs are viewable by everyone" ON faqs;
 CREATE POLICY "FAQs are viewable by everyone" ON faqs FOR SELECT USING (true);
 
 -- Storage Buckets for Reviews and Inquiries
@@ -76,9 +91,17 @@ INSERT INTO storage.buckets (id, name, public) VALUES ('review-images', 'review-
 INSERT INTO storage.buckets (id, name, public) VALUES ('inquiry-images', 'inquiry-images', true) ON CONFLICT (id) DO NOTHING;
 
 -- Storage Policies
+DROP POLICY IF EXISTS "Public Access Review Images" ON storage.objects;
 CREATE POLICY "Public Access Review Images" ON storage.objects FOR SELECT USING (bucket_id = 'review-images');
+
+DROP POLICY IF EXISTS "Authenticated Upload Review Images" ON storage.objects;
 CREATE POLICY "Authenticated Upload Review Images" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'review-images' AND auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Owner Delete Review Images" ON storage.objects;
 CREATE POLICY "Owner Delete Review Images" ON storage.objects FOR DELETE USING (bucket_id = 'review-images' AND auth.uid() = owner);
 
+DROP POLICY IF EXISTS "Public Access Inquiry Images" ON storage.objects;
 CREATE POLICY "Public Access Inquiry Images" ON storage.objects FOR SELECT USING (bucket_id = 'inquiry-images');
+
+DROP POLICY IF EXISTS "Authenticated Upload Inquiry Images" ON storage.objects;
 CREATE POLICY "Authenticated Upload Inquiry Images" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'inquiry-images' AND auth.role() = 'authenticated');

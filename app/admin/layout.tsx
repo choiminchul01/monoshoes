@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText } from 'lucide-react';
+import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/context/ToastContext';
+import { useAdminPermissions } from '@/lib/useAdminPermissions';
 
 const ADMIN_EMAIL = 'master@essentia.com';
 
@@ -14,6 +15,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const router = useRouter();
     const pathname = usePathname();
     const { user, loading } = useAuth();
+    const { hasPermission, isMaster, loading: permLoading } = useAdminPermissions();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showShopConfirm, setShowShopConfirm] = useState(false);
     const [counts, setCounts] = useState({ orders: 0, products: 0 });
@@ -72,15 +74,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return null;
     }
 
+    // All possible nav items with permission keys
+    const allNavItems = [
+        { href: '/admin', label: '대시보드', icon: Home, badge: 0, permission: 'dashboard' as const },
+        { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
+        { href: '/admin/orders', label: '주문 관리', icon: ShoppingCart, badge: counts.orders, permission: 'orders' as const },
+        { href: '/admin/products', label: '상품 관리', icon: Package, badge: counts.products, permission: 'products' as const },
+        { href: '/admin/reviews', label: '리뷰 관리', icon: MessageSquare, badge: 0, permission: 'reviews' as const },
+        { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
+        { href: '/admin/coupons', label: '쿠폰 관리', icon: Ticket, badge: 0, permission: 'coupons' as const },
+        { href: '/admin/inquiries', label: '문의 관리', icon: HelpCircle, badge: 0, permission: 'inquiries' as const },
+        { href: '/admin/settings', label: '설정', icon: Settings, badge: 0, permission: 'settings' as const },
+    ];
+
+    // Add Admin Management for master only
+    const masterOnlyItems = isMaster ? [
+        { href: '/admin/admins', label: '관리자 계정', icon: Shield, badge: 0, permission: null }
+    ] : [];
+
+    // Filter nav items based on permissions
     const navItems = [
-        { href: '/admin', label: '대시보드', icon: Home, badge: 0 },
-        { href: '/admin/orders', label: '주문 관리', icon: ShoppingCart, badge: counts.orders },
-        { href: '/admin/products', label: '상품 관리', icon: Package, badge: counts.products },
-        { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0 },
-        { href: '/admin/reviews', label: '리뷰 관리', icon: MessageSquare, badge: 0 },
-        { href: '/admin/inquiries', label: '문의 관리', icon: HelpCircle, badge: 0 },
-        { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0 },
-        { href: '/admin/settings', label: '설정', icon: Settings, badge: 0 },
+        ...allNavItems.filter(item => hasPermission(item.permission)),
+        ...masterOnlyItems
     ];
 
     return (

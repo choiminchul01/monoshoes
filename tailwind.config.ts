@@ -23,6 +23,10 @@ const config: Config = {
                     800: '#13382D',
                     900: '#0B241C',
                 },
+                gold: {
+                    500: '#D4AF37', // Main Gold (Metallic Gold)
+                    600: '#C5A059', // Darker Gold for hover
+                },
             },
             fontFamily: {
                 sans: ["var(--font-inter)", "sans-serif"],

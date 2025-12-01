@@ -94,4 +94,106 @@ export type Database = {
         size: string
         image: string
     }
+    reviews: {
+        id: string
+        product_id: string
+        user_id: string | null
+        order_id: string | null
+        author_name: string | null
+        rating: number
+        content: string | null
+        image_url: string | null
+        is_admin_created: boolean
+        created_at: string
+    }
+    inquiries: {
+        id: string
+        user_id: string | null
+        type: 'general' | 'request'
+        title: string
+        content: string
+        image_url: string | null
+        is_private: boolean
+        status: 'pending' | 'answered'
+        answer: string | null
+        answered_at: string | null
+        created_at: string
+    }
+    notices: {
+        id: string
+        title: string
+        content: string
+        is_important: boolean
+        view_count: number
+        created_at: string
+    }
+    faqs: {
+        id: string
+        category: string
+        question: string
+        answer: string
+        display_order: number
+        created_at: string
+    }
+    coupons: {
+        id: string
+        code: string
+        name: string
+        description: string | null
+        type: 'percentage' | 'fixed'
+        discount_value: number
+        min_order_amount: number
+        max_discount_amount: number | null
+        usage_limit: number | null
+        usage_per_user: number
+        valid_from: string
+        valid_until: string | null
+        is_active: boolean
+        created_at: string
+    }
+    coupon_usages: {
+        id: string
+        coupon_id: string
+        user_id: string
+        order_id: string | null
+        discount_amount: number
+        used_at: string
+    }
+    user_coupons: {
+        id: string
+        user_id: string
+        coupon_id: string
+        is_used: boolean
+        issued_at: string
+    }
+    user_points: {
+        user_id: string
+        balance: number
+        total_earned: number
+        total_used: number
+        updated_at: string
+    }
+    point_transactions: {
+        id: string
+        user_id: string
+        type: 'earn' | 'use' | 'expire' | 'admin'
+        amount: number
+        balance_after: number
+        description: string
+        order_id: string | null
+        expires_at: string | null
+        created_at: string
+    }
+    product_qna: {
+        id: string
+        product_id: string
+        user_id: string | null
+        author_name: string | null
+        question: string
+        answer: string | null
+        is_private: boolean
+        is_answered: boolean
+        answered_at: string | null
+        created_at: string
+    }
 }

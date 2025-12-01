@@ -94,7 +94,7 @@ export function Header() {
                             <input
                                 type="text"
                                 placeholder="SEARCH"
-                                className="pl-10 pr-4 py-2 rounded-full border border-gray-300 bg-[#FDFCF5] text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black w-48 transition-all"
+                                className="pl-10 pr-4 py-2 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 text-sm focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] w-48 transition-all"
                             />
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         </div>

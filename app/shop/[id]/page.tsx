@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter, notFound } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
 import { Button } from "@/components/ui/button";
+import ProductQnA from "@/components/product/ProductQnA";
 
 type ProductDetails = {
     colors?: { name: string; value: string }[];
@@ -26,6 +27,7 @@ type Product = {
     price: number;
     category: string;
     images: string[];
+    detail_images?: string[];
     description: string;
     stock: number;
     is_available: boolean;
@@ -247,7 +249,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <div className="w-full lg:w-5/12 space-y-4">
                     {/* Main Image with Swipe */}
                     <motion.div
-                        className="relative aspect-[3/4] w-full max-h-[50vh] lg:max-h-none bg-gray-50 overflow-hidden mx-auto cursor-grab active:cursor-grabbing"
+                        className="relative aspect-[3/4] w-full max-h-[50vh] lg:max-h-none bg-gray-50 overflow-hidden mx-auto cursor-grab active:cursor-grabbing rounded-2xl"
                         drag="x"
                         dragConstraints={{ left: 0, right: 0 }}
                         dragElastic={0.2}
@@ -311,7 +313,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 <button
                                     key={index}
                                     onClick={() => setCurrentImageIndex(index)}
-                                    className={`relative aspect-[3/4] bg-gray-50 overflow-hidden transition-all ${currentImageIndex === index
+                                    className={`relative aspect-[3/4] bg-gray-50 overflow-hidden transition-all rounded-lg ${currentImageIndex === index
                                         ? "ring-1 ring-black opacity-100"
                                         : "opacity-70 hover:opacity-100"
                                         }`}
@@ -366,7 +368,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             <button
                                                 key={color.name}
                                                 onClick={() => setSelectedColor(color)}
-                                                className={`min-w-[3rem] h-10 px-3 border text-sm font-medium transition-all ${selectedColor?.name === color.name
+                                                className={`min-w-[3rem] h-10 px-3 border text-sm font-medium transition-all rounded-md ${selectedColor?.name === color.name
                                                     ? "border-black bg-black text-white"
                                                     : "border-gray-200 text-gray-900 hover:border-black"
                                                     }`}
@@ -389,7 +391,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             <button
                                                 key={size}
                                                 onClick={() => setSelectedSize(size)}
-                                                className={`min-w-[3rem] h-10 px-3 border text-sm font-medium transition-all ${selectedSize === size
+                                                className={`min-w-[3rem] h-10 px-3 border text-sm font-medium transition-all rounded-md ${selectedSize === size
                                                     ? "border-black bg-black text-white"
                                                     : "border-gray-200 text-gray-900 hover:border-black"
                                                     }`}
@@ -406,7 +408,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 <span className="text-xs font-bold text-gray-900 tracking-widest uppercase block">
                                     Quantity
                                 </span>
-                                <div className="flex items-center border border-gray-200 w-fit">
+                                <div className="flex items-center border border-gray-200 w-fit rounded-md overflow-hidden">
                                     <button
                                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
                                         className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition-colors"
@@ -432,7 +434,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     disabled={!product.is_available}
                                     isLoading={isAddingToCart}
                                     loadingText="담는 중..."
-                                    className="w-full h-14 bg-black text-white text-sm font-bold tracking-widest hover:bg-gray-800 transition-colors uppercase"
+                                    className="w-full h-14 bg-black text-white text-sm font-bold tracking-widest hover:bg-gray-800 transition-colors uppercase rounded-xl"
                                 >
                                     {product.is_available ? "Add to Cart" : "Out of Stock"}
                                 </Button>
@@ -441,7 +443,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             <motion.button
                                 whileTap={{ scale: 0.8 }}
                                 onClick={handleWishlistClick}
-                                className={`row-span-2 w-20 border flex items-center justify-center transition-colors ${productId && isInWishlist(productId)
+                                className={`row-span-2 w-20 border flex items-center justify-center transition-colors rounded-xl ${productId && isInWishlist(productId)
                                     ? "bg-white border-[#C41E3A]"
                                     : "bg-white border-[#C41E3A] hover:bg-gray-50"
                                     }`}
@@ -461,7 +463,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     disabled={!product.is_available}
                                     isLoading={isBuyingNow}
                                     loadingText="처리 중..."
-                                    className="w-full h-14 border border-black bg-white text-black text-sm font-bold tracking-widest hover:bg-gray-50 transition-colors uppercase"
+                                    className="w-full h-14 border border-black bg-white text-black text-sm font-bold tracking-widest hover:bg-gray-50 transition-colors uppercase rounded-xl"
                                 >
                                     Buy Now
                                 </Button>
@@ -521,6 +523,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {/* Reviews Section */}
             {product && <ReviewSection productId={product.id} />}
 
+            {/* Product Q&A Section */}
+            {product && <ProductQnA productId={product.id} />}
+
+            {/* Detail Images Section */}
+            {product && product.detail_images && product.detail_images.length > 0 && (
+                <DetailImagesSection images={product.detail_images} />
+            )}
+
             {/* Related Products */}
             {relatedProducts.length > 0 && (
                 <div className="mt-32">
@@ -548,6 +558,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 function ReviewSection({ productId }: { productId: string }) {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showAll, setShowAll] = useState(false);
 
     useEffect(() => {
         const fetchReviews = async () => {
@@ -568,64 +579,155 @@ function ReviewSection({ productId }: { productId: string }) {
         ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length).toFixed(1)
         : "0.0";
 
-    return (
-        <div className="mt-24 border-t border-gray-200 pt-16 max-w-4xl mx-auto">
-            <h3 className="text-2xl font-bold text-center mb-8 tracking-widest">REVIEWS ({reviews.length})</h3>
+    const displayedReviews = showAll ? reviews : reviews.slice(0, 3);
 
-            {reviews.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <p className="text-gray-500">아직 작성된 리뷰가 없습니다.</p>
-                </div>
-            ) : (
-                <div className="space-y-8">
-                    <div className="flex items-center justify-center gap-4 mb-12">
+    return (
+        <div className="mt-24 border-t border-gray-200 pt-16 max-w-5xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-12">
+                <h3 className="text-2xl font-bold tracking-widest mb-6">REVIEWS ({reviews.length})</h3>
+
+                {reviews.length > 0 && (
+                    <div className="flex items-center justify-center gap-6">
                         <div className="text-5xl font-bold">{averageRating}</div>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col items-start">
                             <div className="flex gap-1">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                     <Star
                                         key={star}
-                                        className={`w-5 h-5 ${star <= Math.round(Number(averageRating)) ? "fill-black text-black" : "text-gray-300"}`}
+                                        className={`w-5 h-5 ${star <= Math.round(Number(averageRating)) ? "fill-[#D4AF37] text-[#D4AF37]" : "text-gray-300"}`}
                                     />
                                 ))}
                             </div>
                             <span className="text-sm text-gray-500 mt-1">Based on {reviews.length} reviews</span>
                         </div>
                     </div>
+                )}
+            </div>
 
-                    <div className="grid gap-6">
-                        {reviews.map((review) => (
-                            <div key={review.id} className="bg-white border border-gray-100 p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold">
-                                            {review.author_name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium">{review.author_name}</p>
-                                            <div className="flex gap-0.5">
-                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                    <Star
-                                                        key={star}
-                                                        className={`w-3 h-3 ${star <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`}
-                                                    />
-                                                ))}
+            {/* Reviews List */}
+            {reviews.length === 0 ? (
+                <div className="text-center py-16 bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">아직 작성된 리뷰가 없습니다.</p>
+                </div>
+            ) : (
+                <>
+                    <div className="space-y-6">
+                        {displayedReviews.map((review) => (
+                            <div key={review.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
+                                <div className="flex gap-6">
+                                    {/* Left: Review Image (1:1 ratio) */}
+                                    {review.image_url && (
+                                        <div className="flex-shrink-0">
+                                            <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-gray-100">
+                                                <Image
+                                                    src={review.image_url}
+                                                    alt="Review"
+                                                    fill
+                                                    className="object-cover"
+                                                />
                                             </div>
                                         </div>
+                                    )}
+
+                                    {/* Right: Info & Content */}
+                                    <div className="flex-1 min-w-0">
+                                        {/* Author & Rating Row */}
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                {/* Author Avatar */}
+                                                <div className="w-10 h-10 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center text-gray-700 font-bold">
+                                                    {review.author_name.charAt(0).toUpperCase()}
+                                                </div>
+
+                                                {/* Author Info */}
+                                                <div>
+                                                    <p className="font-semibold text-gray-900">{review.author_name}</p>
+                                                    <div className="flex gap-0.5 mt-0.5">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <Star
+                                                                key={star}
+                                                                className={`w-4 h-4 ${star <= review.rating ? "fill-[#D4AF37] text-[#D4AF37]" : "text-gray-200"}`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Date */}
+                                            <span className="text-xs text-gray-400 whitespace-nowrap">
+                                                {new Date(review.created_at).toLocaleDateString('ko-KR')}
+                                            </span>
+                                        </div>
+
+                                        {/* Review Content */}
+                                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                                {review.content}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <span className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString()}</span>
                                 </div>
-                                <p className="text-gray-700 leading-relaxed mb-4 whitespace-pre-wrap">{review.content}</p>
-                                {review.image_url && (
-                                    <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-gray-100">
-                                        <Image src={review.image_url} alt="Review Image" fill className="object-cover" />
-                                    </div>
-                                )}
                             </div>
                         ))}
                     </div>
-                </div>
+
+                    {/* Show More Button */}
+                    {reviews.length > 3 && (
+                        <div className="text-center mt-8">
+                            <button
+                                onClick={() => setShowAll(!showAll)}
+                                className="px-8 py-3 border-2 border-black text-black font-bold tracking-widest hover:bg-black hover:text-white transition-all uppercase"
+                            >
+                                {showAll ? `접기` : `더보기 (${reviews.length - 3}개 더)`}
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
+        </div>
+    );
+}
+
+// 상세 이미지 섹션 컴포넌트 (프리미엄 스크롤 애니메이션)
+function DetailImagesSection({ images }: { images: string[] }) {
+    return (
+        <div className="mt-24 border-t border-gray-200 pt-16 max-w-5xl mx-auto">
+            <motion.h3
+                className="text-2xl font-bold text-center mb-12 tracking-widest"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+            >
+                PRODUCT DETAILS
+            </motion.h3>
+
+            <div className="space-y-4">
+                {images.map((imageUrl, index) => (
+                    <motion.div
+                        key={index}
+                        className="relative w-full"
+                        initial={{ opacity: 0, y: 60 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-100px" }}
+                        transition={{
+                            duration: 0.8,
+                            delay: index * 0.1,
+                            ease: [0.25, 0.46, 0.45, 0.94]
+                        }}
+                    >
+                        <Image
+                            src={imageUrl}
+                            alt={`Product detail ${index + 1}`}
+                            width={1200}
+                            height={800}
+                            className="w-full h-auto rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500"
+                            loading="lazy"
+                        />
+                    </motion.div>
+                ))}
+            </div>
         </div>
     );
 }
