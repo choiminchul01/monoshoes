@@ -24,7 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (!loading) {
             if (!user) {
                 router.push('/admin-login');
-            } else if (user.email?.toLowerCase() !== ADMIN_EMAIL) {
+            } else if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
                 router.push('/');
             } else {
                 fetchNotificationCounts();
@@ -74,16 +74,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return null;
     }
 
-    // All possible nav items with permission keys
+    // All possible nav items with permission keys (grouped by management workflow)
     const allNavItems = [
         { href: '/admin', label: '대시보드', icon: Home, badge: 0, permission: 'dashboard' as const },
-        { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
         { href: '/admin/orders', label: '주문 관리', icon: ShoppingCart, badge: counts.orders, permission: 'orders' as const },
         { href: '/admin/products', label: '상품 관리', icon: Package, badge: counts.products, permission: 'products' as const },
-        { href: '/admin/reviews', label: '리뷰 관리', icon: MessageSquare, badge: 0, permission: 'reviews' as const },
-        { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
         { href: '/admin/coupons', label: '쿠폰 관리', icon: Ticket, badge: 0, permission: 'coupons' as const },
+        { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
+        { href: '/admin/reviews', label: '리뷰 관리', icon: MessageSquare, badge: 0, permission: 'reviews' as const },
         { href: '/admin/inquiries', label: '문의 관리', icon: HelpCircle, badge: 0, permission: 'inquiries' as const },
+        { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
         { href: '/admin/settings', label: '설정', icon: Settings, badge: 0, permission: 'settings' as const },
     ];
 
@@ -115,9 +115,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </header>
 
-                {/* Mobile Nav Bar (Horizontal Scroll) */}
-                <nav className="md:hidden bg-white border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                    <div className="flex p-2 gap-2">
+                {/* Mobile Nav Bar (Multi-row) */}
+                <nav className="md:hidden bg-white border-b border-gray-200">
+                    <div className="flex flex-wrap p-2 gap-2">
                         {navItems.map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.href;

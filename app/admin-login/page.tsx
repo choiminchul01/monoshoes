@@ -93,25 +93,34 @@ export default function AdminLoginPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('Login attempt started', { email, password: '***' });
         setLoading(true);
         setError(null);
 
         if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+            console.log('Email validation failed:', email);
             setError("관리자 계정이 아닙니다. 일반 로그인은 /login을 이용해주세요.");
             setLoading(false);
             return;
         }
 
         try {
+            console.log('Attempting Supabase sign in...');
             const { error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase sign in error:', error);
+                throw error;
+            }
 
-            router.push('/admin');
+            console.log('Login successful, redirecting to /admin');
+            // Use window.location.href for full page reload to ensure cookies are sent
+            window.location.href = '/admin';
         } catch (err: any) {
+            console.error('Login catch error:', err);
             setError(err.message);
         } finally {
             setLoading(false);
@@ -134,7 +143,7 @@ export default function AdminLoginPage() {
                         <h2 className="text-3xl font-bold tracking-tight text-gray-900">Admin Login</h2>
                         <p className="mt-2 text-sm text-gray-600">관리자 전용 로그인</p>
                     </div>
-                    <form className="mt-8 space-y-6" onSubmit={handleLogin} autoComplete="off">
+                    <form className="mt-8 space-y-6" onSubmit={handleLogin}>
                         <div className="space-y-4">
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">Admin Email</label>

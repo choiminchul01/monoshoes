@@ -99,24 +99,29 @@ export default function AdminInquiriesPage() {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
+            {/* Title Row */}
+            <div className="mb-4">
                 <h1 className="text-3xl font-bold">문의 관리</h1>
-                <div className="flex gap-2">
+            </div>
+
+            {/* Filter Buttons Row */}
+            <div className="mb-6">
+                <div className="flex bg-gray-100 p-1 rounded-lg inline-flex">
                     <button
                         onClick={() => setFilter('all')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'all' ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${filter === 'all' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-900'}`}
                     >
                         전체
                     </button>
                     <button
                         onClick={() => setFilter('pending')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${filter === 'pending' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-900'}`}
                     >
                         대기중
                     </button>
                     <button
                         onClick={() => setFilter('answered')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'answered' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${filter === 'answered' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-900'}`}
                     >
                         답변완료
                     </button>

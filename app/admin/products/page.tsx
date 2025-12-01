@@ -336,10 +336,14 @@ export default function AdminProductsPage() {
 
     return (
         <div>
-            {/* Title Row with Notification and Refresh */}
-            <div className="flex flex-row justify-between items-center mb-6 gap-4">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-3xl font-bold">상품 관리</h1>
+            {/* Title Row */}
+            <div className="mb-4">
+                <h1 className="text-3xl font-bold">상품 관리</h1>
+            </div>
+
+            {/* Action Buttons Row */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div className="flex items-center gap-3">
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${lowStockCount > 0
                         ? 'bg-orange-50 border-orange-200'
                         : 'bg-gray-50 border-gray-200'
@@ -351,24 +355,20 @@ export default function AdminProductsPage() {
                             재고부족 {lowStockCount}건
                         </span>
                     </div>
+                    <button
+                        onClick={fetchProducts}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        새로고침
+                    </button>
                 </div>
-                <button
-                    onClick={fetchProducts}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                    <RefreshCw className="w-4 h-4" />
-                    새로고침
-                </button>
-            </div>
-
-            {/* Action Button Row */}
-            <div className="mb-6">
                 <button
                     onClick={() => {
                         resetForm();
                         setShowModal(true);
                     }}
-                    className="flex items-center justify-center gap-2 px-4 py-3 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
                     상품 추가

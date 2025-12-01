@@ -200,12 +200,16 @@ export default function AdminAccountsPage() {
 
     return (
         <div>
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
+            {/* Title Row */}
+            <div className="mb-4">
                 <h1 className="text-3xl font-bold">관리자 계정 관리</h1>
+            </div>
+
+            {/* Action Buttons Row */}
+            <div className="flex justify-end mb-6">
                 <button
                     onClick={() => handleOpenModal()}
-                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
                     관리자 추가

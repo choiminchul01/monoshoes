@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Search, Trash2, Star, Plus, X, Image as ImageIcon } from "lucide-react";
+import { Search, Trash2, Star, Plus, X, Image as ImageIcon, RefreshCw } from "lucide-react";
 import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
@@ -178,17 +178,84 @@ export default function AdminReviewsPage() {
         }
     };
 
+    // Search and filter reviews
+    const getFilteredReviews = () => {
+        let result = reviews;
+
+        if (searchTerm) {
+            const lowerTerm = searchTerm.toLowerCase();
+            result = result.filter(r =>
+                r.author_name.toLowerCase().includes(lowerTerm) ||
+                r.content.toLowerCase().includes(lowerTerm) ||
+                r.product?.name.toLowerCase().includes(lowerTerm)
+            );
+        }
+
+        return result;
+    };
+
+    const filteredReviews = getFilteredReviews();
+    const totalPages = Math.ceil(filteredReviews.length / itemsPerPage);
+    const currentReviews = filteredReviews.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    // Calculate new reviews count (reviews within last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const newReviewsCount = reviews.filter(review =>
+        new Date(review.created_at) > sevenDaysAgo
+    ).length;
+
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
+            {/* Title Row */}
+            <div className="mb-4">
                 <h1 className="text-3xl font-bold">리뷰 관리</h1>
+            </div>
+
+            {/* Action Buttons Row */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div className="flex items-center gap-3">
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${newReviewsCount > 0
+                        ? 'bg-blue-50 border-blue-200'
+                        : 'bg-gray-50 border-gray-200'
+                        }`}>
+                        <span className={`text-sm font-bold ${newReviewsCount > 0
+                            ? 'text-blue-700'
+                            : 'text-gray-500'
+                            }`}>
+                            새 리뷰 {newReviewsCount}건
+                        </span>
+                    </div>
+                    <button
+                        onClick={fetchReviews}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        새로고침
+                    </button>
+                </div>
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
                     리뷰 생성
                 </button>
+            </div>
+
+            {/* Search Row */}
+            <div className="mb-8 mt-4">
+                <AdminSearch
+                    value={searchTerm}
+                    onChange={(val) => {
+                        setSearchTerm(val);
+                        setCurrentPage(1);
+                    }}
+                    placeholder="작성자, 리뷰 내용, 상품명 검색..."
+                />
             </div>
 
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -206,10 +273,12 @@ export default function AdminReviewsPage() {
                     <tbody className="divide-y divide-gray-200">
                         {loading ? (
                             <tr><td colSpan={6} className="p-8 text-center">로딩 중...</td></tr>
-                        ) : reviews.length === 0 ? (
-                            <tr><td colSpan={6} className="p-8 text-center text-gray-500">등록된 리뷰가 없습니다.</td></tr>
+                        ) : currentReviews.length === 0 ? (
+                            <tr><td colSpan={6} className="p-8 text-center text-gray-500">
+                                {searchTerm ? '검색 결과가 없습니다.' : '등록된 리뷰가 없습니다.'}
+                            </td></tr>
                         ) : (
-                            reviews.map((review) => (
+                            currentReviews.map((review) => (
                                 <tr key={review.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
@@ -255,6 +324,12 @@ export default function AdminReviewsPage() {
                     </tbody>
                 </table>
             </div>
+
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
 
             {/* Create Review Modal */}
             {isCreateModalOpen && (
