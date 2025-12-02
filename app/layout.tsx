@@ -7,6 +7,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { KakaoButton } from "@/components/ui/KakaoButton";
+import { TopButton } from "@/components/ui/TopButton";
 import { ClickRipple } from "@/components/ui/ClickRipple";
 import { usePathname } from "next/navigation";
 import { CartProvider } from "@/context/CartContext";
@@ -39,7 +40,12 @@ export default function RootLayout({
                   {children}
                 </main>
                 {!isLandingPage && !isAdminPage && <Footer />}
-                {!isLandingPage && !isAdminPage && <KakaoButton />}
+                {!isLandingPage && !isAdminPage && (
+                  <>
+                    <TopButton />
+                    <KakaoButton />
+                  </>
+                )}
               </ToastProvider>
             </CartProvider>
           </WishlistProvider>

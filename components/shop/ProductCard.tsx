@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Lock } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -19,12 +21,20 @@ interface ProductCardProps {
 
 export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "aspect-[1000/1618]", originalPrice, index = 0 }: ProductCardProps) {
     const { addToCart } = useCart();
-    const toast = useToast(); // useToast returns the context directly which has success, error methods
+    const { user, loading } = useAuth();
+    const toast = useToast();
+    const router = useRouter();
     const [isFlying, setIsFlying] = useState(false);
 
     const handleAddToCart = async (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent navigation
         e.stopPropagation();
+
+        if (!user) {
+            toast.error("회원 전용 서비스입니다. 로그인 또는 회원가입이 필요합니다.");
+            router.push("/login");
+            return;
+        }
 
         setIsFlying(true);
 
@@ -77,15 +87,16 @@ export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "a
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -8, scale: 1.02, zIndex: 20 }}
                 transition={{
                     duration: 0.5,
-                    delay: index * 0.1, // Stagger delay based on index
-                    ease: [0.22, 1, 0.36, 1] // Custom easing
+                    delay: index * 0.1,
+                    ease: [0.22, 1, 0.36, 1]
                 }}
                 className="group relative"
             >
                 <Link href={`/shop/${id}`} className="block">
-                    <div className={`relative ${aspectRatio} w-full overflow-hidden bg-gray-100`}>
+                    <div className={`relative ${aspectRatio} w-full overflow-hidden bg-gray-100 rounded-lg transition-all duration-500 group-hover:shadow-2xl`}>
                         {imageUrl ? (
                             <img
                                 src={imageUrl}
@@ -113,13 +124,26 @@ export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "a
                         <p className="text-xs text-[#C41E3A] uppercase font-bold tracking-wider">{brand}</p>
                         <h3 className="text-sm font-medium text-gray-900">{name}</h3>
                         <div className="flex items-center gap-2">
-                            <p className="text-sm font-bold text-gray-900">
-                                {price.toLocaleString()} KRW
-                            </p>
-                            {originalPrice && (
-                                <p className="text-xs font-normal text-gray-400 line-through">
-                                    {originalPrice.toLocaleString()} KRW
-                                </p>
+                            {loading ? (
+                                <div className="h-5 w-24 bg-gray-100 animate-pulse rounded" />
+                            ) : user ? (
+                                <>
+                                    <p className="text-sm font-bold text-gray-900">
+                                        {price.toLocaleString()} KRW
+                                    </p>
+                                    {originalPrice && (
+                                        <p className="text-xs font-normal text-gray-400 line-through">
+                                            {originalPrice.toLocaleString()} KRW
+                                        </p>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="flex items-center gap-1.5 text-gray-500">
+                                    <Lock className="w-3 h-3" />
+                                    <p className="text-xs font-medium tracking-wide">
+                                        회원 전용
+                                    </p>
+                                </div>
                             )}
                         </div>
                     </div>

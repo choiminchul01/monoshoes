@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Heart, Minus, Plus, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { Heart, Minus, Plus, ChevronDown, ChevronUp, Star, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { useCart } from "@/context/CartContext";
@@ -58,7 +58,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     const { addToCart } = useCart();
     const { isInWishlist, toggleWishlist } = useWishlist();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const toast = useToast();
     const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -139,6 +139,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const handleAddToCart = async () => {
         if (!product) return;
 
+        if (!user) {
+            toast.error("회원 전용 서비스입니다. 로그인 또는 회원가입이 필요합니다.");
+            router.push("/login");
+            return;
+        }
+
         if (product.details?.colors && product.details.colors.length > 0 && !selectedColor) {
             toast.error("색상을 선택해주세요.");
             return;
@@ -171,6 +177,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     const handleBuyNow = async () => {
         if (!product) return;
+
+        if (!user) {
+            toast.error("회원 전용 서비스입니다. 로그인 또는 회원가입이 필요합니다.");
+            router.push("/login");
+            return;
+        }
 
         if (product.details?.colors && product.details.colors.length > 0 && !selectedColor) {
             toast.error("색상을 선택해주세요.");
@@ -342,9 +354,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 {product.name}
                             </h1>
                             <div className="flex items-center gap-3 pt-2">
-                                <span className="text-2xl font-bold text-gray-900">
-                                    {product.price.toLocaleString()} KRW
-                                </span>
+                                {authLoading ? (
+                                    <div className="h-8 w-32 bg-gray-100 animate-pulse rounded" />
+                                ) : user ? (
+                                    <span className="text-2xl font-bold text-gray-900">
+                                        {product.price.toLocaleString()} KRW
+                                    </span>
+                                ) : (
+                                    <div className="flex items-center gap-2 text-gray-500">
+                                        <Lock className="w-5 h-5" />
+                                        <span className="text-lg font-medium tracking-wide">
+                                            회원 전용 (로그인 필요)
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -520,16 +543,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
             </div>
 
+            {/* Detail Images Section */}
+            {product && product.detail_images && product.detail_images.length > 0 && (
+                <DetailImagesSection images={product.detail_images} />
+            )}
+
             {/* Reviews Section */}
             {product && <ReviewSection productId={product.id} />}
 
             {/* Product Q&A Section */}
             {product && <ProductQnA productId={product.id} />}
-
-            {/* Detail Images Section */}
-            {product && product.detail_images && product.detail_images.length > 0 && (
-                <DetailImagesSection images={product.detail_images} />
-            )}
 
             {/* Related Products */}
             {relatedProducts.length > 0 && (
