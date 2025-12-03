@@ -472,7 +472,7 @@ export default function OrdersPage() {
                                                                 onConfirm: () => updatePaymentStatus(order.id, "paid"),
                                                             })
                                                         }
-                                                        className="text-green-600 hover:text-green-900 font-medium"
+                                                        className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
                                                     >
                                                         입금 확인
                                                     </button>
@@ -487,7 +487,7 @@ export default function OrdersPage() {
                                                                 orderNumber: order.order_number,
                                                             })
                                                         }
-                                                        className="text-purple-600 hover:text-purple-900 font-medium"
+                                                        className="text-purple-600 hover:text-purple-900 hover:bg-purple-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
                                                     >
                                                         송장 입력
                                                     </button>
@@ -503,7 +503,7 @@ export default function OrdersPage() {
                                                                 onConfirm: () => updatePaymentStatus(order.id, "delivered"),
                                                             })
                                                         }
-                                                        className="text-blue-600 hover:text-blue-900 font-medium"
+                                                        className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
                                                     >
                                                         배송 완료
                                                     </button>
@@ -585,7 +585,7 @@ export default function OrdersPage() {
                                                         onConfirm: () => updatePaymentStatus(order.id, "paid"),
                                                     })
                                                 }
-                                                className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
                                             >
                                                 입금확인
                                             </button>
@@ -600,7 +600,7 @@ export default function OrdersPage() {
                                                         orderNumber: order.order_number,
                                                     })
                                                 }
-                                                className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
+                                                className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
                                             >
                                                 송장입력
                                             </button>
@@ -616,7 +616,7 @@ export default function OrdersPage() {
                                                         onConfirm: () => updatePaymentStatus(order.id, "delivered"),
                                                     })
                                                 }
-                                                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
                                             >
                                                 배송완료
                                             </button>

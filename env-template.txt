@@ -1,6 +1,9 @@
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 
-# 선택사항: 관리자 작업 자동화를 위한 Service Role Key
-# 주의: 이 키는 절대 클라이언트에 노출하면 안 됩니다!
-# SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+# Email Service (Resend)
+RESEND_API_KEY=your-resend-api-key
+
+# Admin Configuration
+ADMIN_EMAIL=master@essentia.com

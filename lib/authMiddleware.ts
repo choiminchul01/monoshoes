@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
 
-const ADMIN_EMAIL = 'master@essentia.com';
+// Admin email from environment variable (fallback to master@essentia.com)
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'master@essentia.com';
 
 /**
  * Verify if request is from authenticated admin
@@ -18,7 +19,7 @@ export async function verifyAdmin(request: NextRequest): Promise<{
         const token = authHeader?.replace('Bearer ', '');
 
         if (!token) {
-            return { isValid: false, error: 'No authentication token provided' };
+            return { isValid: false, error: 'Unauthorized' };
         }
 
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -29,18 +30,20 @@ export async function verifyAdmin(request: NextRequest): Promise<{
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
         if (error || !user) {
-            return { isValid: false, error: 'Invalid or expired token' };
+            return { isValid: false, error: 'Unauthorized' };
         }
 
         // Check if user is admin
         if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-            return { isValid: false, error: 'Unauthorized: Admin access required' };
+            return { isValid: false, error: 'Forbidden' };
         }
 
         return { isValid: true, user };
 
     } catch (error) {
-        console.error('Auth verification error:', error);
+        // Log detailed error server-side only
+        console.error('[Security] Auth verification error:', error);
+        // Return generic error to client
         return { isValid: false, error: 'Authentication failed' };
     }
 }
