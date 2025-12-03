@@ -175,44 +175,6 @@ USING (
 
 -- 기존 정책 확인 및 제거 (필요한 경우)
 DROP POLICY IF EXISTS "Anyone can insert reviews" ON reviews;
-DROP POLICY IF EXISTS "Anyone can update reviews" ON reviews;
-DROP POLICY IF EXISTS "Anyone can delete reviews" ON reviews;
-DROP POLICY IF EXISTS "Authenticated users can create reviews" ON reviews;
-DROP POLICY IF EXISTS "Users can update own reviews" ON reviews;
-DROP POLICY IF EXISTS "Users can delete own reviews" ON reviews;
-
--- 인증된 사용자만 리뷰 작성 가능
-CREATE POLICY "Authenticated users can create reviews"
-ON reviews FOR INSERT
-WITH CHECK (
-    auth.uid() IS NOT NULL
-);
-
--- 본인 리뷰 또는 관리자만 수정 가능
-CREATE POLICY "Users can update own reviews"
-ON reviews FOR UPDATE
-USING (
-    user_id = auth.uid()
-    OR EXISTS (
-        SELECT 1 FROM admin_roles
-        WHERE user_id = auth.uid()
-    )
-);
-
--- 본인 리뷰 또는 관리자만 삭제 가능
-CREATE POLICY "Users can delete own reviews"
-ON reviews FOR DELETE
-USING (
-    user_id = auth.uid()
-    OR EXISTS (
-        SELECT 1 FROM admin_roles
-        WHERE user_id = auth.uid()
-    )
-);
-
--- ========================================
--- 5. Wishlist 테이블 정책 강화
--- ========================================
 
 -- 기존 정책 확인 및 제거
 DROP POLICY IF EXISTS "Public wishlist access" ON wishlist;
