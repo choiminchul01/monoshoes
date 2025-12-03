@@ -9,9 +9,21 @@
 -- ========================================
 
 -- 기존 정책 제거
+-- 기존 정책 제거
 DROP POLICY IF EXISTS "Admins can insert products" ON products;
 DROP POLICY IF EXISTS "Admins can update products" ON products;
 DROP POLICY IF EXISTS "Admins can delete products" ON products;
+DROP POLICY IF EXISTS "Products are viewable by everyone" ON products;
+DROP POLICY IF EXISTS "Public Read Access Products" ON products;
+-- 추가 발견된 정책 제거
+DROP POLICY IF EXISTS "Enable all access for all users" ON products;
+DROP POLICY IF EXISTS "Public Full Access" ON products;
+DROP POLICY IF EXISTS "public_read_products" ON products;
+
+-- 모든 사용자가 상품을 조회할 수 있음
+CREATE POLICY "Products are viewable by everyone"
+ON products FOR SELECT
+USING (true);
 
 -- 관리자만 상품을 추가할 수 있음
 CREATE POLICY "Admins can insert products"
@@ -55,6 +67,14 @@ DROP POLICY IF EXISTS "Orders are viewable by everyone" ON orders;
 DROP POLICY IF EXISTS "Users can view own orders" ON orders;
 DROP POLICY IF EXISTS "Admins can update orders" ON orders;
 DROP POLICY IF EXISTS "Admins can delete orders" ON orders;
+DROP POLICY IF EXISTS "Anyone can create orders" ON orders;
+DROP POLICY IF EXISTS "Public Insert Orders" ON orders;
+DROP POLICY IF EXISTS "Public Read Orders" ON orders;
+DROP POLICY IF EXISTS "Public Delete Orders" ON orders;
+DROP POLICY IF EXISTS "Public Update Orders" ON orders;
+-- 추가 발견된 정책 제거
+DROP POLICY IF EXISTS "Allow all updates on orders" ON orders;
+DROP POLICY IF EXISTS "Orders are viewable by everyone (temp)" ON orders;
 
 -- 본인 주문만 조회 가능 또는 관리자
 CREATE POLICY "Users can view own orders"
@@ -100,6 +120,12 @@ DROP POLICY IF EXISTS "Order items are viewable by everyone" ON order_items;
 DROP POLICY IF EXISTS "Users can view own order items" ON order_items;
 DROP POLICY IF EXISTS "Admins can update order items" ON order_items;
 DROP POLICY IF EXISTS "Admins can delete order items" ON order_items;
+DROP POLICY IF EXISTS "Anyone can create order items" ON order_items;
+DROP POLICY IF EXISTS "Public Insert Order Items" ON order_items;
+DROP POLICY IF EXISTS "Public Read Order Items" ON order_items;
+DROP POLICY IF EXISTS "Public Delete Order Items" ON order_items;
+-- 추가 발견된 정책 제거
+DROP POLICY IF EXISTS "Order items are viewable by everyone (temp)" ON order_items;
 
 -- 본인 주문의 아이템만 조회 가능
 CREATE POLICY "Users can view own order items"
