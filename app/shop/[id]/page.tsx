@@ -233,7 +233,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     };
 
     return (
-        <div className="container mx-auto px-4 pt-0 pb-6 md:py-12 relative">
+        <div className="container mx-auto px-4 pt-0 pb-6 md:pb-12 md:pt-0 relative">
             {/* Flying Image Animation */}
             <AnimatePresence>
                 {isFlying && product?.images?.[0] && (
@@ -261,7 +261,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <div className="w-full lg:w-5/12 space-y-4">
                     {/* Main Image with Swipe */}
                     <motion.div
-                        className="relative aspect-[3/4] w-full max-h-[50vh] lg:max-h-none bg-gray-50 overflow-hidden mx-auto cursor-grab active:cursor-grabbing rounded-2xl select-none"
+                        className="relative aspect-[1/1.618] w-full max-h-[60vh] lg:max-h-none bg-gray-50 overflow-hidden mx-auto cursor-grab active:cursor-grabbing rounded-2xl select-none"
                         drag="x"
                         dragConstraints={{ left: 0, right: 0 }}
                         dragElastic={0.2}
@@ -330,7 +330,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 <button
                                     key={index}
                                     onClick={() => setCurrentImageIndex(index)}
-                                    className={`relative aspect-[3/4] bg-gray-50 overflow-hidden transition-all rounded-lg ${currentImageIndex === index
+                                    className={`relative aspect-[1/1.618] bg-gray-50 overflow-hidden transition-all rounded-lg ${currentImageIndex === index
                                         ? "ring-1 ring-black opacity-100"
                                         : "opacity-70 hover:opacity-100"
                                         }`}
@@ -376,88 +376,85 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             </div>
                         </div>
 
-                        {/* Options Section - Redesigned */}
-                        <div className="space-y-6">
-                            {/* PC: Color, Size, Details in one row | Mobile: Stack vertically */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                {/* Color */}
-                                <div className="bg-gray-50 rounded-xl p-4">
-                                    <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
-                                        Color
-                                    </span>
-                                    {product.details?.colors && product.details.colors.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {product.details.colors.map((color) => (
-                                                <button
-                                                    key={color.name}
-                                                    onClick={() => setSelectedColor(color)}
-                                                    className={`min-w-[3rem] h-9 px-3 text-sm font-medium transition-all rounded-lg ${selectedColor?.name === color.name
-                                                        ? "bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] shadow-md"
-                                                        : "bg-white text-gray-900 hover:bg-gray-100 border border-gray-200"
-                                                        }`}
-                                                >
-                                                    {color.name.split('#')[0].trim()}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <span className="text-sm text-gray-400">-</span>
-                                    )}
-                                </div>
-
-                                {/* Size */}
-                                <div className="bg-gray-50 rounded-xl p-4">
-                                    <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
-                                        Size
-                                    </span>
-                                    {product.details?.sizes && product.details.sizes.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {product.details.sizes.map((size) => (
-                                                <button
-                                                    key={size}
-                                                    onClick={() => setSelectedSize(size)}
-                                                    className={`min-w-[3rem] h-9 px-3 text-sm font-medium transition-all rounded-lg ${selectedSize === size
-                                                        ? "bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] shadow-md"
-                                                        : "bg-white text-gray-900 hover:bg-gray-100 border border-gray-200"
-                                                        }`}
-                                                >
-                                                    {size}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <span className="text-sm text-gray-400">-</span>
-                                    )}
-                                </div>
-
-                                {/* Details/Features */}
-                                <div className="bg-gray-50 rounded-xl p-4">
-                                    <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
-                                        Details
-                                    </span>
-                                    {product.details?.features && product.details.features.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {product.details.features.slice(0, 3).map((feature, index) => (
-                                                <span
-                                                    key={index}
-                                                    className="inline-flex items-center h-9 px-3 text-sm font-medium bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] rounded-lg"
-                                                >
-                                                    {feature}
-                                                </span>
-                                            ))}
-                                            {product.details.features.length > 3 && (
-                                                <span className="inline-flex items-center h-9 px-3 text-sm text-gray-400 bg-white border border-gray-200 rounded-lg">
-                                                    +{product.details.features.length - 3} more
-                                                </span>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <span className="text-sm text-gray-400">-</span>
-                                    )}
-                                </div>
+                        {/* Options Section - Redesigned 2x2 Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            {/* Color */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                                <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
+                                    Color
+                                </span>
+                                {product.details?.colors && product.details.colors.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {product.details.colors.map((color) => (
+                                            <button
+                                                key={color.name}
+                                                onClick={() => setSelectedColor(color)}
+                                                className={`min-w-[3rem] h-11 px-3 text-sm font-medium transition-all rounded-lg ${selectedColor?.name === color.name
+                                                    ? "bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] shadow-md"
+                                                    : "bg-white text-gray-900 hover:bg-gray-100 border border-gray-200"
+                                                    }`}
+                                            >
+                                                {color.name.split('#')[0].trim()}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <span className="text-sm text-gray-400">-</span>
+                                )}
                             </div>
 
-                            {/* Quantity - Always in next row */}
+                            {/* Size */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                                <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
+                                    Size
+                                </span>
+                                {product.details?.sizes && product.details.sizes.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {product.details.sizes.map((size) => (
+                                            <button
+                                                key={size}
+                                                onClick={() => setSelectedSize(size)}
+                                                className={`min-w-[3rem] h-11 px-3 text-sm font-medium transition-all rounded-lg ${selectedSize === size
+                                                    ? "bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] shadow-md"
+                                                    : "bg-white text-gray-900 hover:bg-gray-100 border border-gray-200"
+                                                    }`}
+                                            >
+                                                {size}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <span className="text-sm text-gray-400">-</span>
+                                )}
+                            </div>
+
+                            {/* Details/Features */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                                <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
+                                    Details
+                                </span>
+                                {product.details?.features && product.details.features.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {product.details.features.slice(0, 3).map((feature, index) => (
+                                            <span
+                                                key={index}
+                                                className="inline-flex items-center h-11 px-3 text-sm font-medium bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] rounded-lg"
+                                            >
+                                                {feature}
+                                            </span>
+                                        ))}
+                                        {product.details.features.length > 3 && (
+                                            <span className="inline-flex items-center h-11 px-3 text-sm text-gray-400 bg-white border border-gray-200 rounded-lg">
+                                                +{product.details.features.length - 3} more
+                                            </span>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <span className="text-sm text-gray-400">-</span>
+                                )}
+                            </div>
+
+                            {/* Quantity */}
                             <div className="bg-gray-50 rounded-xl p-4">
                                 <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
                                     Quantity
@@ -492,7 +489,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         loadingText="담는 중..."
                                         className="w-full h-12 bg-[#e9e4da] text-gray-900 text-sm font-bold tracking-widest hover:bg-[#ddd8ce] transition-colors uppercase rounded-xl"
                                     >
-                                        {product.is_available ? "Add to Cart" : "Out of Stock"}
+                                        {product.is_available ? "장바구니" : "품절"}
                                     </Button>
                                 </motion.div>
                                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -503,7 +500,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         loadingText="처리 중..."
                                         className="w-full h-12 bg-[#4a5544] text-white text-sm font-bold tracking-widest hover:bg-[#3d4739] transition-colors uppercase rounded-xl"
                                     >
-                                        Buy Now
+                                        바로구매
                                     </Button>
                                 </motion.div>
                             </div>
@@ -526,7 +523,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             }`}
                                         strokeWidth={1.5}
                                     />
-                                    <span className="text-xs font-medium text-gray-600 mt-1">찜하기</span>
+                                    <span className="text-xs font-bold text-gray-600 mt-1">찜하기</span>
                                 </motion.button>
 
                                 {/* KakaoTalk Share */}
@@ -568,7 +565,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     <div className="w-8 h-8 lg:w-10 lg:h-10 bg-[#3C1E1E] rounded-full flex items-center justify-center">
                                         <span className="text-xs lg:text-base font-black text-[#FEE500] tracking-tighter">카톡</span>
                                     </div>
-                                    <span className="text-xs font-medium text-[#3C1E1E] mt-1">공유하기</span>
+                                    <span className="text-xs font-bold text-[#3C1E1E] mt-1">공유하기</span>
                                 </motion.button>
                             </div>
                         </div>

@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Trash2, Edit, Plus, Upload, X, RefreshCw } from "lucide-react";
+import { Trash2, Edit, Plus, Upload, X, RefreshCw, Download, FileSpreadsheet } from "lucide-react";
 import Image from "next/image";
 import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
+import * as XLSX from "xlsx";
 
 type Product = {
     id: string;
@@ -35,6 +36,18 @@ type ProductFormData = Omit<Product, "id" | "created_at" | "images" | "detail_im
     colors: { name: string; value: string }[];
     sizes: string[];
     features: string[];
+};
+
+type BulkProductData = {
+    name: string;
+    brand: string;
+    price: number;
+    category: string;
+    stock: number;
+    colors: string;
+    sizes: string;
+    features: string;
+    description: string;
 };
 
 const CATEGORIES = ["BAG", "WALLET", "SHOES", "CLOTHING", "ACCESSORY"];
@@ -66,6 +79,15 @@ export default function AdminProductsPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
     const [isContinue, setIsContinue] = useState(false);
+
+    // Bulk delete state
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+    // Bulk upload state
+    const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+    const [bulkUploadData, setBulkUploadData] = useState<BulkProductData[]>([]);
+    const [bulkUploading, setBulkUploading] = useState(false);
 
     // Pagination & Search State
     const [currentPage, setCurrentPage] = useState(1);
@@ -374,6 +396,181 @@ export default function AdminProductsPage() {
         setDeleteTargetId(null);
     };
 
+    // Bulk delete functions
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id)
+                ? prev.filter(item => item !== id)
+                : [...prev, id]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === currentProducts.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(currentProducts.map(p => p.id));
+        }
+    };
+
+    const handleBulkDelete = () => {
+        if (selectedIds.length === 0) {
+            toast.error("삭제할 상품을 선택해주세요");
+            return;
+        }
+        setShowBulkDeleteConfirm(true);
+    };
+
+    const confirmBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
+
+        const { error } = await supabase
+            .from("products")
+            .delete()
+            .in("id", selectedIds);
+
+        if (!error) {
+            toast.success(`${selectedIds.length}개 상품이 삭제되었습니다`);
+            setSelectedIds([]);
+            fetchProducts();
+        } else {
+            console.error("Bulk delete error:", error);
+            toast.error(`삭제 실패: ${error.message}`);
+        }
+        setShowBulkDeleteConfirm(false);
+    };
+
+    // Excel 템플릿 다운로드
+    const downloadTemplate = () => {
+        const templateData = [
+            {
+                "상품명": "샘플 상품명",
+                "브랜드": "BRAND NAME",
+                "가격": 1000000,
+                "카테고리": "BAG",
+                "재고": 10,
+                "색상옵션": "Black, White",
+                "사이즈옵션": "S, M, L",
+                "상세특징": "프리미엄 가죽, 수제 제작",
+                "상품설명": "상품에 대한 상세 설명을 입력하세요."
+            }
+        ];
+
+        const ws = XLSX.utils.json_to_sheet(templateData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "상품목록");
+
+        // 열 너비 설정
+        ws['!cols'] = [
+            { wch: 20 }, // 상품명
+            { wch: 15 }, // 브랜드
+            { wch: 12 }, // 가격
+            { wch: 12 }, // 카테고리
+            { wch: 8 },  // 재고
+            { wch: 20 }, // 색상옵션
+            { wch: 15 }, // 사이즈옵션
+            { wch: 25 }, // 상세특징
+            { wch: 40 }, // 상품설명
+        ];
+
+        XLSX.writeFile(wb, "상품등록_양식.xlsx");
+        toast.success("템플릿이 다운로드되었습니다");
+    };
+
+    // Excel 파일 업로드 처리
+    const handleBulkFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const data = evt.target?.result;
+                const workbook = XLSX.read(data, { type: "binary" });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+                const parsedData: BulkProductData[] = jsonData.map((row: any) => ({
+                    name: row["상품명"] || "",
+                    brand: row["브랜드"] || "",
+                    price: Number(row["가격"]) || 0,
+                    category: row["카테고리"] || "BAG",
+                    stock: Number(row["재고"]) || 0,
+                    colors: row["색상옵션"] || "",
+                    sizes: row["사이즈옵션"] || "",
+                    features: row["상세특징"] || "",
+                    description: row["상품설명"] || "",
+                }));
+
+                // 필수 항목 검증
+                const validData = parsedData.filter(item => item.name && item.brand && item.price > 0);
+
+                if (validData.length === 0) {
+                    toast.error("유효한 상품 데이터가 없습니다");
+                    return;
+                }
+
+                setBulkUploadData(validData);
+                setShowBulkUploadModal(true);
+                toast.success(`${validData.length}개 상품 데이터를 불러왔습니다`);
+            } catch (error) {
+                console.error("Excel parse error:", error);
+                toast.error("Excel 파일 파싱 중 오류가 발생했습니다");
+            }
+        };
+        reader.readAsBinaryString(file);
+
+        // 파일 input 초기화
+        e.target.value = "";
+    };
+
+    // 일괄 등록 실행
+    const executeBulkUpload = async () => {
+        if (bulkUploadData.length === 0) return;
+
+        setBulkUploading(true);
+
+        try {
+            const productsToInsert = bulkUploadData.map(item => ({
+                name: item.name,
+                brand: item.brand.toUpperCase(),
+                price: item.price,
+                category: CATEGORIES.includes(item.category.toUpperCase())
+                    ? item.category.toUpperCase()
+                    : "BAG",
+                stock: item.stock,
+                is_available: item.stock > 0,
+                description: item.description,
+                images: [],
+                detail_images: [],
+                details: {
+                    colors: item.colors ? [{ name: item.colors, value: "#000000" }] : [],
+                    sizes: item.sizes ? item.sizes.split(",").map(s => s.trim()) : [],
+                    features: item.features ? item.features.split(",").map(f => f.trim()) : [],
+                }
+            }));
+
+            const { error } = await supabase
+                .from("products")
+                .insert(productsToInsert);
+
+            if (error) {
+                throw error;
+            }
+
+            toast.success(`${bulkUploadData.length}개 상품이 등록되었습니다. 이미지는 개별 수정에서 추가해주세요.`);
+            setShowBulkUploadModal(false);
+            setBulkUploadData([]);
+            fetchProducts();
+        } catch (error: any) {
+            console.error("Bulk upload error:", error);
+            toast.error(`일괄 등록 실패: ${error.message}`);
+        } finally {
+            setBulkUploading(false);
+        }
+    };
+
     const resetForm = () => {
         setEditingProduct(null);
         setFormData({
@@ -427,16 +624,42 @@ export default function AdminProductsPage() {
                         새로고침
                     </button>
                 </div>
-                <button
-                    onClick={() => {
-                        resetForm();
-                        setShowModal(true);
-                    }}
-                    className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    상품 추가
-                </button>
+                <div className="flex items-center gap-2">
+                    {/* 템플릿 다운로드 */}
+                    <button
+                        onClick={downloadTemplate}
+                        className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">양식 다운로드</span>
+                        <span className="sm:hidden">양식</span>
+                    </button>
+
+                    {/* 일괄 업로드 */}
+                    <label className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors cursor-pointer">
+                        <FileSpreadsheet className="w-4 h-4" />
+                        <span className="hidden sm:inline">일괄 업로드</span>
+                        <span className="sm:hidden">일괄업로드</span>
+                        <input
+                            type="file"
+                            accept=".xlsx,.xls"
+                            onChange={handleBulkFileUpload}
+                            className="hidden"
+                        />
+                    </label>
+
+                    {/* 상품 추가 */}
+                    <button
+                        onClick={() => {
+                            resetForm();
+                            setShowModal(true);
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        상품 추가
+                    </button>
+                </div>
             </div>
 
             {/* Search Row */}
@@ -451,11 +674,41 @@ export default function AdminProductsPage() {
                 />
             </div>
 
+            {/* Bulk Delete Row */}
+            {selectedIds.length > 0 && (
+                <div className="mb-4 flex items-center gap-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
+                    <span className="text-sm font-medium text-red-700">
+                        {selectedIds.length}개 상품 선택됨
+                    </span>
+                    <button
+                        onClick={handleBulkDelete}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                        선택 삭제
+                    </button>
+                    <button
+                        onClick={() => setSelectedIds([])}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                        선택 취소
+                    </button>
+                </div>
+            )}
+
             <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
                 {/* Desktop Table View */}
                 <table className="w-full hidden md:table">
                     <thead className="bg-gray-50">
                         <tr>
+                            <th className="px-4 py-3 text-center w-12">
+                                <input
+                                    type="checkbox"
+                                    checked={currentProducts.length > 0 && selectedIds.length === currentProducts.length}
+                                    onChange={toggleSelectAll}
+                                    className="w-5 h-5 text-indigo-600 border-2 border-gray-400 rounded focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                                />
+                            </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이미지</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상품명</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">브랜드</th>
@@ -469,19 +722,26 @@ export default function AdminProductsPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
                             <tr>
-                                <td colSpan={8} className="px-6 py-4 text-center">로딩 중...</td>
+                                <td colSpan={9} className="px-6 py-4 text-center">로딩 중...</td>
                             </tr>
                         ) : currentProducts.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="px-6 py-4 text-center">검색 결과가 없습니다.</td>
+                                <td colSpan={9} className="px-6 py-4 text-center">검색 결과가 없습니다.</td>
                             </tr>
                         ) : (
                             currentProducts.map((product) => (
                                 <tr
                                     key={product.id}
-                                    className="hover:bg-gray-50 cursor-pointer transition-colors"
-                                    onClick={() => handleEdit(product)}
+                                    className={`hover:bg-gray-50 transition-colors ${selectedIds.includes(product.id) ? 'bg-indigo-50' : ''}`}
                                 >
+                                    <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.includes(product.id)}
+                                            onChange={() => toggleSelect(product.id)}
+                                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="relative w-16 h-16">
                                             {product.images && product.images[0] ? (
@@ -508,7 +768,7 @@ export default function AdminProductsPage() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex gap-4">
                                             <button
                                                 onClick={() => handleEdit(product)}
                                                 className="text-indigo-600 hover:text-indigo-900"
@@ -531,6 +791,18 @@ export default function AdminProductsPage() {
 
                 {/* Mobile Card View */}
                 <div className="md:hidden">
+                    {/* Mobile Select All Header */}
+                    {!loading && currentProducts.length > 0 && (
+                        <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                checked={currentProducts.length > 0 && selectedIds.length === currentProducts.length}
+                                onChange={toggleSelectAll}
+                                className="w-5 h-5 text-indigo-600 border-2 border-gray-400 rounded focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                            />
+                            <span className="text-sm font-medium text-gray-700">전체 선택</span>
+                        </div>
+                    )}
                     {loading ? (
                         <div className="p-8 text-center text-gray-500">로딩 중...</div>
                     ) : currentProducts.length === 0 ? (
@@ -540,9 +812,17 @@ export default function AdminProductsPage() {
                             {currentProducts.map((product) => (
                                 <div
                                     key={product.id}
-                                    className="p-4 flex gap-4 active:bg-gray-50"
-                                    onClick={() => handleEdit(product)}
+                                    className={`p-4 flex gap-4 ${selectedIds.includes(product.id) ? 'bg-indigo-50' : ''}`}
                                 >
+                                    {/* Checkbox */}
+                                    <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.includes(product.id)}
+                                            onChange={() => toggleSelect(product.id)}
+                                            className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                    </div>
                                     {/* Thumbnail */}
                                     <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
                                         {product.images && product.images[0] ? (
@@ -575,7 +855,7 @@ export default function AdminProductsPage() {
                                                 <p className="text-lg font-bold text-gray-900">₩{product.price.toLocaleString()}</p>
                                                 <p className="text-xs text-gray-500">재고: {product.stock}개</p>
                                             </div>
-                                            <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex gap-5">
                                                 <button
                                                     onClick={() => handleEdit(product)}
                                                     className="p-2 text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100"
@@ -1095,6 +1375,126 @@ export default function AdminProductsPage() {
                                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
                             >
                                 삭제
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Delete Confirmation Modal */}
+            {showBulkDeleteConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+                        <h3 className="text-lg font-bold mb-4 text-red-600">⚠️ 일괄 삭제 확인</h3>
+                        <p className="text-gray-600 mb-2">
+                            선택한 <span className="font-bold text-red-600">{selectedIds.length}개</span> 상품을 삭제하시겠습니까?
+                        </p>
+                        <p className="text-sm text-gray-500 mb-6">이 작업은 되돌릴 수 없습니다.</p>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setShowBulkDeleteConfirm(false)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                            >
+                                취소
+                            </button>
+                            <button
+                                onClick={confirmBulkDelete}
+                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                                {selectedIds.length}개 삭제
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Upload Preview Modal */}
+            {showBulkUploadModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="p-6 border-b">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-xl font-bold flex items-center gap-2">
+                                    <FileSpreadsheet className="w-6 h-6 text-purple-600" />
+                                    상품 일괄 등록 미리보기
+                                </h3>
+                                <button
+                                    onClick={() => {
+                                        setShowBulkUploadModal(false);
+                                        setBulkUploadData([]);
+                                    }}
+                                    className="p-2 hover:bg-gray-100 rounded-full"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-2">
+                                총 <span className="font-bold text-purple-600">{bulkUploadData.length}개</span> 상품이 등록됩니다.
+                                이미지는 등록 후 개별 수정에서 추가해주세요.
+                            </p>
+                        </div>
+
+                        <div className="flex-1 overflow-auto p-6">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-100 sticky top-0">
+                                    <tr>
+                                        <th className="px-3 py-2 text-left font-medium">#</th>
+                                        <th className="px-3 py-2 text-left font-medium">상품명</th>
+                                        <th className="px-3 py-2 text-left font-medium">브랜드</th>
+                                        <th className="px-3 py-2 text-right font-medium">가격</th>
+                                        <th className="px-3 py-2 text-left font-medium">카테고리</th>
+                                        <th className="px-3 py-2 text-right font-medium">재고</th>
+                                        <th className="px-3 py-2 text-left font-medium">색상</th>
+                                        <th className="px-3 py-2 text-left font-medium">사이즈</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {bulkUploadData.map((item, index) => (
+                                        <tr key={index} className="hover:bg-gray-50">
+                                            <td className="px-3 py-2 text-gray-500">{index + 1}</td>
+                                            <td className="px-3 py-2 font-medium">{item.name}</td>
+                                            <td className="px-3 py-2 text-gray-600">{item.brand}</td>
+                                            <td className="px-3 py-2 text-right">₩{item.price.toLocaleString()}</td>
+                                            <td className="px-3 py-2">
+                                                <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
+                                                    {item.category}
+                                                </span>
+                                            </td>
+                                            <td className="px-3 py-2 text-right">{item.stock}</td>
+                                            <td className="px-3 py-2 text-gray-600 max-w-[100px] truncate">{item.colors || "-"}</td>
+                                            <td className="px-3 py-2 text-gray-600 max-w-[100px] truncate">{item.sizes || "-"}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowBulkUploadModal(false);
+                                    setBulkUploadData([]);
+                                }}
+                                className="px-6 py-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                취소
+                            </button>
+                            <button
+                                onClick={executeBulkUpload}
+                                disabled={bulkUploading}
+                                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                            >
+                                {bulkUploading ? (
+                                    <>
+                                        <RefreshCw className="w-4 h-4 animate-spin" />
+                                        등록 중...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-4 h-4" />
+                                        {bulkUploadData.length}개 상품 등록
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
