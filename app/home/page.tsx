@@ -98,7 +98,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16 mb-12">
             {loading ? (
-              [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-square" />)
+              [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-[1000/1618]" />)
             ) : (
               recommendedItems.slice(0, recommendedCount).map((product, idx) => (
                 <ProductCard
@@ -108,7 +108,7 @@ export default function Home() {
                   name={product.name}
                   price={product.price}
                   imageUrl={product.images?.[0]}
-                  aspectRatio="aspect-square"
+                  aspectRatio="aspect-[1000/1618]"
                   index={idx}
                 />
               ))

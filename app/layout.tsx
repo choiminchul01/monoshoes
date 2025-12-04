@@ -9,6 +9,7 @@ import { Footer } from "@/components/layout/Footer";
 import { KakaoButton } from "@/components/ui/KakaoButton";
 import { TopButton } from "@/components/ui/TopButton";
 import { ClickRipple } from "@/components/ui/ClickRipple";
+import { ImageProtection } from "@/components/ui/ImageProtection";
 import { usePathname } from "next/navigation";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -34,6 +35,8 @@ export default function RootLayout({
           <WishlistProvider>
             <CartProvider>
               <ToastProvider>
+                {/* 이미지 보호 - 관리자 페이지 제외 */}
+                {!isAdminPage && <ImageProtection />}
                 <ClickRipple />
                 {!isLandingPage && !isAdminPage && <Header />}
                 <main className={isLandingPage || isAdminPage ? "min-h-screen" : "min-h-screen pt-20"}>

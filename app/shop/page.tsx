@@ -276,7 +276,7 @@ function ShopContent() {
                                         {isLoading ? (
                                             // 로딩 중 스켈레톤 표시
                                             [...Array(4)].map((_, index) => (
-                                                <ProductCardSkeleton key={index} aspectRatio="aspect-square" />
+                                                <ProductCardSkeleton key={index} aspectRatio="aspect-[1000/1618]" />
                                             ))
                                         ) : (
                                             // 실제 상품 표시
@@ -288,7 +288,7 @@ function ShopContent() {
                                                     name={product.name}
                                                     price={product.price}
                                                     imageUrl={product.images?.[0]}
-                                                    aspectRatio="aspect-square"
+                                                    aspectRatio="aspect-[1000/1618]"
                                                     index={idx}
                                                 />
                                             ))

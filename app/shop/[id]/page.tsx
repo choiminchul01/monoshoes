@@ -233,7 +233,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     };
 
     return (
-        <div className="container mx-auto px-4 py-12 relative">
+        <div className="container mx-auto px-4 pt-0 pb-6 md:py-12 relative">
             {/* Flying Image Animation */}
             <AnimatePresence>
                 {isFlying && product?.images?.[0] && (
@@ -261,10 +261,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <div className="w-full lg:w-5/12 space-y-4">
                     {/* Main Image with Swipe */}
                     <motion.div
-                        className="relative aspect-[3/4] w-full max-h-[50vh] lg:max-h-none bg-gray-50 overflow-hidden mx-auto cursor-grab active:cursor-grabbing rounded-2xl"
+                        className="relative aspect-[3/4] w-full max-h-[50vh] lg:max-h-none bg-gray-50 overflow-hidden mx-auto cursor-grab active:cursor-grabbing rounded-2xl select-none"
                         drag="x"
                         dragConstraints={{ left: 0, right: 0 }}
                         dragElastic={0.2}
+                        onContextMenu={(e) => e.preventDefault()}
                         onDragEnd={(e, { offset, velocity }) => {
                             const swipe = offset.x;
                             const swipeVelocity = velocity.x;
@@ -291,6 +292,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 src={product.images[currentImageIndex]}
                                 alt={product.name}
                                 fill
+                                draggable={false}
                                 className="object-cover pointer-events-none"
                                 priority
                             />
@@ -299,6 +301,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 No Image
                             </div>
                         )}
+
+                        {/* 투명 오버레이 - 이미지 직접 접근 차단 */}
+                        <div className="absolute inset-0 z-[5]" />
 
                         {/* Swipe Indicators (Dots) - 모바일에서만 표시 */}
                         {product.images && product.images.length > 1 && (

@@ -96,18 +96,26 @@ export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "a
                 className="group relative"
             >
                 <Link href={`/shop/${id}`} className="block">
-                    <div className={`relative ${aspectRatio} w-full overflow-hidden bg-gray-100 rounded-lg transition-all duration-500 group-hover:shadow-2xl`}>
+                    <div
+                        className={`relative ${aspectRatio} w-full overflow-hidden bg-gray-100 rounded-lg transition-all duration-500 group-hover:shadow-2xl select-none`}
+                        onContextMenu={(e) => e.preventDefault()}
+                        onDragStart={(e) => e.preventDefault()}
+                    >
                         {imageUrl ? (
                             <img
                                 src={imageUrl}
                                 alt={name}
-                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                draggable={false}
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                             />
                         ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
                                 No Image
                             </div>
                         )}
+
+                        {/* 투명 오버레이 - 이미지 직접 접근 차단 */}
+                        <div className="absolute inset-0 z-[5]" />
 
                         {/* Quick Add Button - Visible on Hover (Desktop) / Always (Mobile if needed, but usually hover) */}
                         <motion.button
