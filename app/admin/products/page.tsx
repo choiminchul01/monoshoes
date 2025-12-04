@@ -126,7 +126,7 @@ export default function AdminProductsPage() {
             const files = Array.from(e.target.files);
 
             // 파일 크기 및 형식 검증
-            const maxSize = 5 * 1024 * 1024; // 5MB
+            const maxSize = 10 * 1024 * 1024; // 10MB
             const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
             const invalidFiles = files.filter(file =>
@@ -139,13 +139,13 @@ export default function AdminProductsPage() {
 
                 let errorMsg = '';
                 if (sizeErrors.length > 0) {
-                    errorMsg += `파일 크기가 5MB를 초과하는 파일: ${sizeErrors.map(f => f.name).join(', ')}\n`;
+                    errorMsg += `파일 크기가 10MB를 초과하는 파일: ${sizeErrors.map(f => f.name).join(', ')}\n`;
                 }
                 if (typeErrors.length > 0) {
                     errorMsg += `지원하지 않는 파일 형식: ${typeErrors.map(f => f.name).join(', ')}\n`;
                 }
 
-                alert(errorMsg + '\n지원 형식: JPG, PNG, WebP (최대 5MB)');
+                alert(errorMsg + '\n지원 형식: JPG, PNG, WebP (최대 10MB)');
                 return;
             }
 
