@@ -30,25 +30,28 @@ export function Header() {
         <>
             <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-md">
                 <div className="container mx-auto flex h-20 items-center justify-between px-4 gap-4">
-                    {/* Mobile Menu Button */}
-                    <button
-                        className="md:hidden p-2.5 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                        onClick={toggleMobileMenu}
-                    >
-                        <Menu className="h-6 w-6" />
-                    </button>
+                    {/* Mobile: Menu Button + Logo Group */}
+                    <div className="flex items-center gap-2 md:gap-0">
+                        {/* Mobile Menu Button */}
+                        <button
+                            className="md:hidden p-2.5 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            onClick={toggleMobileMenu}
+                        >
+                            <Menu className="h-6 w-6" />
+                        </button>
 
-                    {/* Logo */}
-                    <Link href="/" className="text-3xl font-bold tracking-[0.15em] flex-shrink-0 flex gap-0">
-                        {"ESSENTIA".split("").map((letter, i) => (
-                            <span
-                                key={i}
-                                className="transition-all duration-500 ease-out hover:text-[#D4AF37] hover:scale-110 inline-block"
-                            >
-                                {letter}
-                            </span>
-                        ))}
-                    </Link>
+                        {/* Logo */}
+                        <Link href="/" className="text-2xl md:text-3xl font-bold tracking-wider flex-shrink-0 flex gap-0.5">
+                            {"ESSENTIA".split("").map((letter, i) => (
+                                <span
+                                    key={i}
+                                    className="transition-all duration-500 ease-out hover:text-[#D4AF37] hover:scale-110 inline-block"
+                                >
+                                    {letter}
+                                </span>
+                            ))}
+                        </Link>
+                    </div>
 
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center gap-8 text-[15px] font-medium">

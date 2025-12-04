@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { Package, ChevronRight, Heart } from 'lucide-react';
+import { Package, ChevronRight, Heart, HelpCircle } from 'lucide-react';
 
 type Order = {
     id: string;
@@ -22,6 +22,7 @@ export default function MyPage() {
     const { user, loading: authLoading } = useAuth();
     const { wishlist } = useWishlist();
     const [orders, setOrders] = useState<Order[]>([]);
+    const [inquiryCount, setInquiryCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -33,6 +34,7 @@ export default function MyPage() {
     useEffect(() => {
         if (user) {
             fetchOrders();
+            fetchInquiryCount();
         }
     }, [user]);
 
@@ -50,6 +52,19 @@ export default function MyPage() {
             setOrders(data);
         }
         setLoading(false);
+    };
+
+    const fetchInquiryCount = async () => {
+        if (!user) return;
+
+        // Fetch count from both tables
+        const [generalRes, productRes] = await Promise.all([
+            supabase.from('general_qna').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+            supabase.from('product_qna').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+        ]);
+
+        const total = (generalRes.count || 0) + (productRes.count || 0);
+        setInquiryCount(total);
     };
 
     const getStatusColor = (status: string) => {
@@ -90,7 +105,7 @@ export default function MyPage() {
                 </div>
 
                 {/* Quick Links */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <Link
                         href="/mypage/wishlist"
                         className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow group"
@@ -116,6 +131,20 @@ export default function MyPage() {
                             <Package className="w-5 h-5 text-gray-400" />
                         </div>
                     </div>
+                    <Link
+                        href="/mypage/inquiries"
+                        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow group"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-bold mb-1">나의 문의내역</h3>
+                                <p className="text-sm text-gray-500">
+                                    <span className="font-bold">{inquiryCount}</span>건의 문의
+                                </p>
+                            </div>
+                            <HelpCircle className="w-5 h-5 text-blue-500" />
+                        </div>
+                    </Link>
                 </div>
 
                 {/* Orders Section */}

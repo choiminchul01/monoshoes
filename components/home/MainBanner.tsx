@@ -107,6 +107,9 @@ export function MainBanner() {
                         fill
                         className="object-cover"
                         priority
+                        quality={100}
+                        sizes="100vw"
+                        unoptimized
                     />
                 </motion.div>
             </AnimatePresence>
