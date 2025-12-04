@@ -32,13 +32,24 @@ const BRANDS = [
     "VALENTINO",
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+    onFilterSelect?: () => void;
+}
+
+export function Sidebar({ onFilterSelect }: SidebarProps) {
     const searchParams = useSearchParams();
     const selectedBrand = searchParams.get("brand")?.toUpperCase();
     const selectedCategory = searchParams.get("category");
 
     // Ensure brands are sorted alphabetically
     const sortedBrands = [...BRANDS].sort();
+
+    const handleClick = () => {
+        // Close mobile sidebar when filter is selected
+        if (onFilterSelect) {
+            onFilterSelect();
+        }
+    };
 
     return (
         <aside className="w-full md:w-64 flex-shrink-0">
@@ -55,6 +66,7 @@ export function Sidebar() {
                             <li key={brand}>
                                 <Link
                                     href={href}
+                                    onClick={handleClick}
                                     className={`block font-serif tracking-wide transition-all ${isSelected
                                         ? "text-black font-bold"
                                         : "text-gray-500 hover:text-black hover:font-bold"

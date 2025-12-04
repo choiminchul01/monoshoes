@@ -140,7 +140,7 @@ function ShopContent() {
                                     </button>
                                 </div>
                                 <div className="w-full">
-                                    <Sidebar />
+                                    <Sidebar onFilterSelect={() => setIsMobileFilterOpen(false)} />
                                 </div>
                             </motion.div>
                         </>

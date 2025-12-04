@@ -15,6 +15,7 @@ type Product = {
     price: number;
     category: string;
     images: string[];
+    detail_images?: string[];
     description: string;
     stock: number;
     is_available: boolean;
@@ -26,9 +27,11 @@ type Product = {
     created_at: string;
 };
 
-type ProductFormData = Omit<Product, "id" | "created_at" | "images"> & {
+type ProductFormData = Omit<Product, "id" | "created_at" | "images" | "detail_images"> & {
     images: File[];
     existingImages?: string[];
+    detailImages: File[];
+    existingDetailImages?: string[];
     colors: { name: string; value: string }[];
     sizes: string[];
     features: string[];
@@ -47,10 +50,12 @@ export default function AdminProductsPage() {
         price: 0,
         category: "BAG",
         images: [],
+        detailImages: [],
         description: "",
         stock: 0,
         is_available: true,
         existingImages: [],
+        existingDetailImages: [],
         colors: [],
         sizes: [],
         features: []
@@ -167,6 +172,53 @@ export default function AdminProductsPage() {
         }));
     };
 
+    // 상세 이미지 핸들러들
+    const handleDetailImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+
+            // 파일 크기 및 형식 검증
+            const maxSize = 15 * 1024 * 1024; // 15MB
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+            const invalidFiles = files.filter(file =>
+                !validTypes.includes(file.type) || file.size > maxSize
+            );
+
+            if (invalidFiles.length > 0) {
+                const sizeErrors = invalidFiles.filter(f => f.size > maxSize);
+                const typeErrors = invalidFiles.filter(f => !validTypes.includes(f.type));
+
+                let errorMsg = '';
+                if (sizeErrors.length > 0) {
+                    errorMsg += `파일 크기가 15MB를 초과하는 파일: ${sizeErrors.map(f => f.name).join(', ')}\n`;
+                }
+                if (typeErrors.length > 0) {
+                    errorMsg += `지원하지 않는 파일 형식: ${typeErrors.map(f => f.name).join(', ')}\n`;
+                }
+
+                alert(errorMsg + '\n지원 형식: JPG, PNG, WebP (최대 15MB)');
+                return;
+            }
+
+            setFormData(prev => ({ ...prev, detailImages: [...prev.detailImages, ...files] }));
+        }
+    };
+
+    const removeDetailImage = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            detailImages: prev.detailImages.filter((_, i) => i !== index)
+        }));
+    };
+
+    const removeExistingDetailImage = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            existingDetailImages: prev.existingDetailImages?.filter((_, i) => i !== index)
+        }));
+    };
+
     const uploadImages = async (files: File[]): Promise<string[]> => {
         const uploadedUrls: string[] = [];
 
@@ -206,11 +258,18 @@ export default function AdminProductsPage() {
         setUploading(true);
 
         try {
-            // 이미지 업로드
+            // 상품 이미지 업로드
             let imageUrls: string[] = formData.existingImages || [];
             if (formData.images.length > 0) {
                 const newUrls = await uploadImages(formData.images);
                 imageUrls = [...imageUrls, ...newUrls];
+            }
+
+            // 상세 페이지 이미지 업로드
+            let detailImageUrls: string[] = formData.existingDetailImages || [];
+            if (formData.detailImages.length > 0) {
+                const newDetailUrls = await uploadImages(formData.detailImages);
+                detailImageUrls = [...detailImageUrls, ...newDetailUrls];
             }
 
             const productData = {
@@ -219,6 +278,7 @@ export default function AdminProductsPage() {
                 price: formData.price,
                 category: formData.category,
                 images: imageUrls,
+                detail_images: detailImageUrls,
                 description: formData.description,
                 stock: formData.stock,
                 is_available: formData.is_available,
@@ -278,6 +338,8 @@ export default function AdminProductsPage() {
             category: product.category,
             images: [],
             existingImages: product.images,
+            detailImages: [],
+            existingDetailImages: product.detail_images || [],
             description: product.description,
             stock: product.stock,
             is_available: product.is_available,
@@ -321,6 +383,8 @@ export default function AdminProductsPage() {
             category: "BAG",
             images: [],
             existingImages: [],
+            detailImages: [],
+            existingDetailImages: [],
             description: "",
             stock: 0,
             is_available: true,
@@ -607,6 +671,72 @@ export default function AdminProductsPage() {
                                 </div>
                             </div>
 
+                            {/* 상세 페이지 이미지 업로드 섹션 */}
+                            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <label className="block text-sm font-medium mb-2 text-blue-800">📄 상세 페이지 이미지</label>
+                                <p className="text-xs text-blue-600 mb-3">※ 상세 페이지에 순서대로 표시될 이미지입니다. (긴 이미지 권장)</p>
+
+                                {/* 업로드 버튼 */}
+                                <div className="flex items-center gap-4 mb-4">
+                                    <label className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 transition-colors">
+                                        <Upload className="w-4 h-4 text-blue-700" />
+                                        <span className="text-blue-700">상세 이미지 선택</span>
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
+                                            onChange={handleDetailImageChange}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                    <span className="text-sm text-blue-600">
+                                        {formData.detailImages.length + (formData.existingDetailImages?.length || 0)}개 이미지
+                                    </span>
+                                </div>
+
+                                {/* 이미지 미리보기 그리드 */}
+                                <div className="grid grid-cols-3 gap-4">
+                                    {/* 기존 상세 이미지 표시 */}
+                                    {formData.existingDetailImages?.map((url, index) => (
+                                        <div key={`existing-detail-${index}`} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-blue-300 bg-white">
+                                            <Image src={url} alt={`Detail ${index}`} fill className="object-cover" />
+                                            <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                                {index + 1}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeExistingDetailImage(index)}
+                                                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {/* 새 상세 이미지 표시 */}
+                                    {formData.detailImages.map((file, index) => (
+                                        <div key={`new-detail-${index}`} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-blue-300 bg-white">
+                                            <Image src={URL.createObjectURL(file)} alt={`New Detail ${index}`} fill className="object-cover" />
+                                            <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                                NEW {(formData.existingDetailImages?.length || 0) + index + 1}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeDetailImage(index)}
+                                                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {(formData.detailImages.length + (formData.existingDetailImages?.length || 0)) === 0 && (
+                                    <div className="text-center py-8 text-blue-400 border-2 border-dashed border-blue-200 rounded-lg">
+                                        상세 페이지 이미지가 없습니다
+                                    </div>
+                                )}
+                            </div>
                             <div>
                                 <label className="block text-sm font-medium mb-2">상품명</label>
                                 <input

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Heart, Minus, Plus, ChevronDown, ChevronUp, Star, Lock } from "lucide-react";
+import { Heart, Minus, Plus, ChevronDown, ChevronUp, Star, Lock, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { useCart } from "@/context/CartContext";
@@ -376,173 +376,208 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             </div>
                         </div>
 
-                        <div className="h-px bg-gray-200" />
-
-                        {/* Description */}
-                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                            {product.description}
-                        </p>
-
-                        {/* Options */}
-                        <div className="space-y-8">
-                            {/* Color */}
-                            {product.details?.colors && product.details.colors.length > 0 && (
-                                <div className="space-y-4">
-                                    <span className="text-xs font-bold text-gray-900 tracking-widest uppercase block">
+                        {/* Options Section - Redesigned */}
+                        <div className="space-y-6">
+                            {/* PC: Color, Size, Details in one row | Mobile: Stack vertically */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Color */}
+                                <div className="bg-gray-50 rounded-xl p-4">
+                                    <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
                                         Color
                                     </span>
-                                    <div className="flex flex-wrap gap-3">
-                                        {product.details.colors.map((color) => (
-                                            <button
-                                                key={color.name}
-                                                onClick={() => setSelectedColor(color)}
-                                                className={`min-w-[3rem] h-10 px-3 border text-sm font-medium transition-all rounded-md ${selectedColor?.name === color.name
-                                                    ? "border-black bg-black text-white"
-                                                    : "border-gray-200 text-gray-900 hover:border-black"
-                                                    }`}
-                                            >
-                                                {color.name.split('#')[0].trim()}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    {product.details?.colors && product.details.colors.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {product.details.colors.map((color) => (
+                                                <button
+                                                    key={color.name}
+                                                    onClick={() => setSelectedColor(color)}
+                                                    className={`min-w-[3rem] h-9 px-3 text-sm font-medium transition-all rounded-lg ${selectedColor?.name === color.name
+                                                        ? "bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] shadow-md"
+                                                        : "bg-white text-gray-900 hover:bg-gray-100 border border-gray-200"
+                                                        }`}
+                                                >
+                                                    {color.name.split('#')[0].trim()}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <span className="text-sm text-gray-400">-</span>
+                                    )}
                                 </div>
-                            )}
 
-                            {/* Size */}
-                            {product.details?.sizes && product.details.sizes.length > 0 && (
-                                <div className="space-y-4">
-                                    <span className="text-xs font-bold text-gray-900 tracking-widest uppercase block">
+                                {/* Size */}
+                                <div className="bg-gray-50 rounded-xl p-4">
+                                    <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
                                         Size
                                     </span>
-                                    <div className="flex gap-3">
-                                        {product.details.sizes.map((size) => (
-                                            <button
-                                                key={size}
-                                                onClick={() => setSelectedSize(size)}
-                                                className={`min-w-[3rem] h-10 px-3 border text-sm font-medium transition-all rounded-md ${selectedSize === size
-                                                    ? "border-black bg-black text-white"
-                                                    : "border-gray-200 text-gray-900 hover:border-black"
-                                                    }`}
-                                            >
-                                                {size}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    {product.details?.sizes && product.details.sizes.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {product.details.sizes.map((size) => (
+                                                <button
+                                                    key={size}
+                                                    onClick={() => setSelectedSize(size)}
+                                                    className={`min-w-[3rem] h-9 px-3 text-sm font-medium transition-all rounded-lg ${selectedSize === size
+                                                        ? "bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] shadow-md"
+                                                        : "bg-white text-gray-900 hover:bg-gray-100 border border-gray-200"
+                                                        }`}
+                                                >
+                                                    {size}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <span className="text-sm text-gray-400">-</span>
+                                    )}
                                 </div>
-                            )}
 
-                            {/* Quantity */}
-                            <div className="space-y-4">
-                                <span className="text-xs font-bold text-gray-900 tracking-widest uppercase block">
+                                {/* Details/Features */}
+                                <div className="bg-gray-50 rounded-xl p-4">
+                                    <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
+                                        Details
+                                    </span>
+                                    {product.details?.features && product.details.features.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {product.details.features.slice(0, 3).map((feature, index) => (
+                                                <span
+                                                    key={index}
+                                                    className="inline-flex items-center h-9 px-3 text-sm font-medium bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] rounded-lg"
+                                                >
+                                                    {feature}
+                                                </span>
+                                            ))}
+                                            {product.details.features.length > 3 && (
+                                                <span className="inline-flex items-center h-9 px-3 text-sm text-gray-400 bg-white border border-gray-200 rounded-lg">
+                                                    +{product.details.features.length - 3} more
+                                                </span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <span className="text-sm text-gray-400">-</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Quantity - Always in next row */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                                <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
                                     Quantity
                                 </span>
-                                <div className="flex items-center border border-gray-200 w-fit rounded-md overflow-hidden">
+                                <div className="flex items-center bg-white border border-gray-200 w-fit rounded-lg overflow-hidden shadow-sm">
                                     <button
                                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                                        className="w-11 h-11 flex items-center justify-center hover:bg-gray-50 transition-colors text-gray-600"
                                     >
-                                        <Minus className="w-3 h-3" />
+                                        <Minus className="w-4 h-4" />
                                     </button>
-                                    <span className="w-12 text-center text-sm font-medium">{quantity}</span>
+                                    <span className="w-14 text-center text-base font-semibold text-gray-900">{quantity}</span>
                                     <button
                                         onClick={() => setQuantity(quantity + 1)}
-                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                                        className="w-11 h-11 flex items-center justify-center hover:bg-gray-50 transition-colors text-gray-600"
                                     >
-                                        <Plus className="w-3 h-3" />
+                                        <Plus className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="grid grid-cols-[1fr_auto] gap-4 pt-4">
-                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
-                                <Button
-                                    onClick={handleAddToCart}
-                                    disabled={!product.is_available}
-                                    isLoading={isAddingToCart}
-                                    loadingText="담는 중..."
-                                    className="w-full h-14 bg-black text-white text-sm font-bold tracking-widest hover:bg-gray-800 transition-colors uppercase rounded-xl"
-                                >
-                                    {product.is_available ? "Add to Cart" : "Out of Stock"}
-                                </Button>
-                            </motion.div>
+                        <div className="grid grid-cols-2 lg:grid-cols-[1fr_auto_auto] gap-2 lg:gap-3 pt-4">
+                            {/* Cart & Buy Now - Left side */}
+                            <div className="space-y-2 col-span-1">
+                                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                    <Button
+                                        onClick={handleAddToCart}
+                                        disabled={!product.is_available}
+                                        isLoading={isAddingToCart}
+                                        loadingText="담는 중..."
+                                        className="w-full h-12 bg-[#e9e4da] text-gray-900 text-sm font-bold tracking-widest hover:bg-[#ddd8ce] transition-colors uppercase rounded-xl"
+                                    >
+                                        {product.is_available ? "Add to Cart" : "Out of Stock"}
+                                    </Button>
+                                </motion.div>
+                                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                    <Button
+                                        onClick={handleBuyNow}
+                                        disabled={!product.is_available}
+                                        isLoading={isBuyingNow}
+                                        loadingText="처리 중..."
+                                        className="w-full h-12 bg-[#4a5544] text-white text-sm font-bold tracking-widest hover:bg-[#3d4739] transition-colors uppercase rounded-xl"
+                                    >
+                                        Buy Now
+                                    </Button>
+                                </motion.div>
+                            </div>
 
-                            <motion.button
-                                whileTap={{ scale: 0.8 }}
-                                onClick={handleWishlistClick}
-                                className={`row-span-2 w-20 border flex items-center justify-center transition-colors rounded-xl ${productId && isInWishlist(productId)
-                                    ? "bg-white border-[#C41E3A]"
-                                    : "bg-white border-[#C41E3A] hover:bg-gray-50"
-                                    }`}
-                            >
-                                <Heart
-                                    className={`w-11 h-11 transition-colors ${productId && isInWishlist(productId)
-                                        ? "text-[#C41E3A] fill-[#C41E3A]"
-                                        : "text-[#C41E3A]"
+                            {/* Wishlist & Share - Right side on mobile, separate on desktop */}
+                            <div className="col-span-1 grid grid-cols-2 gap-2 lg:contents">
+                                {/* Wishlist */}
+                                <motion.button
+                                    whileTap={{ scale: 0.8 }}
+                                    onClick={handleWishlistClick}
+                                    className={`w-full lg:w-24 h-full border-2 flex flex-col items-center justify-center transition-colors rounded-xl ${productId && isInWishlist(productId)
+                                        ? "bg-white border-[#C41E3A]"
+                                        : "bg-white border-[#C41E3A] hover:bg-gray-50"
                                         }`}
-                                    strokeWidth={1}
-                                />
-                            </motion.button>
-
-                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">
-                                <Button
-                                    onClick={handleBuyNow}
-                                    disabled={!product.is_available}
-                                    isLoading={isBuyingNow}
-                                    loadingText="처리 중..."
-                                    className="w-full h-14 border border-black bg-white text-black text-sm font-bold tracking-widest hover:bg-gray-50 transition-colors uppercase rounded-xl"
                                 >
-                                    Buy Now
-                                </Button>
-                            </motion.div>
+                                    <Heart
+                                        className={`w-8 h-8 lg:w-10 lg:h-10 transition-colors ${productId && isInWishlist(productId)
+                                            ? "text-[#C41E3A] fill-[#C41E3A]"
+                                            : "text-[#C41E3A]"
+                                            }`}
+                                        strokeWidth={1.5}
+                                    />
+                                    <span className="text-xs font-medium text-gray-600 mt-1">찜하기</span>
+                                </motion.button>
+
+                                {/* KakaoTalk Share */}
+                                <motion.button
+                                    whileTap={{ scale: 0.8 }}
+                                    onClick={() => {
+                                        if (typeof window !== 'undefined' && (window as any).Kakao) {
+                                            const kakao = (window as any).Kakao;
+                                            if (!kakao.isInitialized()) {
+                                                kakao.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
+                                            }
+                                            kakao.Share.sendDefault({
+                                                objectType: 'feed',
+                                                content: {
+                                                    title: product.name,
+                                                    description: product.description?.slice(0, 100) || '',
+                                                    imageUrl: product.images?.[0] || '',
+                                                    link: {
+                                                        mobileWebUrl: window.location.href,
+                                                        webUrl: window.location.href,
+                                                    },
+                                                },
+                                                buttons: [
+                                                    {
+                                                        title: '자세히 보기',
+                                                        link: {
+                                                            mobileWebUrl: window.location.href,
+                                                            webUrl: window.location.href,
+                                                        },
+                                                    },
+                                                ],
+                                            });
+                                        } else {
+                                            alert('카카오톡 공유 기능을 사용할 수 없습니다.');
+                                        }
+                                    }}
+                                    className="w-full lg:w-24 h-full bg-[#FEE500] border-2 border-[#FEE500] flex flex-col items-center justify-center transition-colors rounded-xl hover:bg-[#F5DC00]"
+                                >
+                                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-[#3C1E1E] rounded-full flex items-center justify-center">
+                                        <span className="text-xs lg:text-base font-black text-[#FEE500] tracking-tighter">카톡</span>
+                                    </div>
+                                    <span className="text-xs font-medium text-[#3C1E1E] mt-1">공유하기</span>
+                                </motion.button>
+                            </div>
                         </div>
 
-                        {/* Accordions */}
-                        <div className="border-t border-gray-200 pt-8 space-y-2">
-                            {product.details?.features && product.details.features.length > 0 && (
-                                <div className="border-b border-gray-200 pb-4">
-                                    <button
-                                        onClick={() => toggleAccordion("details")}
-                                        className="w-full flex items-center justify-between py-2 text-xs font-bold tracking-widest uppercase hover:text-gray-600 transition-colors"
-                                    >
-                                        <span>Details</span>
-                                        {openAccordion === "details" ? (
-                                            <ChevronUp className="w-4 h-4" />
-                                        ) : (
-                                            <ChevronDown className="w-4 h-4" />
-                                        )}
-                                    </button>
-                                    {openAccordion === "details" && (
-                                        <div className="pt-4 pb-2 text-sm text-gray-600 leading-relaxed">
-                                            <ul className="list-disc list-inside space-y-1">
-                                                {product.details.features.map((feature, index) => (
-                                                    <li key={index}>{feature}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            <div className="border-b border-gray-200 pb-4">
-                                <button
-                                    onClick={() => toggleAccordion("shipping")}
-                                    className="w-full flex items-center justify-between py-2 text-xs font-bold tracking-widest uppercase hover:text-gray-600 transition-colors"
-                                >
-                                    <span>Shipping & Returns</span>
-                                    {openAccordion === "shipping" ? (
-                                        <ChevronUp className="w-4 h-4" />
-                                    ) : (
-                                        <ChevronDown className="w-4 h-4" />
-                                    )}
-                                </button>
-                                {openAccordion === "shipping" && (
-                                    <div className="pt-4 pb-2 text-sm text-gray-600 leading-relaxed">
-                                        Free standard shipping on all orders. Returns are accepted within 30 days of purchase.
-                                    </div>
-                                )}
-                            </div>
+                        {/* Description - Below Actions */}
+                        <div className="pt-6 border-t border-gray-200">
+                            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                                {product.description}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -552,6 +587,40 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {product && product.detail_images && product.detail_images.length > 0 && (
                 <DetailImagesSection images={product.detail_images} />
             )}
+
+            {/* Shipping & Returns - Below Detail Images */}
+            <div className="mt-16 max-w-5xl mx-auto">
+                <div className="bg-gray-50 rounded-2xl p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 className="text-sm font-bold tracking-widest uppercase mb-4 flex items-center gap-2">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                </svg>
+                                배송 안내
+                            </h4>
+                            <ul className="text-sm text-gray-600 space-y-2">
+                                <li>• 전 상품 무료 배송</li>
+                                <li>• 오후 2시 이전 주문 시 당일 출고</li>
+                                <li>• 배송 기간: 1-3 영업일 소요</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-bold tracking-widest uppercase mb-4 flex items-center gap-2">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                교환/반품 안내
+                            </h4>
+                            <ul className="text-sm text-gray-600 space-y-2">
+                                <li>• 구매일로부터 30일 이내 교환/반품 가능</li>
+                                <li>• 상품 하자 시 무료 교환</li>
+                                <li>• 단순 변심 시 반품 배송비 고객 부담</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Reviews Section */}
             {product && <ReviewSection productId={product.id} />}
@@ -721,15 +790,17 @@ function ReviewSection({ productId }: { productId: string }) {
 function DetailImagesSection({ images }: { images: string[] }) {
     return (
         <div className="mt-24 border-t border-gray-200 pt-16 max-w-5xl mx-auto">
-            <motion.h3
-                className="text-2xl font-bold text-center mb-12 tracking-widest"
+            <motion.div
+                className="text-center mb-12"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
             >
-                PRODUCT DETAILS
-            </motion.h3>
+                <h3 className="text-2xl font-bold tracking-widest mb-0.5">PRODUCT DETAILS</h3>
+                <p className="text-2xl font-bold text-gray-800 tracking-widest mb-2">· HIGH QUALITY ·</p>
+                <p className="text-base text-gray-500">(실제 상품 사진)</p>
+            </motion.div>
 
             <div className="space-y-4">
                 {images.map((imageUrl, index) => (
