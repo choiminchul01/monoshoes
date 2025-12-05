@@ -11,11 +11,15 @@ type Product = {
   name: string;
   brand: string;
   price: number;
+  original_price?: number;
   category: string;
   images: string[];
   description: string;
   stock: number;
   is_available: boolean;
+  is_best?: boolean;
+  is_new?: boolean;
+  discount_percent?: number;
   created_at: string;
 };
 
@@ -74,6 +78,10 @@ export default function Home() {
                   imageUrl={product.images?.[0]}
                   aspectRatio="aspect-[1000/1618]"
                   index={idx}
+                  discount_percent={product.discount_percent}
+                  is_best={product.is_best}
+                  is_new={product.is_new}
+                  originalPrice={product.original_price}
                 />
               ))
             )}
@@ -110,6 +118,10 @@ export default function Home() {
                   imageUrl={product.images?.[0]}
                   aspectRatio="aspect-[1000/1618]"
                   index={idx}
+                  discount_percent={product.discount_percent}
+                  is_best={product.is_best}
+                  is_new={product.is_new}
+                  originalPrice={product.original_price}
                 />
               ))
             )}

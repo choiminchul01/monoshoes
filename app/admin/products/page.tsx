@@ -14,12 +14,16 @@ type Product = {
     name: string;
     brand: string;
     price: number;
+    original_price?: number;
     category: string;
     images: string[];
     detail_images?: string[];
     description: string;
     stock: number;
     is_available: boolean;
+    is_best?: boolean;
+    is_new?: boolean;
+    discount_percent?: number;
     details?: {
         colors?: { name: string; value: string }[];
         sizes?: string[];
@@ -61,12 +65,16 @@ export default function AdminProductsPage() {
         name: "",
         brand: "",
         price: 0,
+        original_price: 0,
         category: "BAG",
         images: [],
         detailImages: [],
         description: "",
         stock: 0,
         is_available: true,
+        is_best: false,
+        is_new: false,
+        discount_percent: 0,
         existingImages: [],
         existingDetailImages: [],
         colors: [],
@@ -88,6 +96,11 @@ export default function AdminProductsPage() {
     const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
     const [bulkUploadData, setBulkUploadData] = useState<BulkProductData[]>([]);
     const [bulkUploading, setBulkUploading] = useState(false);
+
+    // Drag and drop state for image reordering
+    const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
+    const [dragOverImageIndex, setDragOverImageIndex] = useState<number | null>(null);
+    const [draggedImageType, setDraggedImageType] = useState<'existing' | 'new' | null>(null);
 
     // Pagination & Search State
     const [currentPage, setCurrentPage] = useState(1);
@@ -200,7 +213,7 @@ export default function AdminProductsPage() {
             const files = Array.from(e.target.files);
 
             // 파일 크기 및 형식 검증
-            const maxSize = 15 * 1024 * 1024; // 15MB
+            const maxSize = 20 * 1024 * 1024; // 20MB
             const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
             const invalidFiles = files.filter(file =>
@@ -213,13 +226,13 @@ export default function AdminProductsPage() {
 
                 let errorMsg = '';
                 if (sizeErrors.length > 0) {
-                    errorMsg += `파일 크기가 15MB를 초과하는 파일: ${sizeErrors.map(f => f.name).join(', ')}\n`;
+                    errorMsg += `파일 크기가 20MB를 초과하는 파일: ${sizeErrors.map(f => f.name).join(', ')}\n`;
                 }
                 if (typeErrors.length > 0) {
                     errorMsg += `지원하지 않는 파일 형식: ${typeErrors.map(f => f.name).join(', ')}\n`;
                 }
 
-                alert(errorMsg + '\n지원 형식: JPG, PNG, WebP (최대 15MB)');
+                alert(errorMsg + '\n지원 형식: JPG, PNG, WebP (최대 20MB)');
                 return;
             }
 
@@ -239,6 +252,71 @@ export default function AdminProductsPage() {
             ...prev,
             existingDetailImages: prev.existingDetailImages?.filter((_, i) => i !== index)
         }));
+    };
+
+    // 드래그 앤 드롭으로 이미지 순서 변경
+    const moveImage = (fromIndex: number, toIndex: number, fromType: 'existing' | 'new', toType: 'existing' | 'new') => {
+        // 모든 이미지를 하나의 배열로 합치기
+        const existingImages = formData.existingImages || [];
+        const newImages = formData.images || [];
+
+        // 통합 배열 생성 (existing 먼저, 그 다음 new)
+        type ImageItem = { type: 'existing'; url: string } | { type: 'new'; file: File };
+        const allImages: ImageItem[] = [
+            ...existingImages.map(url => ({ type: 'existing' as const, url })),
+            ...newImages.map(file => ({ type: 'new' as const, file }))
+        ];
+
+        // 실제 인덱스 계산
+        const actualFromIndex = fromType === 'existing' ? fromIndex : existingImages.length + fromIndex;
+        const actualToIndex = toType === 'existing' ? toIndex : existingImages.length + toIndex;
+
+        // 순서 변경
+        const [movedItem] = allImages.splice(actualFromIndex, 1);
+        allImages.splice(actualToIndex, 0, movedItem);
+
+        // 분리하여 저장
+        const newExistingImages = allImages
+            .filter((item): item is { type: 'existing'; url: string } => item.type === 'existing')
+            .map(item => item.url);
+        const newNewImages = allImages
+            .filter((item): item is { type: 'new'; file: File } => item.type === 'new')
+            .map(item => item.file);
+
+        setFormData(prev => ({
+            ...prev,
+            existingImages: newExistingImages,
+            images: newNewImages
+        }));
+    };
+
+    const handleImageDragStart = (e: React.DragEvent, index: number, type: 'existing' | 'new') => {
+        setDraggedImageIndex(index);
+        setDraggedImageType(type);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleImageDragOver = (e: React.DragEvent, index: number, type: 'existing' | 'new') => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const actualIndex = type === 'existing' ? index : (formData.existingImages?.length || 0) + index;
+        setDragOverImageIndex(actualIndex);
+    };
+
+    const handleImageDrop = (e: React.DragEvent, toIndex: number, toType: 'existing' | 'new') => {
+        e.preventDefault();
+        if (draggedImageIndex !== null && draggedImageType !== null) {
+            moveImage(draggedImageIndex, toIndex, draggedImageType, toType);
+        }
+        setDraggedImageIndex(null);
+        setDragOverImageIndex(null);
+        setDraggedImageType(null);
+    };
+
+    const handleImageDragEnd = () => {
+        setDraggedImageIndex(null);
+        setDragOverImageIndex(null);
+        setDraggedImageType(null);
     };
 
     const uploadImages = async (files: File[]): Promise<string[]> => {
@@ -298,6 +376,7 @@ export default function AdminProductsPage() {
                 name: formData.name,
                 brand: formData.brand,
                 price: formData.price,
+                original_price: formData.original_price,
                 category: formData.category,
                 images: imageUrls,
                 detail_images: detailImageUrls,
@@ -308,7 +387,10 @@ export default function AdminProductsPage() {
                     colors: formData.colors,
                     sizes: formData.sizes,
                     features: formData.features
-                }
+                },
+                is_best: formData.is_best,
+                is_new: formData.is_new,
+                discount_percent: formData.discount_percent,
             };
 
             if (editingProduct) {
@@ -357,6 +439,7 @@ export default function AdminProductsPage() {
             name: product.name,
             brand: product.brand,
             price: product.price,
+            original_price: product.original_price || 0,
             category: product.category,
             images: [],
             existingImages: product.images,
@@ -365,6 +448,9 @@ export default function AdminProductsPage() {
             description: product.description,
             stock: product.stock,
             is_available: product.is_available,
+            is_best: product.is_best || false,
+            is_new: product.is_new || false,
+            discount_percent: product.discount_percent || 0,
             colors: product.details?.colors || [],
             sizes: product.details?.sizes || [],
             features: product.details?.features || []
@@ -577,6 +663,7 @@ export default function AdminProductsPage() {
             name: "",
             brand: "",
             price: 0,
+            original_price: 0,
             category: "BAG",
             images: [],
             existingImages: [],
@@ -585,6 +672,9 @@ export default function AdminProductsPage() {
             description: "",
             stock: 0,
             is_available: true,
+            is_best: false,
+            is_new: false,
+            discount_percent: 0,
             colors: [],
             sizes: [],
             features: []
@@ -899,62 +989,127 @@ export default function AdminProductsPage() {
                             {/* 이미지 업로드 섹션 */}
                             <div className="mb-6">
                                 <label className="block text-sm font-medium mb-2">상품 이미지</label>
-                                <p className="text-xs text-gray-500 mb-2">※ 첫 번째 이미지가 대표 이미지(썸네일)로 사용됩니다.</p>
+                                <p className="text-xs text-gray-500 mb-2">※ 첫 번째 이미지가 대표 이미지(썸네일)로 사용됩니다. 드래그하여 순서를 변경할 수 있습니다.</p>
 
-                                {/* 업로드 버튼 */}
-                                <div className="flex items-center gap-4 mb-4">
-                                    <label className="cursor-pointer flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                        <Upload className="w-4 h-4" />
-                                        <span>이미지 선택</span>
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
-                                            onChange={handleImageChange}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                    <span className="text-sm text-gray-500">
-                                        {formData.images.length + (formData.existingImages?.length || 0)}개 이미지
-                                    </span>
+                                {/* 업로드 버튼 + 베스트/신상 체크박스 */}
+                                <div className="flex items-center justify-between gap-4 mb-4">
+                                    <div className="flex items-center gap-4">
+                                        <label className="cursor-pointer flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                            <Upload className="w-4 h-4" />
+                                            <span>이미지 선택</span>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept="image/*"
+                                                onChange={handleImageChange}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        <span className="text-sm text-gray-500">
+                                            {formData.images.length + (formData.existingImages?.length || 0)}개 이미지
+                                        </span>
+                                    </div>
+                                    {/* 베스트/신상 체크박스 */}
+                                    <div className="flex items-center gap-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.is_best || false}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, is_best: e.target.checked }))}
+                                                className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                                            />
+                                            <span className="text-sm font-medium text-orange-600">베스트</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.is_new || false}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, is_new: e.target.checked }))}
+                                                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                            />
+                                            <span className="text-sm font-medium text-green-600">신상</span>
+                                        </label>
+                                    </div>
                                 </div>
 
                                 {/* 이미지 미리보기 그리드 */}
                                 <div className="grid grid-cols-5 gap-4">
                                     {/* 기존 이미지 표시 */}
-                                    {formData.existingImages?.map((url, index) => (
-                                        <div key={`existing-${index}`} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
-                                            <Image src={url} alt={`Existing ${index}`} fill className="object-cover" />
-                                            <button
-                                                type="button"
-                                                onClick={() => removeExistingImage(index)}
-                                                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                    {formData.existingImages?.map((url, index) => {
+                                        const actualIndex = index;
+                                        const isDragging = draggedImageType === 'existing' && draggedImageIndex === index;
+                                        const isDragOver = dragOverImageIndex === actualIndex;
+                                        return (
+                                            <div
+                                                key={`existing-${index}`}
+                                                draggable
+                                                onDragStart={(e) => handleImageDragStart(e, index, 'existing')}
+                                                onDragOver={(e) => handleImageDragOver(e, index, 'existing')}
+                                                onDrop={(e) => handleImageDrop(e, index, 'existing')}
+                                                onDragEnd={handleImageDragEnd}
+                                                className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-50 border-blue-500 scale-95' :
+                                                    isDragOver ? 'border-blue-400 ring-2 ring-blue-200' :
+                                                        'border-gray-200 hover:border-gray-400'
+                                                    }`}
                                             >
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </div>
-                                    ))}
+                                                <Image src={url} alt={`Existing ${index}`} fill className="object-cover pointer-events-none" />
+                                                {/* 순서 번호 뱃지 */}
+                                                <div className={`absolute top-1 left-1 text-white text-xs px-2 py-0.5 rounded-full font-bold ${actualIndex === 0 ? 'bg-green-600' : 'bg-gray-600'
+                                                    }`}>
+                                                    {actualIndex === 0 ? '메인' : actualIndex + 1}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeExistingImage(index)}
+                                                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
 
                                     {/* 새 이미지 표시 */}
-                                    {formData.images.map((file, index) => (
-                                        <div key={`new-${index}`} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
-                                            <Image src={URL.createObjectURL(file)} alt={`New ${index}`} fill className="object-cover" />
-                                            <button
-                                                type="button"
-                                                onClick={() => removeImage(index)}
-                                                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                    {formData.images.map((file, index) => {
+                                        const actualIndex = (formData.existingImages?.length || 0) + index;
+                                        const isDragging = draggedImageType === 'new' && draggedImageIndex === index;
+                                        const isDragOver = dragOverImageIndex === actualIndex;
+                                        return (
+                                            <div
+                                                key={`new-${index}`}
+                                                draggable
+                                                onDragStart={(e) => handleImageDragStart(e, index, 'new')}
+                                                onDragOver={(e) => handleImageDragOver(e, index, 'new')}
+                                                onDrop={(e) => handleImageDrop(e, index, 'new')}
+                                                onDragEnd={handleImageDragEnd}
+                                                className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-50 border-blue-500 scale-95' :
+                                                    isDragOver ? 'border-blue-400 ring-2 ring-blue-200' :
+                                                        'border-green-300 hover:border-green-400'
+                                                    }`}
                                             >
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </div>
-                                    ))}
+                                                <Image src={URL.createObjectURL(file)} alt={`New ${index}`} fill className="object-cover pointer-events-none" />
+                                                {/* 순서 번호 뱃지 */}
+                                                <div className={`absolute top-1 left-1 text-white text-xs px-2 py-0.5 rounded-full font-bold ${actualIndex === 0 ? 'bg-green-600' : 'bg-blue-600'
+                                                    }`}>
+                                                    {actualIndex === 0 ? '메인' : `NEW ${actualIndex + 1}`}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(index)}
+                                                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
                             {/* 상세 페이지 이미지 업로드 섹션 */}
                             <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                                 <label className="block text-sm font-medium mb-2 text-blue-800">📄 상세 페이지 이미지</label>
-                                <p className="text-xs text-blue-600 mb-3">※ 상세 페이지에 순서대로 표시될 이미지입니다. (긴 이미지 권장)</p>
+                                <p className="text-xs text-blue-600 mb-3">※ 상세 페이지에 순서대로 표시될 이미지입니다. (860 X 1100 PX 권장, 긴 이미지 권장)</p>
 
                                 {/* 업로드 버튼 */}
                                 <div className="flex items-center gap-4 mb-4">
@@ -1073,19 +1228,93 @@ export default function AdminProductsPage() {
                             </div>
 
                             {/* 가격 */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">판매가 (원)</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        value={formData.price || ""}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    />
+                                    {formData.price > 0 && (
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            ₩{formData.price.toLocaleString()}
+                                        </p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">브랜드 판매가 (원) <span className="text-gray-400 text-xs">선택</span></label>
+                                    <input
+                                        type="number"
+                                        value={formData.original_price || ""}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, original_price: parseInt(e.target.value) || 0 }))}
+                                        placeholder="할인 전 가격"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    />
+                                    {(formData.original_price || 0) > 0 && (
+                                        <p className="text-sm text-gray-400 mt-1 line-through">
+                                            ₩{(formData.original_price || 0).toLocaleString()}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 할인율 */}
                             <div>
-                                <label className="block text-sm font-medium mb-2">가격 (원)</label>
-                                <input
-                                    type="number"
-                                    required
-                                    value={formData.price || ""}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                                />
-                                {formData.price > 0 && (
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        {formData.price.toLocaleString()}원
-                                    </p>
+                                <label className="block text-sm font-medium mb-2">할인율</label>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    {[0, 5, 10, 15].map((percent) => (
+                                        <label key={percent} className="flex items-center gap-1.5 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="discount"
+                                                checked={formData.discount_percent === percent}
+                                                onChange={() => setFormData(prev => ({ ...prev, discount_percent: percent }))}
+                                                className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                                            />
+                                            <span className={`text-sm ${percent > 0 ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                                                {percent === 0 ? '할인없음' : `${percent}%`}
+                                            </span>
+                                        </label>
+                                    ))}
+                                    {/* 임의 퍼센트 입력 */}
+                                    <div className="flex items-center gap-1.5">
+                                        <input
+                                            type="radio"
+                                            name="discount"
+                                            checked={![0, 5, 10, 15].includes(formData.discount_percent || 0)}
+                                            onChange={() => setFormData(prev => ({ ...prev, discount_percent: 20 }))}
+                                            className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                                        />
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="99"
+                                            placeholder="임의%"
+                                            value={![0, 5, 10, 15].includes(formData.discount_percent || 0) ? formData.discount_percent : ''}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, discount_percent: parseInt(e.target.value) || 0 }))}
+                                            className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
+                                        />
+                                        <span className="text-sm text-gray-500">%</span>
+                                    </div>
+                                </div>
+                                {/* 할인가 미리보기 */}
+                                {formData.price > 0 && (formData.discount_percent || 0) > 0 && (
+                                    <div className="mt-2 p-2 bg-red-50 rounded-lg">
+                                        <p className="text-sm">
+                                            <span className="text-red-600 font-bold">
+                                                ₩{Math.round(formData.price * (1 - (formData.discount_percent || 0) / 100)).toLocaleString()}
+                                            </span>
+                                            <span className="text-gray-400 line-through ml-2">
+                                                ₩{formData.price.toLocaleString()}
+                                            </span>
+                                            <span className="text-red-500 ml-2 text-xs font-medium">
+                                                (-{formData.discount_percent}%)
+                                            </span>
+                                        </p>
+                                    </div>
                                 )}
                             </div>
 

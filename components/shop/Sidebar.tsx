@@ -53,7 +53,7 @@ export function Sidebar({ onFilterSelect }: SidebarProps) {
 
     return (
         <aside className="w-full md:w-64 flex-shrink-0">
-            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-4 scrollbar-hide">
+            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-4 scrollbar-hide bg-white">
                 <h2 className="mb-6 text-lg font-bold tracking-widest">BRAND</h2>
                 <ul className="space-y-3 text-sm">
                     {sortedBrands.map((brand) => {

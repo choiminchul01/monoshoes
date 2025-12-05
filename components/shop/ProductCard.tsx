@@ -17,9 +17,12 @@ interface ProductCardProps {
     aspectRatio?: string;
     originalPrice?: number;
     index?: number; // For stagger animation
+    discount_percent?: number;
+    is_best?: boolean;
+    is_new?: boolean;
 }
 
-export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "aspect-[1000/1618]", originalPrice, index = 0 }: ProductCardProps) {
+export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "aspect-[1000/1618]", originalPrice, index = 0, discount_percent = 0, is_best = false, is_new = false }: ProductCardProps) {
     const { addToCart } = useCart();
     const { user, loading } = useAuth();
     const toast = useToast();
@@ -131,17 +134,23 @@ export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "a
                     <div className="mt-4 space-y-1">
                         <p className="text-xs text-[#C41E3A] uppercase font-bold tracking-wider">{brand}</p>
                         <h3 className="text-sm font-medium text-gray-900">{name}</h3>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             {loading ? (
                                 <div className="h-5 w-24 bg-gray-100 animate-pulse rounded" />
                             ) : user ? (
                                 <>
-                                    <p className="text-sm font-bold text-gray-900">
-                                        {price.toLocaleString()} KRW
-                                    </p>
-                                    {originalPrice && (
-                                        <p className="text-xs font-normal text-gray-400 line-through">
-                                            {originalPrice.toLocaleString()} KRW
+                                    {originalPrice && originalPrice > price ? (
+                                        <>
+                                            <p className="text-base font-normal text-gray-900">
+                                                ₩{price.toLocaleString()}
+                                            </p>
+                                            <p className="text-sm font-normal text-gray-400 line-through">
+                                                ₩{originalPrice.toLocaleString()}
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <p className="text-base font-normal text-gray-900">
+                                            ₩{price.toLocaleString()}
                                         </p>
                                     )}
                                 </>

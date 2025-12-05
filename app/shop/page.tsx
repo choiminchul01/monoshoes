@@ -14,11 +14,15 @@ type Product = {
     name: string;
     brand: string;
     price: number;
+    original_price?: number;
     category: string;
     images: string[];
     description: string;
     stock: number;
     is_available: boolean;
+    is_best?: boolean;
+    is_new?: boolean;
+    discount_percent?: number;
     created_at: string;
 };
 
@@ -129,7 +133,7 @@ function ShopContent() {
                                 exit={{ width: 0, opacity: 0, x: -20 }}
                                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                 className={`
-                                        fixed inset-y-0 left-0 z-50 bg-white w-64 p-6 shadow-2xl md:shadow-none md:static md:bg-transparent md:p-0 md:block overflow-hidden
+                                        fixed inset-y-0 left-0 z-50 bg-white w-64 p-6 shadow-2xl md:shadow-none md:static md:bg-transparent md:p-0 md:block md:z-0 overflow-hidden
                                         ${isMobileFilterOpen ? 'block' : 'hidden md:block'}
                                     `}
                             >
@@ -210,6 +214,10 @@ function ShopContent() {
                                             price={product.price}
                                             imageUrl={product.images?.[0]}
                                             aspectRatio="aspect-[3/4]"
+                                            discount_percent={product.discount_percent}
+                                            is_best={product.is_best}
+                                            is_new={product.is_new}
+                                            originalPrice={product.original_price}
                                         />
                                     ))}
                                 </div>
@@ -247,6 +255,10 @@ function ShopContent() {
                                                     imageUrl={product.images?.[0]}
                                                     aspectRatio="aspect-[1000/1618]"
                                                     index={idx}
+                                                    discount_percent={product.discount_percent}
+                                                    is_best={product.is_best}
+                                                    is_new={product.is_new}
+                                                    originalPrice={product.original_price}
                                                 />
                                             ))
                                         )}
@@ -290,6 +302,10 @@ function ShopContent() {
                                                     imageUrl={product.images?.[0]}
                                                     aspectRatio="aspect-[1000/1618]"
                                                     index={idx}
+                                                    discount_percent={product.discount_percent}
+                                                    is_best={product.is_best}
+                                                    is_new={product.is_new}
+                                                    originalPrice={product.original_price}
                                                 />
                                             ))
                                         )}

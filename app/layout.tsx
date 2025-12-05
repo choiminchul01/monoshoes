@@ -7,7 +7,6 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { KakaoButton } from "@/components/ui/KakaoButton";
-import { TopButton } from "@/components/ui/TopButton";
 import { ClickRipple } from "@/components/ui/ClickRipple";
 import { ImageProtection } from "@/components/ui/ImageProtection";
 import { usePathname } from "next/navigation";
@@ -44,10 +43,7 @@ export default function RootLayout({
                 </main>
                 {!isLandingPage && !isAdminPage && <Footer />}
                 {!isLandingPage && !isAdminPage && (
-                  <>
-                    <TopButton />
-                    <KakaoButton />
-                  </>
+                  <KakaoButton />
                 )}
               </ToastProvider>
             </CartProvider>

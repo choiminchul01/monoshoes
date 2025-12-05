@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Heart, Minus, Plus, ChevronDown, ChevronUp, Star, Lock, MessageCircle } from "lucide-react";
+import { Heart, Minus, Plus, ChevronDown, ChevronUp, Star, Lock, MessageCircle, Share2, Link, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { useCart } from "@/context/CartContext";
@@ -229,6 +229,42 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         } catch (error) {
             console.error("Error toggling wishlist:", error);
             toast.error("작업에 실패했습니다.");
+        }
+    };
+
+    const handleShare = async () => {
+        const shareUrl = window.location.href;
+        const shareTitle = product?.name || 'ESSENTIA';
+        const shareText = `${product?.brand} - ${product?.name}`;
+
+        // Try native Web Share API first (mostly mobile)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: shareTitle,
+                    text: shareText,
+                    url: shareUrl,
+                });
+                return;
+            } catch (err) {
+                // User cancelled or share failed, fall back to clipboard
+                if ((err as Error).name === 'AbortError') return;
+            }
+        }
+
+        // Fallback: Copy to clipboard
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success('링크가 복사되었습니다!');
+        } catch (err) {
+            // Final fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = shareUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            toast.success('링크가 복사되었습니다!');
         }
     };
 
@@ -477,8 +513,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             </div>
                         </div>
 
-                        {/* Actions */}
-                        <div className="grid grid-cols-2 lg:grid-cols-[1fr_auto_auto] gap-2 lg:gap-3 pt-4">
+                        {/* Actions - Hidden on mobile (using fixed bottom bar instead) */}
+                        <div className="hidden md:grid grid-cols-2 lg:grid-cols-[1fr_auto_auto] gap-2 lg:gap-3 pt-4">
                             {/* Cart & Buy Now - Left side */}
                             <div className="space-y-2 col-span-1">
                                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -526,40 +562,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     <span className="text-xs font-bold text-gray-600 mt-1">찜하기</span>
                                 </motion.button>
 
-                                {/* KakaoTalk Share */}
+                                {/* Share Button - Kakao Style */}
                                 <motion.button
                                     whileTap={{ scale: 0.8 }}
-                                    onClick={() => {
-                                        if (typeof window !== 'undefined' && (window as any).Kakao) {
-                                            const kakao = (window as any).Kakao;
-                                            if (!kakao.isInitialized()) {
-                                                kakao.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
-                                            }
-                                            kakao.Share.sendDefault({
-                                                objectType: 'feed',
-                                                content: {
-                                                    title: product.name,
-                                                    description: product.description?.slice(0, 100) || '',
-                                                    imageUrl: product.images?.[0] || '',
-                                                    link: {
-                                                        mobileWebUrl: window.location.href,
-                                                        webUrl: window.location.href,
-                                                    },
-                                                },
-                                                buttons: [
-                                                    {
-                                                        title: '자세히 보기',
-                                                        link: {
-                                                            mobileWebUrl: window.location.href,
-                                                            webUrl: window.location.href,
-                                                        },
-                                                    },
-                                                ],
-                                            });
-                                        } else {
-                                            alert('카카오톡 공유 기능을 사용할 수 없습니다.');
-                                        }
-                                    }}
+                                    onClick={handleShare}
                                     className="w-full lg:w-24 h-full bg-[#FEE500] border-2 border-[#FEE500] flex flex-col items-center justify-center transition-colors rounded-xl hover:bg-[#F5DC00]"
                                 >
                                     <div className="w-8 h-8 lg:w-10 lg:h-10 bg-[#3C1E1E] rounded-full flex items-center justify-center">
@@ -645,6 +651,65 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                 </div>
             )}
+
+            {/* Mobile Bottom Fixed Action Bar */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-3 md:hidden safe-area-pb">
+                <div className="flex gap-2">
+                    {/* 왼쪽: 장바구니 + 바로구매 (세로 스택) - 50% */}
+                    <div className="w-1/2 flex flex-col gap-2">
+                        <Button
+                            onClick={handleAddToCart}
+                            disabled={!product.is_available}
+                            isLoading={isAddingToCart}
+                            loadingText="..."
+                            className="h-12 bg-[#e9e4da] text-gray-900 text-sm font-bold tracking-widest hover:bg-[#ddd8ce] transition-colors uppercase rounded-xl"
+                        >
+                            {product.is_available ? "장바구니" : "품절"}
+                        </Button>
+                        <Button
+                            onClick={handleBuyNow}
+                            disabled={!product.is_available}
+                            isLoading={isBuyingNow}
+                            loadingText="..."
+                            className="h-12 bg-[#4a5544] text-white text-sm font-bold tracking-widest hover:bg-[#3d4739] transition-colors uppercase rounded-xl"
+                        >
+                            바로구매
+                        </Button>
+                    </div>
+
+                    {/* 오른쪽: 찜하기 + 공유하기 - 50% */}
+                    <div className="w-1/2 flex gap-2">
+                        <button
+                            onClick={handleWishlistClick}
+                            className={`flex-1 h-full border-2 flex flex-col items-center justify-center transition-colors rounded-xl ${productId && isInWishlist(productId)
+                                ? "bg-white border-[#C41E3A]"
+                                : "bg-white border-[#C41E3A] hover:bg-gray-50"
+                                }`}
+                        >
+                            <Heart
+                                className={`w-9 h-9 transition-colors ${productId && isInWishlist(productId)
+                                    ? "text-[#C41E3A] fill-[#C41E3A]"
+                                    : "text-[#C41E3A]"
+                                    }`}
+                                strokeWidth={1.5}
+                            />
+                            <span className="text-sm font-bold text-gray-600 mt-1">찜하기</span>
+                        </button>
+                        <button
+                            onClick={handleShare}
+                            className="flex-1 h-full bg-[#FEE500] border-2 border-[#FEE500] flex flex-col items-center justify-center transition-colors rounded-xl hover:bg-[#F5DC00]"
+                        >
+                            <div className="w-9 h-9 bg-[#3C1E1E] rounded-full flex items-center justify-center">
+                                <span className="text-base font-black text-[#FEE500]">카톡</span>
+                            </div>
+                            <span className="text-sm font-bold text-[#3C1E1E] mt-1">공유하기</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom padding for fixed bar on mobile */}
+            <div className="h-32 md:hidden" />
         </div>
     );
 }
