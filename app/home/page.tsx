@@ -64,9 +64,9 @@ export default function Home() {
             <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Featured</p>
             <h1 className="text-2xl font-medium tracking-tight">BEST SELLERS</h1>
           </div>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16 mb-12">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16 mb-12">
             {loading ? (
-              [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-[1000/1618]" />)
+              [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-[3/4]" />)
             ) : (
               weeklyBestItems.slice(0, weeklyBestCount).map((product, idx) => (
                 <ProductCard
@@ -76,7 +76,7 @@ export default function Home() {
                   name={product.name}
                   price={product.price}
                   imageUrl={product.images?.[0]}
-                  aspectRatio="aspect-[1000/1618]"
+                  aspectRatio="aspect-[3/4]"
                   index={idx}
                   discount_percent={product.discount_percent}
                   is_best={product.is_best}
@@ -104,9 +104,9 @@ export default function Home() {
             <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Featured</p>
             <h1 className="text-2xl font-medium tracking-tight">NEW ARRIVALS</h1>
           </div>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16 mb-12">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16 mb-12">
             {loading ? (
-              [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-[1000/1618]" />)
+              [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-[3/4]" />)
             ) : (
               recommendedItems.slice(0, recommendedCount).map((product, idx) => (
                 <ProductCard
@@ -116,7 +116,7 @@ export default function Home() {
                   name={product.name}
                   price={product.price}
                   imageUrl={product.images?.[0]}
-                  aspectRatio="aspect-[1000/1618]"
+                  aspectRatio="aspect-[3/4]"
                   index={idx}
                   discount_percent={product.discount_percent}
                   is_best={product.is_best}

@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { MessageSquareMore, ArrowUp } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export function KakaoButton() {
     const [kakaoUrl, setKakaoUrl] = useState<string>("https://open.kakao.com/o/placeholder");
+    const pathname = usePathname();
+
+    // 상품상세 페이지인지 확인 (/shop/[id] 패턴)
+    const isProductDetailPage = pathname?.startsWith('/shop/') && pathname !== '/shop';
 
     useEffect(() => {
         const fetchKakaoUrl = async () => {
@@ -30,8 +35,14 @@ export function KakaoButton() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // 모바일에서 상품상세 페이지일 때만 bottom-36 (하단 액션바 위)
+    // 그 외에는 PC와 동일하게 bottom-8
+    const positionClass = isProductDetailPage
+        ? "fixed bottom-36 md:bottom-8 right-4 md:right-8 z-50 flex flex-col gap-2"
+        : "fixed bottom-8 right-4 md:right-8 z-50 flex flex-col gap-2";
+
     return (
-        <div className="fixed bottom-36 md:bottom-8 right-4 md:right-8 z-50 flex flex-col gap-2">
+        <div className={positionClass}>
             {/* TOP Button */}
             <button
                 onClick={scrollToTop}

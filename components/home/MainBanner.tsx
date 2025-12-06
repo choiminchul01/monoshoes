@@ -30,6 +30,7 @@ export function MainBanner() {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [banners, setBanners] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [direction, setDirection] = useState(1); // 1: next, -1: prev
 
     useEffect(() => {
         const fetchBanners = async () => {
@@ -65,10 +66,37 @@ export function MainBanner() {
         if (banners.length === 0) return;
 
         const timer = setInterval(() => {
+            setDirection(1);
             setCurrentSlide((prev) => (prev + 1) % banners.length);
-        }, 5000);
+        }, 6000); // 5초 → 6초로 늘림
         return () => clearInterval(timer);
     }, [banners]);
+
+    // 이전 슬라이드로
+    const goToPrev = () => {
+        setDirection(-1);
+        setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
+    };
+
+    // 다음 슬라이드로
+    const goToNext = () => {
+        setDirection(1);
+        setCurrentSlide((prev) => (prev + 1) % banners.length);
+    };
+
+    // 스와이프 핸들러
+    const handleDragEnd = (e: any, { offset, velocity }: any) => {
+        const swipe = offset.x;
+        const swipeVelocity = velocity.x;
+        const swipeThreshold = 50;
+        const velocityThreshold = 500;
+
+        if (swipe < -swipeThreshold || swipeVelocity < -velocityThreshold) {
+            goToNext();
+        } else if (swipe > swipeThreshold || swipeVelocity > velocityThreshold) {
+            goToPrev();
+        }
+    };
 
     // Construct slides object for rendering
     const slides = banners.length > 0
@@ -90,26 +118,49 @@ export function MainBanner() {
         );
     }
 
+    // 슬라이드 애니메이션 변수
+    const slideVariants = {
+        enter: (direction: number) => ({
+            x: direction > 0 ? 300 : -300,
+            opacity: 0,
+        }),
+        center: {
+            x: 0,
+            opacity: 1,
+        },
+        exit: (direction: number) => ({
+            x: direction > 0 ? -300 : 300,
+            opacity: 0,
+        }),
+    };
+
     return (
-        <div className="relative w-full h-[60vh] md:h-auto md:aspect-[2.4/1] overflow-hidden bg-gray-100">
-            <AnimatePresence mode="wait">
+        <div className="relative w-full h-[60vh] md:h-auto md:aspect-[2.4/1] overflow-hidden bg-gray-100 group">
+            <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                     key={currentSlide}
-                    initial={{ opacity: 0, x: 100 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -100 }}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                    className="absolute inset-0"
+                    custom={direction}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                    className="absolute inset-0 cursor-grab active:cursor-grabbing"
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={handleDragEnd}
                 >
                     <Image
                         src={slides[currentSlide].image}
                         alt={slides[currentSlide].title}
                         fill
-                        className="object-cover"
+                        className="object-cover pointer-events-none"
                         priority
                         quality={100}
                         sizes="100vw"
                         unoptimized
+                        draggable={false}
                     />
                 </motion.div>
             </AnimatePresence>
@@ -119,7 +170,10 @@ export function MainBanner() {
                 {slides.map((_, index) => (
                     <button
                         key={index}
-                        onClick={() => setCurrentSlide(index)}
+                        onClick={() => {
+                            setDirection(index > currentSlide ? 1 : -1);
+                            setCurrentSlide(index);
+                        }}
                         className={`w-3 h-3 rounded-full transition-all duration-300 ${currentSlide === index ? "bg-white w-8" : "bg-white/50"
                             }`}
                         aria-label={`Go to slide ${index + 1}`}

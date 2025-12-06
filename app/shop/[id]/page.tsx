@@ -292,12 +292,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 )}
             </AnimatePresence>
 
-            <div className="flex flex-col lg:flex-row gap-16">
+            <div className="flex flex-col lg:flex-row gap-2 lg:gap-16">
                 {/* Left: Image Gallery */}
                 <div className="w-full lg:w-5/12 space-y-4">
                     {/* Main Image with Swipe */}
                     <motion.div
-                        className="relative aspect-[1/1.618] w-full max-h-[60vh] lg:max-h-none bg-gray-50 overflow-hidden mx-auto cursor-grab active:cursor-grabbing rounded-2xl select-none"
+                        className="relative aspect-[3/4] w-full max-h-[60vh] lg:max-h-none bg-gray-50 overflow-hidden mx-auto cursor-grab active:cursor-grabbing rounded-2xl select-none"
                         drag="x"
                         dragConstraints={{ left: 0, right: 0 }}
                         dragElastic={0.2}
@@ -366,7 +366,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 <button
                                     key={index}
                                     onClick={() => setCurrentImageIndex(index)}
-                                    className={`relative aspect-[1/1.618] bg-gray-50 overflow-hidden transition-all rounded-lg ${currentImageIndex === index
+                                    className={`relative aspect-[3/4] bg-gray-50 overflow-hidden transition-all rounded-lg ${currentImageIndex === index
                                         ? "ring-1 ring-black opacity-100"
                                         : "opacity-70 hover:opacity-100"
                                         }`}

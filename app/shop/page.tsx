@@ -204,7 +204,7 @@ function ShopContent() {
                             </h1>
 
                             {allFilteredProducts.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
                                     {allFilteredProducts.map((product) => (
                                         <ProductCard
                                             key={product.id}
@@ -237,11 +237,11 @@ function ShopContent() {
                                         <Crown className="w-5 h-5 text-yellow-600" fill="currentColor" />
                                     </h1>
 
-                                    <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
                                         {isLoading ? (
                                             // 로딩 중 스켈레톤 표시
                                             [...Array(4)].map((_, index) => (
-                                                <ProductCardSkeleton key={index} aspectRatio="aspect-[1000/1618]" />
+                                                <ProductCardSkeleton key={index} aspectRatio="aspect-[3/4]" />
                                             ))
                                         ) : (
                                             // 실제 상품 표시
@@ -253,7 +253,7 @@ function ShopContent() {
                                                     name={product.name}
                                                     price={product.price}
                                                     imageUrl={product.images?.[0]}
-                                                    aspectRatio="aspect-[1000/1618]"
+                                                    aspectRatio="aspect-[3/4]"
                                                     index={idx}
                                                     discount_percent={product.discount_percent}
                                                     is_best={product.is_best}
@@ -284,11 +284,11 @@ function ShopContent() {
                                         <Sparkles className="w-5 h-5 text-yellow-600" fill="currentColor" />
                                     </h2>
 
-                                    <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
                                         {isLoading ? (
                                             // 로딩 중 스켈레톤 표시
                                             [...Array(4)].map((_, index) => (
-                                                <ProductCardSkeleton key={index} aspectRatio="aspect-[1000/1618]" />
+                                                <ProductCardSkeleton key={index} aspectRatio="aspect-[3/4]" />
                                             ))
                                         ) : (
                                             // 실제 상품 표시
@@ -300,7 +300,7 @@ function ShopContent() {
                                                     name={product.name}
                                                     price={product.price}
                                                     imageUrl={product.images?.[0]}
-                                                    aspectRatio="aspect-[1000/1618]"
+                                                    aspectRatio="aspect-[3/4]"
                                                     index={idx}
                                                     discount_percent={product.discount_percent}
                                                     is_best={product.is_best}

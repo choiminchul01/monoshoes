@@ -22,7 +22,7 @@ interface ProductCardProps {
     is_new?: boolean;
 }
 
-export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "aspect-[1000/1618]", originalPrice, index = 0, discount_percent = 0, is_best = false, is_new = false }: ProductCardProps) {
+export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "aspect-[3/4]", originalPrice, index = 0, discount_percent = 0, is_best = false, is_new = false }: ProductCardProps) {
     const { addToCart } = useCart();
     const { user, loading } = useAuth();
     const toast = useToast();

@@ -38,7 +38,7 @@ export default function RootLayout({
                 {!isAdminPage && <ImageProtection />}
                 <ClickRipple />
                 {!isLandingPage && !isAdminPage && <Header />}
-                <main className={isLandingPage || isAdminPage ? "min-h-screen" : "min-h-screen pt-20"}>
+                <main className={isLandingPage || isAdminPage ? "min-h-screen" : "min-h-screen pt-8 md:pt-20"}>
                   {children}
                 </main>
                 {!isLandingPage && !isAdminPage && <Footer />}
