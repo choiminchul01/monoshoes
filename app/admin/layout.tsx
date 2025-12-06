@@ -103,7 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex h-screen bg-gray-50 flex-col md:flex-row">
                 {/* Mobile Top Bar */}
                 <header className="md:hidden bg-white border-b border-gray-200 p-4 flex justify-between items-center sticky top-0 z-50">
-                    <h1 className="text-xl font-bold text-gray-900">ESSENTIA ADMIN</h1>
+                    <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>ESSENTIA ADMIN</h1>
                     <div className="flex items-center gap-2">
                         <button onClick={() => setShowShopConfirm(true)} className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors">
                             <Store className="w-4 h-4" />
@@ -146,7 +146,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Desktop Sidebar */}
                 <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col">
                     <div className="p-6 border-b border-gray-200">
-                        <h1 className="text-2xl font-bold text-gray-900">ESSENTIA ADMIN</h1>
+                        <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>ESSENTIA ADMIN</h1>
                         <p className="text-sm text-gray-500 mt-1">관리자 패널</p>
                     </div>
                     <nav className="flex-1 p-4 space-y-2">

@@ -65,6 +65,7 @@ export default function LandingPage() {
                             color: { duration: 1.5, ease: "easeInOut" } // Smooth color transition
                         }}
                         className="text-5xl md:text-8xl font-bold tracking-wider"
+                        style={{ fontFamily: 'var(--font-cinzel), serif' }}
                     >
                         <motion.span
                             animate={isLanded ? {

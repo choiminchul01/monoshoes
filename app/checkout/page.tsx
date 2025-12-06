@@ -240,12 +240,12 @@ export default function CheckoutPage() {
                 <div className="w-full max-w-[600px] px-4 py-8 lg:px-8 lg:py-16">
                     {/* Logo (Mobile only) */}
                     <div className="lg:hidden mb-6 text-center">
-                        <Link href="/" className="text-2xl font-bold tracking-widest">ESSENTIA</Link>
+                        <Link href="/" className="text-2xl font-bold tracking-widest" style={{ fontFamily: 'var(--font-cinzel), serif' }}>ESSENTIA</Link>
                     </div>
 
                     {/* Logo (Desktop) with Back Link */}
                     <div className="hidden lg:flex items-center justify-between mb-8">
-                        <Link href="/" className="text-3xl font-bold tracking-widest">ESSENTIA</Link>
+                        <Link href="/" className="text-3xl font-bold tracking-widest" style={{ fontFamily: 'var(--font-cinzel), serif' }}>ESSENTIA</Link>
                         <Link href="/cart" className="flex items-center gap-2 text-sm text-gray-500 hover:text-black transition-colors">
                             <ChevronLeft className="w-4 h-4" />
                             장바구니로 돌아가기

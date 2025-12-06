@@ -25,6 +25,8 @@ type Product = {
     name: string;
     brand: string;
     price: number;
+    original_price?: number;
+    discount_percent?: number;
     category: string;
     images: string[];
     detail_images?: string[];
@@ -394,19 +396,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             <h1 className="text-3xl font-medium text-gray-900 tracking-tight">
                                 {product.name}
                             </h1>
-                            <div className="flex items-center gap-3 pt-2">
+                            <div className="flex items-center gap-2 md:gap-3 pt-2 flex-wrap">
                                 {authLoading ? (
-                                    <div className="h-8 w-32 bg-gray-100 animate-pulse rounded" />
+                                    <div className="h-5 md:h-6 w-24 md:w-32 bg-gray-100 animate-pulse rounded" />
                                 ) : user ? (
-                                    <span className="text-2xl font-bold text-gray-900">
-                                        {product.price.toLocaleString()} KRW
-                                    </span>
+                                    <>
+                                        {product.original_price && product.original_price > product.price ? (
+                                            <>
+                                                <p className="text-base md:text-xl font-normal text-gray-900">
+                                                    ₩{product.price.toLocaleString()}
+                                                </p>
+                                                <p className="text-sm md:text-base font-normal text-gray-400 line-through">
+                                                    ₩{product.original_price.toLocaleString()}
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <p className="text-base md:text-xl font-normal text-gray-900">
+                                                ₩{product.price.toLocaleString()}
+                                            </p>
+                                        )}
+                                    </>
                                 ) : (
-                                    <div className="flex items-center gap-2 text-gray-500">
-                                        <Lock className="w-5 h-5" />
-                                        <span className="text-lg font-medium tracking-wide">
-                                            회원 전용 (로그인 필요)
-                                        </span>
+                                    <div className="flex items-center gap-1.5 text-gray-500">
+                                        <Lock className="w-3 h-3 md:w-4 md:h-4" />
+                                        <p className="text-xs md:text-sm font-medium tracking-wide">
+                                            회원 전용
+                                        </p>
                                     </div>
                                 )}
                             </div>
