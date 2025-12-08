@@ -64,7 +64,7 @@ export default function Home() {
   );
 
   return (
-    <div className="flex flex-col min-h-screen -mt-20">
+    <div className="flex flex-col min-h-screen md:-mt-20">
       <MainBanner />
 
       <div className="container mx-auto px-4 py-12">

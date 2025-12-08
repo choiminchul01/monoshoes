@@ -135,7 +135,7 @@ export function MainBanner() {
     };
 
     return (
-        <div className="relative w-full h-[60vh] md:h-auto md:aspect-[2.4/1] overflow-hidden bg-gray-100 group">
+        <div className="relative w-full aspect-[7/5] md:aspect-[2.4/1] overflow-hidden bg-gray-100 group">
             <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                     key={currentSlide}
@@ -155,7 +155,7 @@ export function MainBanner() {
                         src={slides[currentSlide].image}
                         alt={slides[currentSlide].title}
                         fill
-                        className="object-cover pointer-events-none"
+                        className="object-cover object-center pointer-events-none"
                         priority
                         quality={100}
                         sizes="100vw"
