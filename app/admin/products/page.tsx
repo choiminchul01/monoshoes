@@ -54,7 +54,7 @@ type BulkProductData = {
     description: string;
 };
 
-const CATEGORIES = ["BAG", "WALLET", "SHOES", "CLOTHING", "ACCESSORY"];
+const CATEGORIES = ["BAG", "WALLET", "SHOES", "ACCESSORY"];
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);

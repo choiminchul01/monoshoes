@@ -606,42 +606,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <DetailImagesSection images={product.detail_images} />
             )}
 
-            {/* Shipping & Returns - Below Detail Images */}
-            <div className="mt-16 max-w-5xl mx-auto">
-                <div className="bg-gray-50 rounded-2xl p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                            <h4 className="text-sm font-bold tracking-widest uppercase mb-4 flex items-center gap-2">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                                </svg>
-                                배송 안내
-                            </h4>
-                            <ul className="text-sm text-gray-600 space-y-2">
-                                <li>• 전 상품 무료 배송</li>
-                                <li>• 오후 2시 이전 주문 시 당일 출고</li>
-                                <li>• 배송 기간: 1-3 영업일 소요</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-bold tracking-widest uppercase mb-4 flex items-center gap-2">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                교환/반품 안내
-                            </h4>
-                            <ul className="text-sm text-gray-600 space-y-2">
-                                <li>• 구매일로부터 30일 이내 교환/반품 가능</li>
-                                <li>• 상품 하자 시 무료 교환</li>
-                                <li>• 단순 변심 시 반품 배송비 고객 부담</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Reviews Section */}
-            {product && <ReviewSection productId={product.id} />}
+            {/* Common Policy Images Section (이용 안내 - 전 상품 공통) */}
+            <PolicyImagesSection />
 
             {/* Product Q&A Section */}
             {product && <ProductQnA productId={product.id} />}
@@ -907,3 +873,95 @@ function DetailImagesSection({ images }: { images: string[] }) {
         </div>
     );
 }
+
+// 공통 이용 안내 이미지 섹션 (배송/교환/환불 규정 - 전 상품 공통)
+function PolicyImagesSection() {
+    const [policyImages, setPolicyImages] = useState<string[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchPolicyImages = async () => {
+            try {
+                // 1~5번 슬롯에 대해 직접 URL 확인
+                const validUrls: string[] = [];
+
+                for (let i = 1; i <= 3; i++) {
+                    // 다양한 확장자 시도
+                    const extensions = ['png', 'jpg', 'jpeg', 'webp'];
+
+                    for (const ext of extensions) {
+                        const fileName = `policy_${i}.${ext}`;
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('banners')
+                            .getPublicUrl(fileName);
+
+                        // 이미지가 존재하는지 HEAD 요청으로 확인 (캐시 우회)
+                        try {
+                            const urlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
+                            const response = await fetch(urlWithTimestamp, { method: 'HEAD', cache: 'no-store' });
+                            if (response.ok) {
+                                validUrls.push(urlWithTimestamp);
+                                break; // 해당 슬롯은 찾았으니 다음 슬롯으로
+                            }
+                        } catch {
+                            // 이미지 없음, 다음 확장자 시도
+                        }
+                    }
+                }
+
+                setPolicyImages(validUrls);
+            } catch (error) {
+                console.error('Failed to fetch policy images:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPolicyImages();
+    }, []);
+
+    if (loading || policyImages.length === 0) return null;
+
+    return (
+        <div className="mt-24 border-t border-gray-200 pt-16 max-w-5xl mx-auto">
+            <motion.div
+                className="text-center mb-12"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+            >
+                <h3 className="text-2xl font-bold tracking-widest mb-0.5">GUIDE & POLICY</h3>
+                <p className="text-2xl font-bold text-gray-800 tracking-widest mb-2">· ESSENTIA ·</p>
+                <p className="text-base text-gray-500">(이용 안내)</p>
+            </motion.div>
+
+            <div className="space-y-4">
+                {policyImages.map((imageUrl, index) => (
+                    <motion.div
+                        key={index}
+                        className="relative w-full"
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{
+                            duration: 0.6,
+                            delay: index * 0.1,
+                            ease: [0.25, 0.46, 0.45, 0.94]
+                        }}
+                    >
+                        <Image
+                            src={imageUrl}
+                            alt={`이용 안내 ${index + 1}`}
+                            width={900}
+                            height={1200}
+                            className="w-full h-auto rounded-2xl"
+                            loading="lazy"
+                        />
+                    </motion.div>
+                ))}
+            </div>
+        </div>
+    );
+}
+

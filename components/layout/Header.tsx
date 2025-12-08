@@ -67,7 +67,6 @@ export function Header() {
                                     <Link href="/shop?category=BAG" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">BAG</Link>
                                     <Link href="/shop?category=WALLET" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">WALLET</Link>
                                     <Link href="/shop?category=SHOES" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">SHOES</Link>
-                                    <Link href="/shop?category=CLOTHING" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">CLOTHING</Link>
                                     <Link href="/shop?category=ACCESSORY" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">ACCESSORY</Link>
                                 </div>
                             </div>
@@ -198,7 +197,6 @@ export function Header() {
                                                         <Link href="/shop?category=BAG" onClick={() => setIsMobileMenuOpen(false)}>BAG</Link>
                                                         <Link href="/shop?category=WALLET" onClick={() => setIsMobileMenuOpen(false)}>WALLET</Link>
                                                         <Link href="/shop?category=SHOES" onClick={() => setIsMobileMenuOpen(false)}>SHOES</Link>
-                                                        <Link href="/shop?category=CLOTHING" onClick={() => setIsMobileMenuOpen(false)}>CLOTHING</Link>
                                                         <Link href="/shop?category=ACCESSORY" onClick={() => setIsMobileMenuOpen(false)}>ACCESSORY</Link>
                                                     </div>
                                                 </motion.div>

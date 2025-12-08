@@ -92,3 +92,89 @@ export async function fetchBannersAction() {
         return { success: false, error: error.message };
     }
 }
+
+// Policy Images (이용 안내 이미지) - 배송/교환/환불 규정
+export async function uploadPolicyImageAction(formData: FormData) {
+    const file = formData.get('file') as File;
+    const imageIndex = formData.get('imageIndex') as string;
+
+    if (!file || !imageIndex) {
+        return { success: false, error: 'File or image index missing' };
+    }
+
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `policy_${imageIndex}.${fileExt}`;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        const { error } = await supabaseAdmin.storage
+            .from('banners')
+            .upload(fileName, buffer, {
+                contentType: file.type,
+                upsert: true
+            });
+
+        if (error) throw error;
+
+        revalidatePath('/admin/settings');
+        revalidatePath('/shop');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Policy image upload error:', error);
+        return { success: false, error: `Upload failed: ${error.message}` };
+    }
+}
+
+export async function deletePolicyImageAction(imageIndex: number) {
+    try {
+        const { data: files } = await supabaseAdmin.storage.from('banners').list();
+        const policyFile = files?.find(f => f.name.startsWith(`policy_${imageIndex}`));
+
+        if (policyFile) {
+            const { error } = await supabaseAdmin.storage
+                .from('banners')
+                .remove([policyFile.name]);
+
+            if (error) throw error;
+        }
+
+        revalidatePath('/admin/settings');
+        revalidatePath('/shop');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Policy image delete error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function fetchPolicyImagesAction() {
+    try {
+        const { data: files, error } = await supabaseAdmin.storage.from('banners').list();
+
+        if (error) throw error;
+
+        const policyUrls: string[] = [];
+
+        if (files) {
+            // Find all policy images (policy_1, policy_2, etc.)
+            const policyFiles = files
+                .filter(f => f.name.startsWith('policy_'))
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            for (const file of policyFiles) {
+                const { data: { publicUrl } } = supabaseAdmin.storage
+                    .from('banners')
+                    .getPublicUrl(file.name);
+                policyUrls.push(`${publicUrl}?t=${new Date().getTime()}`);
+            }
+        }
+
+        return { success: true, images: policyUrls };
+    } catch (error: any) {
+        console.error('Fetch policy images error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
