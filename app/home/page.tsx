@@ -49,9 +49,19 @@ export default function Home() {
     fetchProducts();
   }, []);
 
-  // Split products for sections (just splitting by index for demo)
-  const weeklyBestItems = products.slice(0, 10);
-  const recommendedItems = products.slice(10);
+  // 90일 기준으로 신상품 자동 분류
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+  // BEST SELLERS: is_best가 true인 상품 또는 전체 상품 중 상위 10개
+  const weeklyBestItems = products.filter(p => p.is_best).length > 0
+    ? products.filter(p => p.is_best)
+    : products.slice(0, 10);
+
+  // NEW ARRIVALS: 최근 90일 이내 등록된 상품 (created_at 기준)
+  const recommendedItems = products.filter(p =>
+    new Date(p.created_at) >= ninetyDaysAgo
+  );
 
   return (
     <div className="flex flex-col min-h-screen -mt-20">

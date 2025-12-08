@@ -27,7 +27,9 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname();
   const isLandingPage = pathname === "/";
+  const isPartnerPage = pathname === "/partner";
   const isAdminPage = pathname?.startsWith("/admin");
+  const hideNavigation = isLandingPage || isPartnerPage;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -39,12 +41,12 @@ export default function RootLayout({
                 {/* 이미지 보호 - 관리자 페이지 제외 */}
                 {!isAdminPage && <ImageProtection />}
                 <ClickRipple />
-                {!isLandingPage && !isAdminPage && <Header />}
-                <main className={isLandingPage || isAdminPage ? "min-h-screen" : "min-h-screen pt-8 md:pt-20"}>
+                {!hideNavigation && !isAdminPage && <Header />}
+                <main className={hideNavigation || isAdminPage ? "min-h-screen" : "min-h-screen pt-8 md:pt-20"}>
                   {children}
                 </main>
-                {!isLandingPage && !isAdminPage && <Footer />}
-                {!isLandingPage && !isAdminPage && (
+                {!hideNavigation && !isAdminPage && <Footer />}
+                {!hideNavigation && !isAdminPage && (
                   <KakaoButton />
                 )}
               </ToastProvider>
