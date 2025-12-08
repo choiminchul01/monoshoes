@@ -87,6 +87,9 @@ export function Header() {
                                 </div>
                             </div>
                         </div>
+                        <Link href="/partner" className="hover:text-[#C41E3A] hover:font-bold transition-all">
+                            PARTNER
+                        </Link>
                     </nav>
 
                     {/* Icons & Auth */}
@@ -219,6 +222,10 @@ export function Header() {
                                             <Link href="/cs?tab=inquiry" onClick={() => setIsMobileMenuOpen(false)}>1:1 문의</Link>
                                         </div>
                                     </div>
+
+                                    <Link href="/partner" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium hover:text-[#C41E3A]">
+                                        PARTNER
+                                    </Link>
                                 </div>
 
                                 <div className="mt-8 pt-8 border-t border-gray-100">
