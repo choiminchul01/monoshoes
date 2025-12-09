@@ -15,19 +15,22 @@ export default function PartnerInquiryPage() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
-    const [partnershipImage, setPartnershipImage] = useState<string | null>(null);
+    const [partnershipImages, setPartnershipImages] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchSettings = async () => {
+            // Fetch both array and legacy column
             const { data } = await supabase
                 .from('site_settings')
-                .select('partnership_proposal_image')
+                .select('partnership_proposal_image, partnership_proposal_images')
                 .eq('id', 1)
                 .single();
 
-            if (data?.partnership_proposal_image) {
-                // Add timestamp to prevent caching issues if needed, though URL usually changes
-                setPartnershipImage(data.partnership_proposal_image);
+            if (data?.partnership_proposal_images && Array.isArray(data.partnership_proposal_images) && data.partnership_proposal_images.length > 0) {
+                setPartnershipImages(data.partnership_proposal_images);
+            } else if (data?.partnership_proposal_image) {
+                // Fallback to legacy single image if array is empty but legacy exists
+                setPartnershipImages([data.partnership_proposal_image]);
             }
         };
         fetchSettings();
@@ -80,7 +83,7 @@ export default function PartnerInquiryPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 py-16 px-4">
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-[1200px] mx-auto">
                 {/* Header */}
                 <motion.div
                     initial={{ y: -20, opacity: 0 }}
@@ -96,23 +99,22 @@ export default function PartnerInquiryPage() {
                     </p>
                 </motion.div>
 
-                {/* Partnership Proposal Image */}
-                {partnershipImage && (
-                    <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.1 }}
-                        className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white"
-                    >
-                        <div className="w-full">
-                            {/* Using img tag for flexibility with dynamic aspect ratios from user uploads */}
-                            <img
-                                src={partnershipImage}
-                                alt="Membership Proposal"
-                                className="w-full h-auto block"
+                {/* Partnership Proposal Images */}
+                {partnershipImages.length > 0 && (
+                    <div className="mb-12 space-y-8">
+                        {partnershipImages.map((src, index) => (
+                            <motion.img
+                                key={index}
+                                src={src}
+                                alt={`Partnership Proposal ${index + 1}`}
+                                className="w-full h-auto block rounded-2xl shadow-sm border border-gray-100 bg-white"
+                                initial={{ opacity: 0, y: 50 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: "-50px" }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
                             />
-                        </div>
-                    </motion.div>
+                        ))}
+                    </div>
                 )}
 
                 {/* Form */}
@@ -121,7 +123,7 @@ export default function PartnerInquiryPage() {
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2 }}
                     onSubmit={handleSubmit}
-                    className="bg-white rounded-2xl shadow-lg p-8 md:p-12"
+                    className="bg-white rounded-2xl shadow-lg p-8 md:p-12 max-w-3xl mx-auto"
                 >
                     <div className="space-y-6">
                         {/* Name / Company */}
@@ -220,7 +222,7 @@ export default function PartnerInquiryPage() {
                         disabled={isSubmitting}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="w-1/2 mx-auto mt-8 py-4 bg-[#171f35] text-[#cfb898] font-bold rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-1/2 mx-auto mt-8 py-4 bg-[#3157b7] text-white font-bold rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? (
                             <>

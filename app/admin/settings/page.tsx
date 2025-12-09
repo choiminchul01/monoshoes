@@ -25,7 +25,7 @@ export default function AdminSettingsPage() {
     const [policyUploading, setPolicyUploading] = useState<number | null>(null);
 
     // Partnership Image State
-    const [partnershipImage, setPartnershipImage] = useState<string | null>(null);
+    const [partnershipImages, setPartnershipImages] = useState<string[]>([]);
     const [partnershipUploading, setPartnershipUploading] = useState(false);
 
     // Site Settings State
@@ -59,11 +59,11 @@ export default function AdminSettingsPage() {
     const fetchPartnershipImage = async () => {
         try {
             const result = await fetchPartnershipImageAction();
-            if (result.success) {
-                setPartnershipImage(result.imageUrl);
+            if (result.success && result.imageUrls) {
+                setPartnershipImages(result.imageUrls);
             }
         } catch (error) {
-            console.error("Failed to fetch partnership image:", error);
+            console.error("Failed to fetch partnership images:", error);
         }
     };
 
@@ -87,7 +87,7 @@ export default function AdminSettingsPage() {
 
             if (!result.success) throw new Error(result.error);
 
-            toast.success("제휴 제안서 이미지가 업로드되었습니다.");
+            toast.success("제휴 제안서 이미지가 추가되었습니다.");
             await fetchPartnershipImage();
         } catch (error: any) {
             console.error("Partnership image upload failed:", error);
@@ -98,15 +98,15 @@ export default function AdminSettingsPage() {
         }
     };
 
-    const handlePartnershipDelete = async () => {
-        if (!confirm("제휴 제안서 이미지를 삭제하시겠습니까?")) return;
+    const handlePartnershipDelete = async (targetUrl: string) => {
+        if (!confirm("선택한 이미지를 삭제하시겠습니까?")) return;
 
         try {
-            const result = await deletePartnershipImageAction();
+            const result = await deletePartnershipImageAction(targetUrl);
 
             if (!result.success) throw new Error(result.error);
 
-            toast.success("제휴 제안서 이미지가 삭제되었습니다.");
+            toast.success("이미지가 삭제되었습니다.");
             await fetchPartnershipImage();
         } catch (error) {
             console.error("Partnership image delete failed:", error);
@@ -855,25 +855,33 @@ export default function AdminSettingsPage() {
 
                                         <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all max-w-md">
                                             <div className="flex items-center justify-between mb-4">
-                                                <h3 className="font-bold text-gray-900">현재 등록된 이미지</h3>
-                                                {partnershipImage && (
-                                                    <button
-                                                        onClick={handlePartnershipDelete}
-                                                        className="px-4 py-1.5 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-700 hover:text-white text-xs font-bold transition-all"
-                                                    >
-                                                        삭제
-                                                    </button>
-                                                )}
+                                                <h3 className="font-bold text-gray-900">
+                                                    현재 등록된 이미지 ({partnershipImages.length})
+                                                </h3>
                                             </div>
 
-                                            {partnershipImage ? (
-                                                <div className="relative w-full aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden mb-4">
-                                                    <Image
-                                                        src={partnershipImage}
-                                                        alt="Partnership Proposal"
-                                                        fill
-                                                        className="object-contain"
-                                                    />
+                                            {partnershipImages.length > 0 ? (
+                                                <div className="space-y-4 mb-4">
+                                                    {partnershipImages.map((url, index) => (
+                                                        <div key={index} className="relative w-full aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden group border border-gray-200">
+                                                            <Image
+                                                                src={url}
+                                                                alt={`Partnership Proposal ${index + 1}`}
+                                                                fill
+                                                                className="object-contain"
+                                                            />
+                                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <button
+                                                                    onClick={() => handlePartnershipDelete(url)}
+                                                                    className="p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 shadow-sm"
+                                                                    title="이미지 삭제"
+                                                                    type="button"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             ) : (
                                                 <div className="relative w-full aspect-[3/4] bg-gray-50 rounded-lg flex items-center justify-center mb-4 border-2 border-dashed border-gray-200">
@@ -886,7 +894,7 @@ export default function AdminSettingsPage() {
 
                                             <label className="flex items-center justify-center gap-2 px-6 py-3 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-bold text-sm w-full">
                                                 <Upload className="w-4 h-4" />
-                                                {partnershipUploading ? "업로드 중..." : partnershipImage ? "이미지 변경" : "이미지 업로드"}
+                                                {partnershipUploading ? "업로드 중..." : "이미지 추가"}
                                                 <input
                                                     type="file"
                                                     accept="image/*"

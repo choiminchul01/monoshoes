@@ -222,7 +222,8 @@ export async function fetchPolicyImagesAction() {
     }
 }
 
-// Partnership Proposal Image
+// Partnership Image Actions (Multiple Support)
+
 export async function uploadPartnershipImageAction(formData: FormData) {
     const file = formData.get('file') as File;
 
@@ -232,7 +233,8 @@ export async function uploadPartnershipImageAction(formData: FormData) {
 
     try {
         const fileExt = file.name.split('.').pop();
-        const fileName = `partnership_proposal.${fileExt}`;
+        // Generate unique filename for each upload
+        const fileName = `partnership_proposal_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -242,7 +244,7 @@ export async function uploadPartnershipImageAction(formData: FormData) {
             .from('partnership')
             .upload(fileName, buffer, {
                 contentType: file.type,
-                upsert: true
+                upsert: false // Do not overwrite, allow multiple files
             });
 
         if (uploadError) throw uploadError;
@@ -252,13 +254,25 @@ export async function uploadPartnershipImageAction(formData: FormData) {
             .from('partnership')
             .getPublicUrl(fileName);
 
-        // Add timestamp to safely handle cache busting
-        const publicUrlWithTimestamp = `${publicUrl}?t=${new Date().getTime()}`;
+        // Fetch current settings to append
+        const { data: currentSettings } = await supabaseAdmin
+            .from('site_settings')
+            .select('partnership_proposal_images')
+            .eq('id', 1)
+            .single();
 
-        // Save URL to site_settings
+        const currentImages = currentSettings?.partnership_proposal_images || [];
+        const newImages = [...currentImages, publicUrl];
+
+        // Save URL array to site_settings (partnership_proposal_images)
+        // Also update legacy column just in case for backward compatibility if needed, or leave it.
+        // We focus on the array column.
         const { error: dbError } = await supabaseAdmin
             .from('site_settings')
-            .update({ partnership_proposal_image: publicUrlWithTimestamp })
+            .update({
+                partnership_proposal_images: newImages,
+                // Optional: sync first image to legacy column if desired, but we rely on array now
+            })
             .eq('id', 1);
 
         if (dbError) throw dbError;
@@ -272,50 +286,89 @@ export async function uploadPartnershipImageAction(formData: FormData) {
     }
 }
 
-export async function deletePartnershipImageAction() {
+export async function deletePartnershipImageAction(targetUrl?: string) {
     try {
-        const { data: files } = await supabaseAdmin.storage.from('partnership').list();
-        const proposalFile = files?.find(f => f.name.startsWith('partnership_proposal'));
+        // 1. Get current images
+        const { data: currentSettings } = await supabaseAdmin
+            .from('site_settings')
+            .select('partnership_proposal_images')
+            .eq('id', 1)
+            .single();
 
-        if (proposalFile) {
-            const { error: deleteStorageError } = await supabaseAdmin.storage
-                .from('partnership')
-                .remove([proposalFile.name]);
+        const currentImages: string[] = currentSettings?.partnership_proposal_images || [];
 
-            if (deleteStorageError) throw deleteStorageError;
+        let newImages = currentImages;
+        let fileToDelete = "";
+
+        if (targetUrl) {
+            // Remove specific image
+            newImages = currentImages.filter(url => url !== targetUrl);
+
+            // Extract filename from URL to delete from storage
+            // URL format: .../partnership/partnership_proposal_...
+            const urlParts = targetUrl.split('/');
+            fileToDelete = urlParts[urlParts.length - 1];
+            // Remove query params if any
+            if (fileToDelete.includes('?')) {
+                fileToDelete = fileToDelete.split('?')[0];
+            }
+        } else {
+            // Safety: if no targetUrl provided (legacy behavior), maybe prompt error or delete last?
+            // For safety, let's require targetUrl for deletion in multiple mode.
+            return { success: false, error: "Target image URL is required for deletion." };
         }
 
-        // Clear from site_settings
+        // 2. Update DB
         const { error: dbError } = await supabaseAdmin
             .from('site_settings')
-            .update({ partnership_proposal_image: null })
+            .update({ partnership_proposal_images: newImages })
             .eq('id', 1);
 
         if (dbError) throw dbError;
+
+        // 3. Delete from Storage if file name found
+        if (fileToDelete) {
+            const { error: storageError } = await supabaseAdmin.storage
+                .from('partnership')
+                .remove([fileToDelete]);
+
+            if (storageError) {
+                console.error("Storage delete warning:", storageError);
+                // We don't fail the action if DB update succeeded, just log warning
+            }
+        }
 
         revalidatePath('/admin/settings');
         revalidatePath('/partner/inquiry');
         return { success: true };
     } catch (error: any) {
-        console.error('Delete partnership image error:', error);
-        return { success: false, error: error.message };
+        console.error('Partnership image delete error:', error);
+        return { success: false, error: `Delete failed: ${error.message}` };
     }
 }
 
-export async function fetchPartnershipImageAction() {
+export async function fetchPartnershipImageAction() { // Name kept same but returns array in structure
     try {
-        const { data: settings, error } = await supabaseAdmin
+        const { data, error } = await supabaseAdmin
             .from('site_settings')
-            .select('partnership_proposal_image')
+            .select('partnership_proposal_images, partnership_proposal_image') // Select both for fallback
             .eq('id', 1)
             .single();
 
         if (error) throw error;
 
-        return { success: true, imageUrl: settings?.partnership_proposal_image || null };
+        // Priority: Array column -> Legacy column wrapped in array -> Empty array
+        let images: string[] = [];
+
+        if (data.partnership_proposal_images && Array.isArray(data.partnership_proposal_images)) {
+            images = data.partnership_proposal_images;
+        } else if (data.partnership_proposal_image) {
+            images = [data.partnership_proposal_image];
+        }
+
+        return { success: true, imageUrls: images }; // Changed key to imageUrls
     } catch (error: any) {
-        console.error('Fetch partnership image error:', error);
+        console.error('Partnership image fetch error:', error);
         return { success: false, error: error.message };
     }
 }
-
