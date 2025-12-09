@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { fetchBannersAction } from "@/app/admin/settings/actions";
 
 const FALLBACK_SLIDES = [
@@ -27,10 +28,28 @@ const FALLBACK_SLIDES = [
 ];
 
 export function MainBanner() {
+    const router = useRouter();
     const [currentSlide, setCurrentSlide] = useState(0);
     const [banners, setBanners] = useState<string[]>([]);
+    const [bannerLinks, setBannerLinks] = useState<string[]>(['', '', '']);
     const [loading, setLoading] = useState(true);
     const [direction, setDirection] = useState(1); // 1: next, -1: prev
+    const [isDragging, setIsDragging] = useState(false);
+
+    // 배너 클릭 핸들러
+    const handleBannerClick = () => {
+        if (isDragging) return; // 드래그 중에는 클릭 무시
+
+        const link = bannerLinks[currentSlide];
+        if (link && link.trim()) {
+            // 외부 링크인지 내부 링크인지 확인
+            if (link.startsWith('http://') || link.startsWith('https://')) {
+                window.open(link, '_blank');
+            } else {
+                router.push(link);
+            }
+        }
+    };
 
     useEffect(() => {
         const fetchBanners = async () => {
@@ -41,19 +60,28 @@ export function MainBanner() {
                     // Always create 3 slides, using uploaded banner or fallback
                     const combinedBanners = FALLBACK_SLIDES.map((fallback, index) => {
                         const slotKey = index + 1;
-                        // result.banners is { 1: url, 2: url, ... }
                         // @ts-ignore - result.banners type is known from action
                         return result.banners[slotKey] || fallback.image;
                     });
 
+                    // Get banner links
+                    const links = FALLBACK_SLIDES.map((_, index) => {
+                        const slotKey = index + 1;
+                        // @ts-ignore
+                        return result.links?.[slotKey] || '';
+                    });
+
                     setBanners(combinedBanners);
+                    setBannerLinks(links);
                 } else {
                     // If fetch fails or no banners, use fallbacks
                     setBanners(FALLBACK_SLIDES.map(s => s.image));
+                    setBannerLinks(['', '', '']);
                 }
             } catch (error) {
                 console.error('Error fetching banners:', error);
                 setBanners(FALLBACK_SLIDES.map(s => s.image));
+                setBannerLinks(['', '', '']);
             } finally {
                 setLoading(false);
             }
@@ -145,11 +173,16 @@ export function MainBanner() {
                     animate="center"
                     exit="exit"
                     transition={{ duration: 0.5, ease: "easeInOut" }}
-                    className="absolute inset-0 cursor-grab active:cursor-grabbing"
+                    className={`absolute inset-0 ${bannerLinks[currentSlide]?.trim() ? 'cursor-pointer' : 'cursor-grab'} active:cursor-grabbing`}
                     drag="x"
                     dragConstraints={{ left: 0, right: 0 }}
                     dragElastic={0.2}
-                    onDragEnd={handleDragEnd}
+                    onDragStart={() => setIsDragging(true)}
+                    onDragEnd={(e, info) => {
+                        setTimeout(() => setIsDragging(false), 100);
+                        handleDragEnd(e, info);
+                    }}
+                    onClick={handleBannerClick}
                 >
                     <Image
                         src={slides[currentSlide].image}

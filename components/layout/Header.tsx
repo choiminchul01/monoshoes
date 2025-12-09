@@ -64,32 +64,29 @@ export function Header() {
                             </Link>
                             <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 hidden group-hover:block w-48 z-50">
                                 <div className="bg-white/90 backdrop-blur-md border border-gray-100 shadow-lg p-4 flex flex-col gap-3 text-center">
-                                    <Link href="/shop?category=BAG" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">BAG</Link>
-                                    <Link href="/shop?category=WALLET" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">WALLET</Link>
-                                    <Link href="/shop?category=SHOES" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">SHOES</Link>
-                                    <Link href="/shop?category=ACCESSORY" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">ACCESSORY</Link>
+                                    <Link href="/shop?category=BAG" className="text-gray-600 hover:text-[#C41E3A] hover:font-bold text-xs tracking-widest transition-colors">BAG</Link>
+                                    <Link href="/shop?category=WALLET" className="text-gray-600 hover:text-[#C41E3A] hover:font-bold text-xs tracking-widest transition-colors">WALLET</Link>
+                                    <Link href="/shop?category=SHOES" className="text-gray-600 hover:text-[#C41E3A] hover:font-bold text-xs tracking-widest transition-colors">SHOES</Link>
+                                    <Link href="/shop?category=ACCESSORY" className="text-gray-600 hover:text-[#C41E3A] hover:font-bold text-xs tracking-widest transition-colors">ACCESSORY</Link>
                                 </div>
                             </div>
                         </div>
                         <Link href="/event" className="hover:text-[#C41E3A] hover:font-bold transition-all">
                             EVENT
                         </Link>
+                        <Link href="/cs" className="hover:text-[#C41E3A] hover:font-bold transition-all">
+                            C/S
+                        </Link>
                         <div className="relative group">
-                            <Link href="/cs" className="hover:text-[#C41E3A] hover:font-bold transition-all py-4">
-                                C/S
+                            <Link href="/partner" className="hover:text-[#C41E3A] hover:font-bold transition-all py-4">
+                                PARTNER
                             </Link>
                             <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 hidden group-hover:block w-48 z-50">
                                 <div className="bg-white/90 backdrop-blur-md border border-gray-100 shadow-lg p-4 flex flex-col gap-3 text-center">
-                                    <Link href="/cs?tab=notice" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">공지사항</Link>
-                                    <Link href="/cs?tab=faq" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">FAQ</Link>
-                                    <Link href="/cs?tab=inquiry" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">1:1 문의</Link>
-                                    <Link href="/mypage" className="text-gray-600 hover:text-black hover:font-bold text-xs tracking-widest transition-colors">배송조회</Link>
+                                    <Link href="/partner/inquiry" className="text-gray-600 hover:text-[#C41E3A] hover:font-bold text-xs tracking-widest transition-colors">제휴문의</Link>
                                 </div>
                             </div>
                         </div>
-                        <Link href="/partner" className="hover:text-[#C41E3A] hover:font-bold transition-all">
-                            PARTNER
-                        </Link>
                     </nav>
 
                     {/* Icons & Auth */}
@@ -197,10 +194,10 @@ export function Header() {
                                                     className="overflow-hidden"
                                                 >
                                                     <div className="pl-4 flex flex-col gap-3 text-sm text-gray-600 pb-2">
-                                                        <Link href="/shop?category=BAG" onClick={() => setIsMobileMenuOpen(false)}>BAG</Link>
-                                                        <Link href="/shop?category=WALLET" onClick={() => setIsMobileMenuOpen(false)}>WALLET</Link>
-                                                        <Link href="/shop?category=SHOES" onClick={() => setIsMobileMenuOpen(false)}>SHOES</Link>
-                                                        <Link href="/shop?category=ACCESSORY" onClick={() => setIsMobileMenuOpen(false)}>ACCESSORY</Link>
+                                                        <Link href="/shop?category=BAG" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#C41E3A] hover:font-bold transition-colors">BAG</Link>
+                                                        <Link href="/shop?category=WALLET" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#C41E3A] hover:font-bold transition-colors">WALLET</Link>
+                                                        <Link href="/shop?category=SHOES" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#C41E3A] hover:font-bold transition-colors">SHOES</Link>
+                                                        <Link href="/shop?category=ACCESSORY" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#C41E3A] hover:font-bold transition-colors">ACCESSORY</Link>
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -214,18 +211,18 @@ export function Header() {
                                         EVENT
                                     </Link>
 
-                                    <div className="space-y-4">
-                                        <span className="text-lg font-medium">C/S CENTER</span>
+                                    <Link href="/cs" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium hover:text-[#C41E3A]">
+                                        C/S
+                                    </Link>
+
+                                    <div className="space-y-3">
+                                        <Link href="/partner" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium hover:text-[#C41E3A] block">
+                                            PARTNER
+                                        </Link>
                                         <div className="pl-4 flex flex-col gap-3 text-sm text-gray-600">
-                                            <Link href="/cs?tab=notice" onClick={() => setIsMobileMenuOpen(false)}>공지사항</Link>
-                                            <Link href="/cs?tab=faq" onClick={() => setIsMobileMenuOpen(false)}>FAQ</Link>
-                                            <Link href="/cs?tab=inquiry" onClick={() => setIsMobileMenuOpen(false)}>1:1 문의</Link>
+                                            <Link href="/partner/inquiry" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#C41E3A] hover:font-bold transition-colors">제휴문의</Link>
                                         </div>
                                     </div>
-
-                                    <Link href="/partner" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium hover:text-[#C41E3A]">
-                                        PARTNER
-                                    </Link>
                                 </div>
 
                                 <div className="mt-8 pt-8 border-t border-gray-100">

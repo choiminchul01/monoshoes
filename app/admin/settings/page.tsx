@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { uploadBannerAction, deleteBannerAction, fetchBannersAction, uploadPolicyImageAction, deletePolicyImageAction, fetchPolicyImagesAction } from "./actions";
-import { Upload, Save, Image as ImageIcon, CheckCircle, ChevronDown } from "lucide-react";
+import { uploadBannerAction, deleteBannerAction, fetchBannersAction, uploadPolicyImageAction, deletePolicyImageAction, fetchPolicyImagesAction, saveBannerLinksAction, uploadPartnershipImageAction, deletePartnershipImageAction, fetchPartnershipImageAction } from "./actions";
+import { Upload, Save, Image as ImageIcon, CheckCircle, ChevronDown, Link as LinkIcon } from "lucide-react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/context/ToastContext";
@@ -11,14 +11,22 @@ import { useToast } from "@/context/ToastContext";
 export default function AdminSettingsPage() {
     const toast = useToast();
     // Accordion state - track which section is open
-    const [openSection, setOpenSection] = useState<'info' | 'shipping' | 'banner' | 'policy' | null>(null);
+    const [openSection, setOpenSection] = useState<'info' | 'shipping' | 'banner' | 'policy' | 'partnership' | null>(null);
 
-    const [bannerSlots, setBannerSlots] = useState<Array<{ url: string | null }>>([{ url: null }, { url: null }, { url: null }]);
+    const [bannerSlots, setBannerSlots] = useState<Array<{ url: string | null; link: string }>>([
+        { url: null, link: '' },
+        { url: null, link: '' },
+        { url: null, link: '' }
+    ]);
     const [uploading, setUploading] = useState<number | null>(null); // Track which slot is uploading
 
     // Policy Images state (이용 안내 이미지)
     const [policyImages, setPolicyImages] = useState<string[]>([]);
     const [policyUploading, setPolicyUploading] = useState<number | null>(null);
+
+    // Partnership Image State
+    const [partnershipImage, setPartnershipImage] = useState<string | null>(null);
+    const [partnershipUploading, setPartnershipUploading] = useState(false);
 
     // Site Settings State
     const [siteSettings, setSiteSettings] = useState({
@@ -42,7 +50,69 @@ export default function AdminSettingsPage() {
         fetchBanners();
         fetchSiteSettings();
         fetchPolicyImages();
+        fetchBanners();
+        fetchSiteSettings();
+        fetchPolicyImages();
+        fetchPartnershipImage();
     }, []);
+
+    const fetchPartnershipImage = async () => {
+        try {
+            const result = await fetchPartnershipImageAction();
+            if (result.success) {
+                setPartnershipImage(result.imageUrl);
+            }
+        } catch (error) {
+            console.error("Failed to fetch partnership image:", error);
+        }
+    };
+
+    const handlePartnershipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        const file = e.target.files[0];
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert("파일 크기는 10MB를 초과할 수 없습니다.");
+            e.target.value = '';
+            return;
+        }
+        setPartnershipUploading(true);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const result = await uploadPartnershipImageAction(formData);
+
+            if (!result.success) throw new Error(result.error);
+
+            toast.success("제휴 제안서 이미지가 업로드되었습니다.");
+            await fetchPartnershipImage();
+        } catch (error: any) {
+            console.error("Partnership image upload failed:", error);
+            toast.error(`업로드 실패: ${error.message}`);
+        } finally {
+            setPartnershipUploading(false);
+            e.target.value = '';
+        }
+    };
+
+    const handlePartnershipDelete = async () => {
+        if (!confirm("제휴 제안서 이미지를 삭제하시겠습니까?")) return;
+
+        try {
+            const result = await deletePartnershipImageAction();
+
+            if (!result.success) throw new Error(result.error);
+
+            toast.success("제휴 제안서 이미지가 삭제되었습니다.");
+            await fetchPartnershipImage();
+        } catch (error) {
+            console.error("Partnership image delete failed:", error);
+            toast.error("삭제 중 오류가 발생했습니다.");
+        }
+    };
 
     const fetchBanners = async () => {
         try {
@@ -51,13 +121,19 @@ export default function AdminSettingsPage() {
             if (result.success && result.banners) {
                 const newSlots = [...bannerSlots];
                 // Reset slots first
-                newSlots.forEach(slot => slot.url = null);
+                newSlots.forEach(slot => {
+                    slot.url = null;
+                    slot.link = '';
+                });
 
-                // Update slots with fetched URLs
+                // Update slots with fetched URLs and links
                 Object.entries(result.banners).forEach(([key, url]) => {
                     const index = parseInt(key) - 1;
                     if (index >= 0 && index < 3) {
-                        newSlots[index] = { url: url as string };
+                        newSlots[index] = {
+                            url: url as string,
+                            link: result.links?.[parseInt(key)] || ''
+                        };
                     }
                 });
 
@@ -580,17 +656,60 @@ export default function AdminSettingsPage() {
                                                         </div>
                                                     )}
 
-                                                    <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-bold text-sm">
-                                                        <Upload className="w-4 h-4" />
-                                                        {uploading === slotNumber ? "업로드 중..." : bannerSlots[slotNumber - 1]?.url ? "이미지 변경" : "이미지 업로드"}
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="hidden"
-                                                            onChange={(e) => handleBannerUpload(slotNumber, e)}
-                                                            disabled={uploading === slotNumber}
-                                                        />
-                                                    </label>
+                                                    <div className="flex flex-wrap gap-3 items-center">
+                                                        <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-bold text-sm">
+                                                            <Upload className="w-4 h-4" />
+                                                            {uploading === slotNumber ? "업로드 중..." : bannerSlots[slotNumber - 1]?.url ? "이미지 변경" : "이미지 업로드"}
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="hidden"
+                                                                onChange={(e) => handleBannerUpload(slotNumber, e)}
+                                                                disabled={uploading === slotNumber}
+                                                            />
+                                                        </label>
+                                                    </div>
+
+                                                    {/* 링크 입력 필드 */}
+                                                    <div className="mt-4">
+                                                        <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                                                            <LinkIcon className="w-3 h-3 inline mr-1" />
+                                                            배너 클릭 시 이동할 링크
+                                                        </label>
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                type="url"
+                                                                value={bannerSlots[slotNumber - 1]?.link || ''}
+                                                                onChange={(e) => {
+                                                                    const newSlots = [...bannerSlots];
+                                                                    newSlots[slotNumber - 1] = {
+                                                                        ...newSlots[slotNumber - 1],
+                                                                        link: e.target.value
+                                                                    };
+                                                                    setBannerSlots(newSlots);
+                                                                }}
+                                                                placeholder="https://example.com 또는 /shop"
+                                                                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:border-green-700 focus:ring-1 focus:ring-green-700 bg-white outline-none transition-colors font-normal text-gray-900 text-sm"
+                                                            />
+                                                            <button
+                                                                onClick={async () => {
+                                                                    const links: { [key: number]: string } = {};
+                                                                    links[slotNumber] = bannerSlots[slotNumber - 1]?.link || '';
+                                                                    const result = await saveBannerLinksAction(links);
+                                                                    if (result.success) {
+                                                                        toast.success(`배너 ${slotNumber}번 링크가 저장되었습니다.`);
+                                                                    } else {
+                                                                        toast.error('링크 저장에 실패했습니다.');
+                                                                    }
+                                                                }}
+                                                                className="px-4 py-2.5 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white transition-all font-bold text-sm whitespace-nowrap"
+                                                            >
+                                                                <Save className="w-4 h-4 inline mr-1" />
+                                                                저장
+                                                            </button>
+                                                        </div>
+                                                        <p className="text-xs text-gray-400 mt-1">비워두면 클릭해도 이동하지 않습니다</p>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
@@ -689,6 +808,93 @@ export default function AdminSettingsPage() {
                                                     </div>
                                                 );
                                             })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* 제휴 제안서 이미지 설정 섹션 */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden mt-8">
+                <button
+                    onClick={() => setOpenSection(openSection === 'partnership' ? null : 'partnership')}
+                    className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-1 h-6 bg-green-700 rounded-full"></div>
+                        <h2 className="text-xl font-bold tracking-tight text-gray-900">
+                            제휴 제안서 이미지
+                        </h2>
+                    </div>
+                    <motion.div
+                        animate={{ rotate: openSection === 'partnership' ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                    </motion.div>
+                </button>
+
+                <AnimatePresence>
+                    {openSection === 'partnership' && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                        >
+                            <div className="px-8 pb-8 pt-4 border-t border-gray-100">
+                                <div className="space-y-6">
+                                    <div>
+                                        <p className="text-sm text-gray-500 mb-6 font-normal">
+                                            제휴문의 페이지(/partner/inquiry) 상단에 노출되는 제안서 및 안내 이미지입니다.<br />
+                                            권장 사이즈: 가로 1200px 이상 (세로 길이는 자유, 최대 10MB)
+                                        </p>
+
+                                        <div className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all max-w-md">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="font-bold text-gray-900">현재 등록된 이미지</h3>
+                                                {partnershipImage && (
+                                                    <button
+                                                        onClick={handlePartnershipDelete}
+                                                        className="px-4 py-1.5 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-700 hover:text-white text-xs font-bold transition-all"
+                                                    >
+                                                        삭제
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {partnershipImage ? (
+                                                <div className="relative w-full aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden mb-4">
+                                                    <Image
+                                                        src={partnershipImage}
+                                                        alt="Partnership Proposal"
+                                                        fill
+                                                        className="object-contain"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="relative w-full aspect-[3/4] bg-gray-50 rounded-lg flex items-center justify-center mb-4 border-2 border-dashed border-gray-200">
+                                                    <div className="text-center text-gray-400">
+                                                        <ImageIcon className="w-12 h-12 mx-auto mb-2 stroke-1" />
+                                                        <p className="text-sm font-normal">등록된 이미지가 없습니다</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <label className="flex items-center justify-center gap-2 px-6 py-3 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-bold text-sm w-full">
+                                                <Upload className="w-4 h-4" />
+                                                {partnershipUploading ? "업로드 중..." : partnershipImage ? "이미지 변경" : "이미지 업로드"}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handlePartnershipUpload}
+                                                    disabled={partnershipUploading}
+                                                />
+                                            </label>
                                         </div>
                                     </div>
                                 </div>

@@ -43,7 +43,7 @@ export default function PartnerPage() {
         if (isTransitioning) return;
         setIsTransitioning(true);
         setTimeout(() => {
-            router.push("/home");
+            router.push("/partner/inquiry");
         }, 800);
     };
 

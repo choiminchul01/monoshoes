@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket } from 'lucide-react';
+import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, ClipboardCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/context/ToastContext';
 import { useAdminPermissions } from '@/lib/useAdminPermissions';
@@ -78,10 +78,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const allNavItems = [
         { href: '/admin', label: '대시보드', icon: Home, badge: 0, permission: 'dashboard' as const },
         { href: '/admin/orders', label: '주문 관리', icon: ShoppingCart, badge: counts.orders, permission: 'orders' as const },
+        { href: '/admin/reviews', label: '리뷰 관리', icon: MessageSquare, badge: 0, permission: 'reviews' as const },
         { href: '/admin/products', label: '상품 관리', icon: Package, badge: counts.products, permission: 'products' as const },
+        { href: '/admin/inspections', label: '출고관리', icon: ClipboardCheck, badge: 0, permission: 'products' as const },
         { href: '/admin/coupons', label: '쿠폰 관리', icon: Ticket, badge: 0, permission: 'coupons' as const },
         { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
-        { href: '/admin/reviews', label: '리뷰 관리', icon: MessageSquare, badge: 0, permission: 'reviews' as const },
         { href: '/admin/inquiries', label: '문의 관리', icon: HelpCircle, badge: 0, permission: 'inquiries' as const },
         { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
         { href: '/admin/settings', label: '설정', icon: Settings, badge: 0, permission: 'settings' as const },

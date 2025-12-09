@@ -72,6 +72,7 @@ export async function fetchBannersAction() {
         if (error) throw error;
 
         const bannerUrls: { [key: number]: string } = {};
+        const bannerLinks: { [key: number]: string } = {};
 
         if (files) {
             for (let i = 1; i <= 3; i++) {
@@ -86,9 +87,52 @@ export async function fetchBannersAction() {
             }
         }
 
-        return { success: true, banners: bannerUrls };
+        // Fetch banner links from site_settings (single row with columns)
+        const { data: settings } = await supabaseAdmin
+            .from('site_settings')
+            .select('banner_1_link, banner_2_link, banner_3_link')
+            .eq('id', 1)
+            .single();
+
+        if (settings) {
+            bannerLinks[1] = settings.banner_1_link || '';
+            bannerLinks[2] = settings.banner_2_link || '';
+            bannerLinks[3] = settings.banner_3_link || '';
+        }
+
+        return { success: true, banners: bannerUrls, links: bannerLinks };
     } catch (error: any) {
         console.error('Fetch error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function saveBannerLinksAction(links: { [key: number]: string }) {
+    try {
+        // Build update object with only the columns being updated
+        const updateData: { [key: string]: string } = {};
+
+        for (const [slot, link] of Object.entries(links)) {
+            const columnName = `banner_${slot}_link`;
+            updateData[columnName] = link || '';
+        }
+
+        // Update site_settings row id=1
+        const { error } = await supabaseAdmin
+            .from('site_settings')
+            .update(updateData)
+            .eq('id', 1);
+
+        if (error) {
+            console.error('Update banner links error:', error);
+            throw error;
+        }
+
+        revalidatePath('/admin/settings');
+        revalidatePath('/home');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Save banner links error:', error);
         return { success: false, error: error.message };
     }
 }
@@ -174,6 +218,103 @@ export async function fetchPolicyImagesAction() {
         return { success: true, images: policyUrls };
     } catch (error: any) {
         console.error('Fetch policy images error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Partnership Proposal Image
+export async function uploadPartnershipImageAction(formData: FormData) {
+    const file = formData.get('file') as File;
+
+    if (!file) {
+        return { success: false, error: 'File missing' };
+    }
+
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `partnership_proposal.${fileExt}`;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Upload to 'partnership' bucket
+        const { error: uploadError } = await supabaseAdmin.storage
+            .from('partnership')
+            .upload(fileName, buffer, {
+                contentType: file.type,
+                upsert: true
+            });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabaseAdmin.storage
+            .from('partnership')
+            .getPublicUrl(fileName);
+
+        // Add timestamp to safely handle cache busting
+        const publicUrlWithTimestamp = `${publicUrl}?t=${new Date().getTime()}`;
+
+        // Save URL to site_settings
+        const { error: dbError } = await supabaseAdmin
+            .from('site_settings')
+            .update({ partnership_proposal_image: publicUrlWithTimestamp })
+            .eq('id', 1);
+
+        if (dbError) throw dbError;
+
+        revalidatePath('/admin/settings');
+        revalidatePath('/partner/inquiry');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Partnership image upload error:', error);
+        return { success: false, error: `Upload failed: ${error.message}` };
+    }
+}
+
+export async function deletePartnershipImageAction() {
+    try {
+        const { data: files } = await supabaseAdmin.storage.from('partnership').list();
+        const proposalFile = files?.find(f => f.name.startsWith('partnership_proposal'));
+
+        if (proposalFile) {
+            const { error: deleteStorageError } = await supabaseAdmin.storage
+                .from('partnership')
+                .remove([proposalFile.name]);
+
+            if (deleteStorageError) throw deleteStorageError;
+        }
+
+        // Clear from site_settings
+        const { error: dbError } = await supabaseAdmin
+            .from('site_settings')
+            .update({ partnership_proposal_image: null })
+            .eq('id', 1);
+
+        if (dbError) throw dbError;
+
+        revalidatePath('/admin/settings');
+        revalidatePath('/partner/inquiry');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Delete partnership image error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function fetchPartnershipImageAction() {
+    try {
+        const { data: settings, error } = await supabaseAdmin
+            .from('site_settings')
+            .select('partnership_proposal_image')
+            .eq('id', 1)
+            .single();
+
+        if (error) throw error;
+
+        return { success: true, imageUrl: settings?.partnership_proposal_image || null };
+    } catch (error: any) {
+        console.error('Fetch partnership image error:', error);
         return { success: false, error: error.message };
     }
 }
