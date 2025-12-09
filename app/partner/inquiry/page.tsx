@@ -220,7 +220,7 @@ export default function PartnerInquiryPage() {
                         disabled={isSubmitting}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="w-1/2 mx-auto mt-8 py-4 bg-[#6ae3c9] text-[#595959] font-bold rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-1/2 mx-auto mt-8 py-4 bg-[#171f35] text-[#cfb898] font-bold rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? (
                             <>
