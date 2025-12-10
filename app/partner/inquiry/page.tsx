@@ -88,12 +88,11 @@ export default function PartnerInquiryPage() {
                 <motion.div
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    className="text-center mb-12"
+                    className="mb-10 text-center"
                 >
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
-                        Partnership
-                    </h1>
-                    <p className="text-gray-600">
+                    <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Partnership</p>
+                    <h1 className="text-3xl font-bold tracking-widest" style={{ fontFamily: "'S-Core Dream', sans-serif" }}>제휴문의</h1>
+                    <p className="mt-4 text-sm text-gray-500">
                         무점포·소자본 창업, 시작부터 관리까지 모든 지원.<br />
                         문의 남겨주시면 담당자 배정 후 빠른 연락드리겠습니다.
                     </p>

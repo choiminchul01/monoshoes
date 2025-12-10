@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* S-Core Dream 6 Bold */
+@font-face {
+  font-family: 'S-Core Dream';
+  font-weight: 600;
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-6Bold.woff') format('woff');
+}
+
 @theme {
   --color-background: #ffffff;
   --color-foreground: #171717;

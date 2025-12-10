@@ -68,7 +68,7 @@ export default function InspectionPage() {
         <div className="container mx-auto px-4 py-12">
             <div className="mb-10 text-center">
                 <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Quality Check</p>
-                <h1 className="text-3xl font-bold tracking-widest">출고 검수</h1>
+                <h1 className="text-3xl font-bold tracking-widest" style={{ fontFamily: "'S-Core Dream', sans-serif" }}>출고 검수</h1>
                 <p className="mt-4 text-sm text-gray-500">고객님께 전달되기 전 철저한 검수 과정을 거칩니다</p>
             </div>
 

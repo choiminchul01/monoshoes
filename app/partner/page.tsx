@@ -39,6 +39,16 @@ export default function PartnerPage() {
         return () => clearTimeout(timer);
     }, []);
 
+    // Auto-redirect after landing animation completes
+    useEffect(() => {
+        if (isLanded && !isTransitioning) {
+            const autoRedirectTimer = setTimeout(() => {
+                handleEnter();
+            }, 1500); // Wait 1.5s after landing before auto-redirect
+            return () => clearTimeout(autoRedirectTimer);
+        }
+    }, [isLanded, isTransitioning]);
+
     const handleEnter = () => {
         if (isTransitioning) return;
         setIsTransitioning(true);
@@ -66,9 +76,9 @@ export default function PartnerPage() {
             className="relative min-h-screen bg-white flex flex-col items-center justify-center overflow-hidden cursor-pointer"
             onClick={handleEnter}
         >
-            {/* 전환 효과 오버레이 - 1번: Fade Out + Zoom In */}
+            {/* 전환 효과 오버레이 - 밝은 화이트 테마 */}
             <motion.div
-                className="fixed inset-0 bg-black z-50 pointer-events-none"
+                className="fixed inset-0 bg-white z-50 pointer-events-none"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: isTransitioning ? 1 : 0 }}
                 transition={{ duration: 0.8, ease: "easeInOut" }}
@@ -137,7 +147,6 @@ export default function PartnerPage() {
                     </p>
 
                     <div className="flex flex-col items-center gap-2">
-                        <p className="text-xs tracking-widest uppercase text-gray-400">Click to Enter</p>
                         <motion.div
                             animate={{ y: [0, 10, 0] }}
                             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}

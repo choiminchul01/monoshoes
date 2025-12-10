@@ -5,6 +5,7 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { MainBanner } from "@/components/home/MainBanner";
 import { supabase } from "@/lib/supabase";
 import { ProductCardSkeleton } from "@/components/ui/Skeleton";
+import EventPopup from "@/components/home/EventPopup";
 
 type Product = {
   id: string;
@@ -64,7 +65,7 @@ export default function Home() {
   );
 
   return (
-    <div className="flex flex-col min-h-screen md:-mt-20">
+    <>
       <MainBanner />
 
       <div className="container mx-auto px-4 py-12">
@@ -148,6 +149,7 @@ export default function Home() {
           )}
         </section>
       </div>
-    </div>
+      <EventPopup />
+    </>
   );
 }

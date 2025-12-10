@@ -34,7 +34,8 @@ export default function NoticePage() {
         <div className="container mx-auto px-4 py-12 max-w-4xl">
             <div className="mb-10 text-center">
                 <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Customer Service</p>
-                <h1 className="text-3xl font-bold tracking-widest">공지사항</h1>
+                <h1 className="text-3xl font-bold tracking-widest" style={{ fontFamily: "'S-Core Dream', sans-serif" }}>공지사항</h1>
+                <p className="mt-4 text-sm text-gray-500">에센시아의 새로운 소식과 중요 안내사항을 확인하세요</p>
             </div>
 
             {loading ? (

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, ClipboardCheck } from 'lucide-react';
+import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, ClipboardCheck, Megaphone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/context/ToastContext';
 import { useAdminPermissions } from '@/lib/useAdminPermissions';
@@ -85,6 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
         { href: '/admin/inquiries', label: '문의 관리', icon: HelpCircle, badge: 0, permission: 'inquiries' as const },
         { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
+        { href: '/admin/events', label: '이벤트 관리', icon: Megaphone, badge: 0, permission: 'board' as const },
         { href: '/admin/settings', label: '설정', icon: Settings, badge: 0, permission: 'settings' as const },
     ];
 
