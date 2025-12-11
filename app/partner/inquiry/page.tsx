@@ -40,11 +40,28 @@ export default function PartnerInquiryPage() {
         e.preventDefault();
         setIsSubmitting(true);
 
-        // 실제 구현 시 여기에 API 호출 추가
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            // Save to database
+            const { error } = await supabase
+                .from('partner_inquiries')
+                .insert({
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    inquiry_type: formData.inquiryType,
+                    message: formData.message,
+                    status: 'pending'
+                });
 
-        setIsSubmitting(false);
-        setIsSubmitted(true);
+            if (error) throw error;
+
+            setIsSubmitted(true);
+        } catch (error) {
+            console.error('Error submitting inquiry:', error);
+            alert('문의 접수 중 오류가 발생했습니다. 다시 시도해주세요.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

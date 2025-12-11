@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, ClipboardCheck, Megaphone } from 'lucide-react';
+import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, ClipboardCheck, Megaphone, Handshake } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/context/ToastContext';
 import { useAdminPermissions } from '@/lib/useAdminPermissions';
@@ -92,7 +92,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     // Add Admin Management for master only
     const masterOnlyItems = isMaster ? [
-        { href: '/admin/admins', label: '관리자 계정', icon: Shield, badge: 0, permission: null }
+        { href: '/admin/admins', label: '관리자 계정', icon: Shield, badge: 0, permission: null },
+        { href: '/admin/partnership', label: '에센시아 파트너십', icon: Handshake, badge: 0, permission: null }
     ] : [];
 
     // Filter nav items based on permissions
