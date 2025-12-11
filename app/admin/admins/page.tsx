@@ -133,8 +133,8 @@ export default function AdminAccountsPage() {
         }
     };
 
-    const handleDelete = async (id: string, email: string) => {
-        if (email === 'master@essentia.com') {
+    const handleDelete = async (id: string, email: string, role: AdminRole) => {
+        if (role === 'master') {
             toast.error('마스터 계정은 삭제할 수 없습니다.');
             return;
         }
@@ -257,7 +257,7 @@ export default function AdminAccountsPage() {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            {admin.email !== 'master@essentia.com' && (
+                                            {admin.role !== 'master' && (
                                                 <>
                                                     <button
                                                         onClick={() => handleOpenModal(admin)}
@@ -267,7 +267,7 @@ export default function AdminAccountsPage() {
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDelete(admin.id, admin.email)}
+                                                        onClick={() => handleDelete(admin.id, admin.email, admin.role)}
                                                         className="p-2 text-red-500 hover:text-red-700"
                                                         title="삭제"
                                                     >

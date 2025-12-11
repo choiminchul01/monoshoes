@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Shield } from "lucide-react";
 
-const ADMIN_EMAIL = 'master@essentia.com';
+// Admin email validation is now handled by admin_roles table in database
+// This removes the hardcoded email from client-side code for security
 
 export default function AdminLoginPage() {
     const router = useRouter();
@@ -35,7 +36,6 @@ export default function AdminLoginPage() {
 
         const particleCount = 50;
 
-        // Initialize particles with random positions and velocities
         for (let i = 0; i < particleCount; i++) {
             particles.push({
                 x: Math.random() * canvas.width,
@@ -58,11 +58,9 @@ export default function AdminLoginPage() {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             particles.forEach((particle) => {
-                // Update position
                 particle.x += particle.vx;
                 particle.y += particle.vy;
 
-                // Bounce off walls
                 if (particle.x < 0 || particle.x > canvas.width) {
                     particle.vx *= -1;
                 }
@@ -70,11 +68,9 @@ export default function AdminLoginPage() {
                     particle.vy *= -1;
                 }
 
-                // Keep particles in bounds
                 particle.x = Math.max(0, Math.min(canvas.width, particle.x));
                 particle.y = Math.max(0, Math.min(canvas.height, particle.y));
 
-                // Draw particle
                 ctx.beginPath();
                 ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
                 ctx.fillStyle = '#00704A';
@@ -93,34 +89,36 @@ export default function AdminLoginPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Login attempt started', { email, password: '***' });
         setLoading(true);
         setError(null);
 
-        if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-            console.log('Email validation failed:', email);
-            setError("관리자 계정이 아닙니다. 일반 로그인은 /login을 이용해주세요.");
-            setLoading(false);
-            return;
-        }
-
         try {
-            console.log('Attempting Supabase sign in...');
-            const { error } = await supabase.auth.signInWithPassword({
+            // Attempt Supabase sign in
+            const { data, error: authError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
-            if (error) {
-                console.error('Supabase sign in error:', error);
-                throw error;
+            if (authError) {
+                throw authError;
             }
 
-            console.log('Login successful, redirecting to /admin');
-            // Use window.location.href for full page reload to ensure cookies are sent
+            // Check if user has admin role in database
+            const { data: roleData, error: roleError } = await supabase
+                .from('admin_roles')
+                .select('role')
+                .eq('user_id', data.user.id)
+                .single();
+
+            if (roleError || !roleData) {
+                // Sign out if not an admin
+                await supabase.auth.signOut();
+                throw new Error('관리자 권한이 없습니다. 일반 로그인은 /login을 이용해주세요.');
+            }
+
+            // Login successful, redirect to admin
             window.location.href = '/admin';
         } catch (err: any) {
-            console.error('Login catch error:', err);
             setError(err.message);
         } finally {
             setLoading(false);
@@ -156,7 +154,7 @@ export default function AdminLoginPage() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="mt-1 block w-full rounded-md bg-white border border-gray-300 py-3 px-3 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00704A] focus:border-transparent sm:text-sm"
-                                    placeholder="admin@essentia.com"
+                                    placeholder="admin@example.com"
                                 />
                             </div>
                             <div>

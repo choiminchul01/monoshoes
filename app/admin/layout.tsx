@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/context/ToastContext';
 import { useAdminPermissions } from '@/lib/useAdminPermissions';
 
-const ADMIN_EMAIL = 'master@essentia.com';
+// Admin validation now uses admin_roles table via useAdminPermissions hook
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -21,16 +21,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [counts, setCounts] = useState({ orders: 0, products: 0 });
 
     useEffect(() => {
-        if (!loading) {
+        if (!loading && !permLoading) {
             if (!user) {
                 router.push('/admin-login');
-            } else if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+            } else if (!hasPermission('dashboard')) {
+                // User is logged in but not an admin
                 router.push('/');
             } else {
                 fetchNotificationCounts();
             }
         }
-    }, [user, loading, router]);
+    }, [user, loading, permLoading, hasPermission, router]);
 
     const fetchNotificationCounts = async () => {
         try {
@@ -70,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return <div className="flex items-center justify-center min-h-screen">로딩 중...</div>;
     }
 
-    if (!user || user.email?.toLowerCase() !== ADMIN_EMAIL) {
+    if (!user || permLoading || !hasPermission('dashboard')) {
         return null;
     }
 
