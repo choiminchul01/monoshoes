@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 type PointBalance = {
     balance: number;
@@ -23,14 +23,7 @@ export function usePoints() {
     const [transactions, setTransactions] = useState<PointTransaction[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (user) {
-            fetchPoints();
-            fetchTransactions();
-        }
-    }, [user]);
-
-    const fetchPoints = async () => {
+    const fetchPoints = useCallback(async () => {
         if (!user) return;
 
         const { data } = await supabase
@@ -51,9 +44,9 @@ export function usePoints() {
 
             if (newData) setBalance(newData);
         }
-    };
+    }, [user]);
 
-    const fetchTransactions = async () => {
+    const fetchTransactions = useCallback(async () => {
         if (!user) return;
 
         setLoading(true);
@@ -66,7 +59,14 @@ export function usePoints() {
 
         if (data) setTransactions(data);
         setLoading(false);
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            fetchPoints();
+            fetchTransactions();
+        }
+    }, [user, fetchPoints, fetchTransactions]);
 
     const canUsePoints = (amount: number): boolean => {
         return balance.balance >= amount;
@@ -83,3 +83,4 @@ export function usePoints() {
         }
     };
 }
+
