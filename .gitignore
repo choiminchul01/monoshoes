@@ -47,3 +47,6 @@ DEVELOPMENT_NOTES.md
 TODO.md
 **/dev-docs/
 **/developer-notes/
+
+.vercel
+.env*.local
