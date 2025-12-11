@@ -43,6 +43,14 @@ export default function AdminSettingsPage() {
         kakao_url: '',
         shipping_cost: 0,
         extra_shipping_cost: 0,
+        // Visibility toggles for footer
+        show_owner_name: true,
+        show_business_license: true,
+        show_mail_order_license: true,
+        show_address: true,
+        show_cs_phone: true,
+        show_cs_hours: true,
+        show_cs_email: true,
     });
     const [savingSettings, setSavingSettings] = useState(false);
 
@@ -279,6 +287,14 @@ export default function AdminSettingsPage() {
                     kakao_url: data.kakao_url || '',
                     shipping_cost: data.shipping_cost || 0,
                     extra_shipping_cost: data.extra_shipping_cost || 0,
+                    // Visibility toggles
+                    show_owner_name: data.show_owner_name ?? true,
+                    show_business_license: data.show_business_license ?? true,
+                    show_mail_order_license: data.show_mail_order_license ?? true,
+                    show_address: data.show_address ?? true,
+                    show_cs_phone: data.show_cs_phone ?? true,
+                    show_cs_hours: data.show_cs_hours ?? true,
+                    show_cs_email: data.show_cs_email ?? true,
                 });
             }
         } catch (error) {
@@ -286,7 +302,7 @@ export default function AdminSettingsPage() {
         }
     };
 
-    const handleSettingsChange = (field: string, value: string | number) => {
+    const handleSettingsChange = (field: string, value: string | number | boolean) => {
         setSiteSettings(prev => ({ ...prev, [field]: value }));
     };
 
@@ -472,6 +488,37 @@ export default function AdminSettingsPage() {
                                                 placeholder="http://pf.kakao.com/..."
                                                 className="w-full px-0 py-2 border-b border-gray-200 focus:border-green-700 bg-transparent outline-none transition-colors placeholder-gray-300 font-normal text-gray-900"
                                             />
+                                        </div>
+                                    </div>
+
+                                    {/* Footer Visibility Toggles */}
+                                    <div className="pt-6 border-t border-gray-100">
+                                        <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">푸터 정보 표시 설정</h3>
+                                        <p className="text-xs text-gray-500 mb-4">표시할 정보를 선택하세요. 개인정보 보호를 위해 필요하지 않은 정보는 숨길 수 있습니다.</p>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            {[
+                                                { key: 'show_owner_name', label: '대표자명' },
+                                                { key: 'show_business_license', label: '사업자등록번호' },
+                                                { key: 'show_mail_order_license', label: '통신판매업신고' },
+                                                { key: 'show_address', label: '회사 주소' },
+                                                { key: 'show_cs_phone', label: '고객센터 전화' },
+                                                { key: 'show_cs_hours', label: '운영시간' },
+                                                { key: 'show_cs_email', label: '이메일' },
+                                            ].map(({ key, label }) => (
+                                                <label key={key} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group">
+                                                    <div className="relative">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={siteSettings[key as keyof typeof siteSettings] as boolean}
+                                                            onChange={(e) => handleSettingsChange(key, e.target.checked)}
+                                                            className="sr-only peer"
+                                                        />
+                                                        <div className="w-10 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
+                                                        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4 shadow-sm"></div>
+                                                    </div>
+                                                    <span className="text-sm text-gray-700 group-hover:text-gray-900">{label}</span>
+                                                </label>
+                                            ))}
                                         </div>
                                     </div>
 
