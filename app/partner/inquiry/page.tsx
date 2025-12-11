@@ -92,9 +92,9 @@ export default function PartnerInquiryPage() {
                 >
                     <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Partnership</p>
                     <h1 className="text-3xl font-bold tracking-widest" style={{ fontFamily: "'S-Core Dream', sans-serif" }}>제휴문의</h1>
-                    <p className="mt-4 text-sm text-gray-500">
-                        무점포·소자본 창업, 시작부터 관리까지 모든 지원.<br />
-                        문의 남겨주시면 담당자 배정 후 빠른 연락드리겠습니다.
+                    <p className="mt-4 text-sm text-gray-500 text-center">
+                        우리와 함께 성장하는 파트너<br />
+                        누구든, 언제든, 만족하실꺼에요. 에센시아.
                     </p>
                 </motion.div>
 
