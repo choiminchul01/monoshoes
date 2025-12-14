@@ -10,6 +10,7 @@ import { Footer } from "@/components/layout/Footer";
 import { KakaoButton } from "@/components/ui/KakaoButton";
 import { ClickRipple } from "@/components/ui/ClickRipple";
 import { ImageProtection } from "@/components/ui/ImageProtection";
+import AddToHomeScreenBanner from "@/components/ui/AddToHomeScreenBanner";
 import { usePathname } from "next/navigation";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -48,6 +49,10 @@ export default function RootLayout({
                 {!hideNavigation && !isAdminPage && <Footer />}
                 {!hideNavigation && !isAdminPage && (
                   <KakaoButton />
+                )}
+                {/* 홈 화면 추가 배너 - 관리자/랜딩/파트너 페이지 제외 */}
+                {!hideNavigation && !isAdminPage && (
+                  <AddToHomeScreenBanner />
                 )}
               </ToastProvider>
             </CartProvider>
