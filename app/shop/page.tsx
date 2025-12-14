@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { ProductCardSkeleton } from "@/components/ui/Skeleton";
 import { Sidebar } from "@/components/shop/Sidebar";
-import { Crown, Sparkles, Filter, X, Search } from "lucide-react";
+import { Crown, Sparkles, Star, Filter, X, Search } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -22,6 +22,8 @@ type Product = {
     is_available: boolean;
     is_best?: boolean;
     is_new?: boolean;
+    is_celeb_pick?: boolean;
+    celeb_pick_image_index?: number;
     discount_percent?: number;
     created_at: string;
 };
@@ -36,6 +38,7 @@ function ShopContent() {
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
     const [bestSellersCount, setBestSellersCount] = useState(4);
     const [newArrivalsCount, setNewArrivalsCount] = useState(4);
+    const [celebPickCount, setCelebPickCount] = useState(4);
     const [searchTerm, setSearchTerm] = useState(urlSearchTerm || ""); // 초기값을 URL 검색어로 설정
     const [isLoading, setIsLoading] = useState(true);
 
@@ -67,6 +70,7 @@ function ShopContent() {
     useEffect(() => {
         setBestSellersCount(4);
         setNewArrivalsCount(4);
+        setCelebPickCount(4);
     }, [selectedCategory, selectedBrand, searchTerm]);
 
     const thirtyDaysAgo = new Date();
@@ -105,6 +109,9 @@ function ShopContent() {
         // Let's just duplicate them for visual fullness if the user wants to see both sections
         BEST_SELLERS = sortedByDate;
     }
+
+    // CELEB'S PICK: is_celeb_pick이 true인 상품
+    const CELEB_PICKS = allFilteredProducts.filter(p => p.is_celeb_pick);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -324,7 +331,59 @@ function ShopContent() {
                                 </>
                             )}
 
-                            {BEST_SELLERS.length === 0 && NEW_ARRIVALS.length === 0 && (
+                            {/* CELEB'S PICK */}
+                            {CELEB_PICKS.length > 0 && (
+                                <>
+                                    <h2 className="mb-8 mt-16 text-lg font-light tracking-tight flex items-center gap-2">
+                                        CELEB'S PICK
+                                        <Star className="w-5 h-5 text-purple-600" fill="currentColor" />
+                                    </h2>
+
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
+                                        {isLoading ? (
+                                            // 로딩 중 스켈레톤 표시
+                                            [...Array(4)].map((_, index) => (
+                                                <ProductCardSkeleton key={index} aspectRatio="aspect-[3/4]" />
+                                            ))
+                                        ) : (
+                                            // 실제 상품 표시
+                                            CELEB_PICKS.slice(0, celebPickCount).map((product, idx) => {
+                                                const celebImageIndex = product.celeb_pick_image_index ?? 0;
+                                                const celebImageUrl = product.images?.[celebImageIndex] || product.images?.[0];
+                                                return (
+                                                    <ProductCard
+                                                        key={product.id}
+                                                        id={product.id}
+                                                        brand={product.brand}
+                                                        name={product.name}
+                                                        price={product.price}
+                                                        imageUrl={celebImageUrl}
+                                                        aspectRatio="aspect-[3/4]"
+                                                        index={idx}
+                                                        discount_percent={product.discount_percent}
+                                                        is_best={product.is_best}
+                                                        is_new={product.is_new}
+                                                        originalPrice={product.original_price}
+                                                    />
+                                                );
+                                            })
+                                        )}
+                                    </div>
+
+                                    {celebPickCount < CELEB_PICKS.length && (
+                                        <div className="flex justify-center">
+                                            <button
+                                                onClick={() => setCelebPickCount((prev) => Math.min(prev + 4, CELEB_PICKS.length))}
+                                                className="px-5 py-1.5 bg-transparent border border-black text-black text-xs font-medium hover:bg-black hover:text-white transition-colors rounded-full tracking-widest uppercase"
+                                            >
+                                                Load More
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {BEST_SELLERS.length === 0 && NEW_ARRIVALS.length === 0 && CELEB_PICKS.length === 0 && (
                                 <div className="text-center py-20 text-gray-500 font-light">
                                     No products found.
                                 </div>

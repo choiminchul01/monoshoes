@@ -23,6 +23,8 @@ type Product = {
     is_available: boolean;
     is_best?: boolean;
     is_new?: boolean;
+    is_celeb_pick?: boolean;
+    celeb_pick_image_index?: number;
     discount_percent?: number;
     details?: {
         colors?: { name: string; value: string }[];
@@ -74,6 +76,8 @@ export default function AdminProductsPage() {
         is_available: true,
         is_best: false,
         is_new: false,
+        is_celeb_pick: false,
+        celeb_pick_image_index: 0,
         discount_percent: 0,
         existingImages: [],
         existingDetailImages: [],
@@ -390,6 +394,8 @@ export default function AdminProductsPage() {
                 },
                 is_best: formData.is_best,
                 is_new: formData.is_new,
+                is_celeb_pick: formData.is_celeb_pick,
+                celeb_pick_image_index: formData.is_celeb_pick ? formData.celeb_pick_image_index : null,
                 discount_percent: formData.discount_percent,
             };
 
@@ -450,6 +456,8 @@ export default function AdminProductsPage() {
             is_available: product.is_available,
             is_best: product.is_best || false,
             is_new: product.is_new || false,
+            is_celeb_pick: product.is_celeb_pick || false,
+            celeb_pick_image_index: product.celeb_pick_image_index || 0,
             discount_percent: product.discount_percent || 0,
             colors: product.details?.colors || [],
             sizes: product.details?.sizes || [],
@@ -1009,7 +1017,7 @@ export default function AdminProductsPage() {
                                             {formData.images.length + (formData.existingImages?.length || 0)}개 이미지
                                         </span>
                                     </div>
-                                    {/* 베스트/신상 체크박스 */}
+                                    {/* 베스트/신상/셀럽픽 체크박스 */}
                                     <div className="flex items-center gap-4">
                                         <label className="flex items-center gap-2 cursor-pointer">
                                             <input
@@ -1029,6 +1037,29 @@ export default function AdminProductsPage() {
                                             />
                                             <span className="text-sm font-medium text-green-600">신상</span>
                                         </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.is_celeb_pick || false}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, is_celeb_pick: e.target.checked }))}
+                                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                            />
+                                            <span className="text-sm font-medium text-purple-600">셀럽PICK</span>
+                                        </label>
+                                        {/* 셀럽PICK 이미지 선택 드롭다운 */}
+                                        {formData.is_celeb_pick && (formData.existingImages?.length || 0) + formData.images.length > 1 && (
+                                            <select
+                                                value={formData.celeb_pick_image_index || 0}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, celeb_pick_image_index: parseInt(e.target.value) }))}
+                                                className="px-2 py-1 text-sm border border-purple-300 rounded-lg bg-purple-50 text-purple-700 focus:ring-purple-500 focus:border-purple-500"
+                                            >
+                                                {[...(formData.existingImages || []), ...formData.images.map((f, i) => `새이미지${i + 1}`)].map((_, idx) => (
+                                                    <option key={idx} value={idx}>
+                                                        {idx + 1}번 이미지
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
 
