@@ -372,3 +372,5 @@ export async function fetchPartnershipImageAction() { // Name kept same but retu
         return { success: false, error: error.message };
     }
 }
+
+

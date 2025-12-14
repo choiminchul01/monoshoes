@@ -61,6 +61,9 @@ export default function AdminSettingsPage() {
         fetchBanners();
         fetchSiteSettings();
         fetchPolicyImages();
+        fetchBanners();
+        fetchSiteSettings();
+        fetchPolicyImages();
         fetchPartnershipImage();
     }, []);
 
