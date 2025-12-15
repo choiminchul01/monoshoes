@@ -601,13 +601,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
             </div>
 
+            {/* Common Policy Images Section (이용 안내 - 1번 이미지) */}
+            <PolicyImagesSection
+                startId={1}
+                endId={1}
+                title="GUIDE"
+                subtitle="(이용 안내)"
+            />
+
             {/* Detail Images Section */}
             {product && product.detail_images && product.detail_images.length > 0 && (
                 <DetailImagesSection images={product.detail_images} />
             )}
 
-            {/* Common Policy Images Section (이용 안내 - 전 상품 공통) */}
-            <PolicyImagesSection />
+            {/* Common Policy Images Section (교환/환불 - 2,3번 이미지) */}
+            <PolicyImagesSection
+                startId={2}
+                endId={3}
+                title="POLICY"
+                subtitle="(교환 / 환불)"
+            />
 
             {/* Product Q&A Section */}
             {product && <ProductQnA productId={product.id} />}
@@ -875,17 +888,26 @@ function DetailImagesSection({ images }: { images: string[] }) {
 }
 
 // 공통 이용 안내 이미지 섹션 (배송/교환/환불 규정 - 전 상품 공통)
-function PolicyImagesSection() {
+function PolicyImagesSection({
+    startId = 1,
+    endId = 3,
+    title = "GUIDE & POLICY",
+    subtitle = "(이용 안내)"
+}: {
+    startId?: number;
+    endId?: number;
+    title?: string;
+    subtitle?: string;
+}) {
     const [policyImages, setPolicyImages] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchPolicyImages = async () => {
             try {
-                // 1~5번 슬롯에 대해 직접 URL 확인
                 const validUrls: string[] = [];
 
-                for (let i = 1; i <= 3; i++) {
+                for (let i = startId; i <= endId; i++) {
                     // 다양한 확장자 시도
                     const extensions = ['png', 'jpg', 'jpeg', 'webp'];
 
@@ -918,7 +940,7 @@ function PolicyImagesSection() {
         };
 
         fetchPolicyImages();
-    }, []);
+    }, [startId, endId]); // startId, endId 변경 시 재실행
 
     if (loading || policyImages.length === 0) return null;
 
@@ -931,9 +953,9 @@ function PolicyImagesSection() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
             >
-                <h3 className="text-2xl font-bold tracking-widest mb-0.5">GUIDE & POLICY</h3>
+                <h3 className="text-2xl font-bold tracking-widest mb-0.5">{title}</h3>
                 <p className="text-2xl font-bold text-gray-800 tracking-widest mb-2">· ESSENTIA ·</p>
-                <p className="text-base text-gray-500">(이용 안내)</p>
+                <p className="text-base text-gray-500">{subtitle}</p>
             </motion.div>
 
             <div className="space-y-4">
@@ -952,7 +974,7 @@ function PolicyImagesSection() {
                     >
                         <Image
                             src={imageUrl}
-                            alt={`이용 안내 ${index + 1}`}
+                            alt={`${title} ${index + 1}`}
                             width={900}
                             height={1200}
                             className="w-full h-auto rounded-2xl"
