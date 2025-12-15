@@ -1,26 +1,55 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchBrandLogosAction } from '@/app/admin/settings/actions';
+import Image from 'next/image';
 
-// 명품 브랜드 목록
-const brands = [
-    { name: 'PRADA', logoText: 'PRADA' },
-    { name: 'CELINE', logoText: 'CELINE' },
-    { name: 'BOTTEGA VENETA', logoText: 'BOTTEGA VENETA' },
-    { name: 'HERMÈS', logoText: 'HERMÈS' },
-    { name: 'GOYARD', logoText: 'GOYARD' },
-    { name: 'GUCCI', logoText: 'GUCCI' },
-    { name: 'LOUIS VUITTON', logoText: 'LOUIS VUITTON' },
-    { name: 'CHANEL', logoText: 'CHANEL' },
-    { name: 'DIOR', logoText: 'DIOR' },
-    { name: 'BALENCIAGA', logoText: 'BALENCIAGA' },
+interface BrandLogo {
+    name: string;
+    imageUrl: string | null;
+    order: number;
+}
+
+// 기본 브랜드 목록 (DB 데이터 없을 때 폴백)
+const defaultBrands = [
+    { name: 'PRADA', logoText: 'PRADA', imageUrl: null, order: 0 },
+    { name: 'CELINE', logoText: 'CELINE', imageUrl: null, order: 1 },
+    { name: 'BOTTEGA VENETA', logoText: 'BOTTEGA VENETA', imageUrl: null, order: 2 },
+    { name: 'HERMÈS', logoText: 'HERMÈS', imageUrl: null, order: 3 },
+    { name: 'GOYARD', logoText: 'GOYARD', imageUrl: null, order: 4 },
+    { name: 'GUCCI', logoText: 'GUCCI', imageUrl: null, order: 5 },
+    { name: 'LOUIS VUITTON', logoText: 'LOUIS VUITTON', imageUrl: null, order: 6 },
+    { name: 'CHANEL', logoText: 'CHANEL', imageUrl: null, order: 7 },
+    { name: 'DIOR', logoText: 'DIOR', imageUrl: null, order: 8 },
+    { name: 'BALENCIAGA', logoText: 'BALENCIAGA', imageUrl: null, order: 9 },
 ];
 
 export default function BrandSlider() {
     const [isPaused, setIsPaused] = useState(false);
+    const [brands, setBrands] = useState<any[]>(defaultBrands);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // 무한 스크롤을 위해 브랜드 목록 복제
-    const duplicatedBrands = [...brands, ...brands];
+    useEffect(() => {
+        const loadBrands = async () => {
+            try {
+                const result = await fetchBrandLogosAction();
+                if (result.success && result.logos && result.logos.length > 0) {
+                    setBrands(result.logos);
+                }
+            } catch (error) {
+                console.error("Failed to load brand logos:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadBrands();
+    }, []);
+
+    // 무한 스크롤을 위해 브랜드 목록 복제 (아이템이 너무 적으면 3~4배 복제)
+    const duplicatedBrands = brands.length < 5
+        ? [...brands, ...brands, ...brands, ...brands]
+        : [...brands, ...brands];
 
     return (
         <section className="py-12 bg-white">
@@ -42,7 +71,7 @@ export default function BrandSlider() {
                         className="flex gap-6 md:gap-8"
                         style={{
                             width: 'max-content',
-                            animation: 'brandScroll 30s linear infinite',
+                            animation: brands.length > 0 ? 'brandScroll 30s linear infinite' : 'none',
                             animationPlayState: isPaused ? 'paused' : 'running',
                         }}
                     >
@@ -51,10 +80,22 @@ export default function BrandSlider() {
                                 key={`${brand.name}-${index}`}
                                 className="flex-shrink-0 group"
                             >
-                                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-white border-2 border-gray-100 shadow-sm flex items-center justify-center transition-all duration-300 ease-out cursor-pointer group-hover:scale-110 group-hover:shadow-lg group-hover:border-gray-300 group-hover:bg-gray-50">
-                                    <span className="text-[10px] md:text-xs font-bold text-gray-700 tracking-wider text-center whitespace-pre-line leading-tight transition-all duration-300 group-hover:text-gray-900">
-                                        {brand.logoText}
-                                    </span>
+                                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-white border-2 border-gray-100 shadow-sm flex items-center justify-center transition-all duration-300 ease-out cursor-pointer group-hover:scale-110 group-hover:shadow-lg group-hover:border-gray-300 group-hover:bg-gray-50 overflow-hidden relative">
+                                    {brand.imageUrl ? (
+                                        <div className="relative w-16 h-16 md:w-20 md:h-20">
+                                            <Image
+                                                src={brand.imageUrl}
+                                                alt={brand.name}
+                                                fill
+                                                className="object-contain transition-transform duration-300 group-hover:scale-110"
+                                                sizes="(max-width: 768px) 64px, 80px"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <span className="text-[10px] md:text-xs font-bold text-gray-700 tracking-wider text-center whitespace-pre-line leading-tight transition-all duration-300 group-hover:text-gray-900 px-2">
+                                            {brand.name}
+                                        </span>
+                                    )}
                                 </div>
                                 {/* 브랜드명 툴팁 */}
                                 <div className="mt-2 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs text-gray-500 h-4">

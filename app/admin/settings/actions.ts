@@ -495,9 +495,36 @@ export async function uploadBrandLogoAction(formData: FormData) {
             return { success: false, error: 'PNG, JPG, WEBP, SVG 이미지만 업로드 가능합니다.' };
         }
 
-        // 브랜드명을 파일명으로 사용 (공백을 _로 변환)
-        const safeName = brandName.replace(/\s+/g, '_').toLowerCase();
-        const fileName = `brand_${safeName}.${fileExt}`;
+        // 1. site_settings 조회 (기존 이미지 확인용)
+        const { data: settings } = await supabaseAdmin
+            .from('site_settings')
+            .select('brand_logos')
+            .eq('id', 1)
+            .single();
+
+        const currentLogos: BrandLogo[] = settings?.brand_logos || [];
+        const existingIndex = currentLogos.findIndex(b => b.name === brandName);
+
+        // 2. 기존 이미지가 있다면 삭제
+        if (existingIndex >= 0) {
+            const oldUrl = currentLogos[existingIndex].imageUrl;
+            if (oldUrl) {
+                try {
+                    const oldFileName = oldUrl.split('/').pop()?.split('?')[0];
+                    if (oldFileName) {
+                        await supabaseAdmin.storage
+                            .from('banners')
+                            .remove([oldFileName]);
+                    }
+                } catch (e) {
+                    console.error("Old image delete failed (non-fatal):", e);
+                }
+            }
+        }
+
+        // 3. 새 파일 업로드 (파일명 안전하게 랜덤 생성)
+        // 특수문자 이슈 방지를 위해 timestamp + random 사용
+        const fileName = `brand_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -506,28 +533,21 @@ export async function uploadBrandLogoAction(formData: FormData) {
             .from('banners')
             .upload(fileName, buffer, {
                 contentType: file.type,
-                upsert: true
+                upsert: false // 랜덤 이름이므로 덮어쓰기 불필요
             });
 
         if (error) throw error;
 
-        // site_settings의 brand_logos 배열 업데이트
-        const { data: settings } = await supabaseAdmin
-            .from('site_settings')
-            .select('brand_logos')
-            .eq('id', 1)
-            .single();
-
-        const currentLogos: BrandLogo[] = settings?.brand_logos || [];
         const { data: { publicUrl } } = supabaseAdmin.storage
             .from('banners')
             .getPublicUrl(fileName);
 
-        // 기존 브랜드가 있으면 업데이트, 없으면 추가
-        const existingIndex = currentLogos.findIndex(b => b.name === brandName);
+        // 4. DB 업데이트
         if (existingIndex >= 0) {
+            // 업데이트
             currentLogos[existingIndex].imageUrl = publicUrl;
         } else {
+            // 추가
             currentLogos.push({
                 name: brandName,
                 imageUrl: publicUrl,
@@ -551,18 +571,7 @@ export async function uploadBrandLogoAction(formData: FormData) {
 
 export async function deleteBrandLogoAction(brandName: string) {
     try {
-        // Storage에서 이미지 삭제
-        const safeName = brandName.replace(/\s+/g, '_').toLowerCase();
-        const { data: files } = await supabaseAdmin.storage.from('banners').list();
-        const brandFile = files?.find(f => f.name.startsWith(`brand_${safeName}`));
-
-        if (brandFile) {
-            await supabaseAdmin.storage
-                .from('banners')
-                .remove([brandFile.name]);
-        }
-
-        // site_settings에서 브랜드 제거
+        // 1. site_settings 조회
         const { data: settings } = await supabaseAdmin
             .from('site_settings')
             .select('brand_logos')
@@ -570,6 +579,23 @@ export async function deleteBrandLogoAction(brandName: string) {
             .single();
 
         const currentLogos: BrandLogo[] = settings?.brand_logos || [];
+        const targetBrand = currentLogos.find(b => b.name === brandName);
+
+        // 2. Storage에서 이미지 삭제 (URL 기반)
+        if (targetBrand && targetBrand.imageUrl) {
+            try {
+                const fileName = targetBrand.imageUrl.split('/').pop()?.split('?')[0];
+                if (fileName) {
+                    await supabaseAdmin.storage
+                        .from('banners')
+                        .remove([fileName]);
+                }
+            } catch (e) {
+                console.error("Storage delete warning:", e);
+            }
+        }
+
+        // 3. DB 업데이트 (목록에서 제거)
         const updatedLogos = currentLogos.filter(b => b.name !== brandName);
 
         await supabaseAdmin
