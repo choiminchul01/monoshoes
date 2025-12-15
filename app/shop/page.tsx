@@ -237,6 +237,58 @@ function ShopContent() {
                     ) : (
                         // Default View (Best Sellers & New Arrivals)
                         <>
+                            {/* CELEB'S PICK - 1순위 */}
+                            {CELEB_PICKS.length > 0 && (
+                                <>
+                                    <h2 className="mb-8 text-lg font-light tracking-tight flex items-center gap-2">
+                                        CELEB'S PICK
+                                        <Star className="w-5 h-5 text-purple-600" fill="currentColor" />
+                                    </h2>
+
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
+                                        {isLoading ? (
+                                            // 로딩 중 스켈레톤 표시
+                                            [...Array(4)].map((_, index) => (
+                                                <ProductCardSkeleton key={index} aspectRatio="aspect-[3/4]" />
+                                            ))
+                                        ) : (
+                                            // 실제 상품 표시
+                                            CELEB_PICKS.slice(0, celebPickCount).map((product, idx) => {
+                                                const celebImageIndex = product.celeb_pick_image_index ?? 0;
+                                                const celebImageUrl = product.images?.[celebImageIndex] || product.images?.[0];
+                                                return (
+                                                    <ProductCard
+                                                        key={product.id}
+                                                        id={product.id}
+                                                        brand={product.brand}
+                                                        name={product.name}
+                                                        price={product.price}
+                                                        imageUrl={celebImageUrl}
+                                                        aspectRatio="aspect-[3/4]"
+                                                        index={idx}
+                                                        discount_percent={product.discount_percent}
+                                                        is_best={product.is_best}
+                                                        is_new={product.is_new}
+                                                        originalPrice={product.original_price}
+                                                    />
+                                                );
+                                            })
+                                        )}
+                                    </div>
+
+                                    {celebPickCount < CELEB_PICKS.length && (
+                                        <div className="flex justify-center mb-16">
+                                            <button
+                                                onClick={() => setCelebPickCount((prev) => Math.min(prev + 4, CELEB_PICKS.length))}
+                                                className="px-5 py-1.5 bg-transparent border border-black text-black text-xs font-medium hover:bg-black hover:text-white transition-colors rounded-full tracking-widest uppercase"
+                                            >
+                                                Load More
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
                             {BEST_SELLERS.length > 0 && (
                                 <>
                                     <h1 className="mb-8 text-lg font-light tracking-tight flex items-center gap-2">
@@ -272,7 +324,7 @@ function ShopContent() {
                                     </div>
 
                                     {bestSellersCount < BEST_SELLERS.length && (
-                                        <div className="flex justify-center mb-24">
+                                        <div className="flex justify-center mb-16">
                                             <button
                                                 onClick={() => setBestSellersCount((prev) => Math.min(prev + 4, BEST_SELLERS.length))}
                                                 className="px-5 py-1.5 bg-transparent border border-black text-black text-xs font-medium hover:bg-black hover:text-white transition-colors rounded-full tracking-widest uppercase"
@@ -322,58 +374,6 @@ function ShopContent() {
                                         <div className="flex justify-center">
                                             <button
                                                 onClick={() => setNewArrivalsCount((prev) => Math.min(prev + 4, NEW_ARRIVALS.length))}
-                                                className="px-5 py-1.5 bg-transparent border border-black text-black text-xs font-medium hover:bg-black hover:text-white transition-colors rounded-full tracking-widest uppercase"
-                                            >
-                                                Load More
-                                            </button>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
-                            {/* CELEB'S PICK */}
-                            {CELEB_PICKS.length > 0 && (
-                                <>
-                                    <h2 className="mb-8 mt-16 text-lg font-light tracking-tight flex items-center gap-2">
-                                        CELEB'S PICK
-                                        <Star className="w-5 h-5 text-purple-600" fill="currentColor" />
-                                    </h2>
-
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
-                                        {isLoading ? (
-                                            // 로딩 중 스켈레톤 표시
-                                            [...Array(4)].map((_, index) => (
-                                                <ProductCardSkeleton key={index} aspectRatio="aspect-[3/4]" />
-                                            ))
-                                        ) : (
-                                            // 실제 상품 표시
-                                            CELEB_PICKS.slice(0, celebPickCount).map((product, idx) => {
-                                                const celebImageIndex = product.celeb_pick_image_index ?? 0;
-                                                const celebImageUrl = product.images?.[celebImageIndex] || product.images?.[0];
-                                                return (
-                                                    <ProductCard
-                                                        key={product.id}
-                                                        id={product.id}
-                                                        brand={product.brand}
-                                                        name={product.name}
-                                                        price={product.price}
-                                                        imageUrl={celebImageUrl}
-                                                        aspectRatio="aspect-[3/4]"
-                                                        index={idx}
-                                                        discount_percent={product.discount_percent}
-                                                        is_best={product.is_best}
-                                                        is_new={product.is_new}
-                                                        originalPrice={product.original_price}
-                                                    />
-                                                );
-                                            })
-                                        )}
-                                    </div>
-
-                                    {celebPickCount < CELEB_PICKS.length && (
-                                        <div className="flex justify-center">
-                                            <button
-                                                onClick={() => setCelebPickCount((prev) => Math.min(prev + 4, CELEB_PICKS.length))}
                                                 className="px-5 py-1.5 bg-transparent border border-black text-black text-xs font-medium hover:bg-black hover:text-white transition-colors rounded-full tracking-widest uppercase"
                                             >
                                                 Load More

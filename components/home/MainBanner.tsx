@@ -96,9 +96,9 @@ export function MainBanner() {
         const timer = setInterval(() => {
             setDirection(1);
             setCurrentSlide((prev) => (prev + 1) % banners.length);
-        }, 6000); // 5초 → 6초로 늘림
+        }, 8000); // 8초로 변경
         return () => clearInterval(timer);
-    }, [banners]);
+    }, [banners, currentSlide]); // currentSlide 변경 시 타이머 리셋
 
     // 이전 슬라이드로
     const goToPrev = () => {
