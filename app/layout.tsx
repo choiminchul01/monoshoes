@@ -1,16 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Outfit } from "next/font/google";
 import { Cinzel } from "next/font/google";
 import "./globals.css";
 import ClientLayout from "@/components/layout/ClientLayout";
-import { metadata as siteMetadata } from "./metadata";
+import { metadata as siteMetadata, viewport as siteViewport } from "./metadata";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 const cinzel = Cinzel({ subsets: ["latin"], weight: ["700"], variable: "--font-cinzel" });
 
 export const metadata: Metadata = siteMetadata;
+export const viewport: Viewport = siteViewport;
 
 export default function RootLayout({
   children,

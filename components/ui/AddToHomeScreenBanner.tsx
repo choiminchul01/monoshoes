@@ -12,6 +12,11 @@ interface BeforeInstallPromptEvent extends Event {
 export default function AddToHomeScreenBanner() {
     const [showInstructions, setShowInstructions] = useState(false);
     const [platform, setPlatform] = useState<'ios' | 'android' | 'pc'>('pc');
+    const [isVisible, setIsVisible] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+    const [isIOS, setIsIOS] = useState(false);
+    const [isStandalone, setIsStandalone] = useState(false);
 
     useEffect(() => {
         // 이미 홈 화면에서 실행 중인지 확인 (PWA 모드)

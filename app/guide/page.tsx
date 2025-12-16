@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Monitor, Smartphone, Apple, Share, MoreVertical, PlusSquare, ArrowRight, Download } from "lucide-react";
+import { Monitor, Smartphone, Share, MoreVertical, PlusSquare, ArrowRight, Download } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -34,7 +34,7 @@ export default function GuidePage() {
                                 : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                                 }`}
                         >
-                            <Apple className="w-5 h-5" />
+                            <Smartphone className="w-5 h-5" />
                             <span>iPhone (iOS)</span>
                         </button>
                         <button
@@ -303,4 +303,4 @@ function PCGuide() {
             </div>
         </div>
     );
-}  
+}
