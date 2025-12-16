@@ -3,28 +3,139 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
+
+// ============================================
+// Main Banner Actions (Dynamic)
+// ============================================
+
+export interface MainBanner {
+    id: string;
+    imageUrl: string;
+    link: string;
+    order: number;
+}
+
 export async function uploadBannerAction(formData: FormData) {
     const file = formData.get('file') as File;
-    const slotNumber = formData.get('slotNumber') as string;
+    const link = formData.get('link') as string || '';
 
-    if (!file || !slotNumber) {
-        return { success: false, error: 'File or slot number missing' };
+    if (!file) {
+        return { success: false, error: 'File missing' };
     }
 
     try {
         const fileExt = file.name.split('.').pop();
-        const fileName = `banner_${slotNumber}.${fileExt}`;
+        const bannerId = `banner_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        const fileName = `${bannerId}.${fileExt}`;
 
         // Convert file to ArrayBuffer for Supabase upload
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const { error } = await supabaseAdmin.storage
+        // Upload to 'banners' bucket
+        const { error: uploadError } = await supabaseAdmin.storage
             .from('banners')
             .upload(fileName, buffer, {
                 contentType: file.type,
-                upsert: true
+                upsert: false
             });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabaseAdmin.storage
+            .from('banners')
+            .getPublicUrl(fileName);
+
+        const fullImageUrl = `${publicUrl}?t=${Date.now()}`;
+
+        // Update DB
+        const { data: settings } = await supabaseAdmin
+            .from('site_settings')
+            .select('main_banners')
+            .eq('id', 1)
+            .single();
+
+        const currentBanners: MainBanner[] = settings?.main_banners || [];
+        const newBanner: MainBanner = {
+            id: bannerId,
+            imageUrl: fullImageUrl,
+            link: link,
+            order: currentBanners.length
+        };
+
+        const updatedBanners = [...currentBanners, newBanner];
+
+        const { error: dbError } = await supabaseAdmin
+            .from('site_settings')
+            .update({ main_banners: updatedBanners })
+            .eq('id', 1);
+
+        if (dbError) throw dbError;
+
+        revalidatePath('/admin/settings');
+        revalidatePath('/home');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Banner upload error:', error);
+        return { success: false, error: `Upload failed: ${error.message}` };
+    }
+}
+
+export async function deleteBannerAction(bannerId: string) {
+    try {
+        const { data: settings } = await supabaseAdmin
+            .from('site_settings')
+            .select('main_banners')
+            .eq('id', 1)
+            .single();
+
+        const currentBanners: MainBanner[] = settings?.main_banners || [];
+        const targetBanner = currentBanners.find(b => b.id === bannerId);
+
+        if (!targetBanner) {
+            return { success: false, error: 'Banner not found' };
+        }
+
+        // Delete from Storage
+        // Extract filename from URL
+        const fileName = targetBanner.imageUrl.split('/').pop()?.split('?')[0];
+        if (fileName) {
+            await supabaseAdmin.storage
+                .from('banners')
+                .remove([fileName]);
+        }
+
+        // Update DB
+        const updatedBanners = currentBanners.filter(b => b.id !== bannerId);
+
+        const { error: dbError } = await supabaseAdmin
+            .from('site_settings')
+            .update({ main_banners: updatedBanners })
+            .eq('id', 1);
+
+        if (dbError) throw dbError;
+
+        revalidatePath('/admin/settings');
+        revalidatePath('/home');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Delete banner error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function saveBannerOrderAction(banners: MainBanner[]) {
+    try {
+        // Normalize orders based on array index
+        const orderedBanners = banners.map((b, index) => ({
+            ...b,
+            order: index
+        }));
+
+        const { error } = await supabaseAdmin
+            .from('site_settings')
+            .update({ main_banners: orderedBanners })
+            .eq('id', 1);
 
         if (error) throw error;
 
@@ -32,107 +143,67 @@ export async function uploadBannerAction(formData: FormData) {
         revalidatePath('/home');
         return { success: true };
     } catch (error: any) {
-        console.error('Upload error details:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint
-        });
-        return { success: false, error: `Upload failed: ${error.message}` };
-    }
-}
-
-export async function deleteBannerAction(slotNumber: number) {
-    try {
-        // List files to find the correct extension
-        const { data: files } = await supabaseAdmin.storage.from('banners').list();
-        const bannerFile = files?.find(f => f.name.startsWith(`banner_${slotNumber}`));
-
-        if (bannerFile) {
-            const { error } = await supabaseAdmin.storage
-                .from('banners')
-                .remove([bannerFile.name]);
-
-            if (error) throw error;
-        }
-
-        revalidatePath('/admin/settings');
-        revalidatePath('/home');
-        return { success: true };
-    } catch (error: any) {
-        console.error('Delete error:', error);
+        console.error('Save banner order error:', error);
         return { success: false, error: error.message };
     }
 }
 
 export async function fetchBannersAction() {
     try {
-        const { data: files, error } = await supabaseAdmin.storage.from('banners').list();
-
-        if (error) throw error;
-
-        const bannerUrls: { [key: number]: string } = {};
-        const bannerLinks: { [key: number]: string } = {};
-
-        if (files) {
-            for (let i = 1; i <= 3; i++) {
-                const bannerFile = files.find(f => f.name.startsWith(`banner_${i}`));
-                if (bannerFile) {
-                    const { data: { publicUrl } } = supabaseAdmin.storage
-                        .from('banners')
-                        .getPublicUrl(bannerFile.name);
-                    // Add timestamp to bust cache
-                    bannerUrls[i] = `${publicUrl}?t=${new Date().getTime()}`;
-                }
-            }
-        }
-
-        // Fetch banner links from site_settings (single row with columns)
-        const { data: settings } = await supabaseAdmin
+        const { data: settings, error } = await supabaseAdmin
             .from('site_settings')
-            .select('banner_1_link, banner_2_link, banner_3_link')
+            .select('main_banners, banner_1_link, banner_2_link, banner_3_link')
             .eq('id', 1)
             .single();
 
-        if (settings) {
-            bannerLinks[1] = settings.banner_1_link || '';
-            bannerLinks[2] = settings.banner_2_link || '';
-            bannerLinks[3] = settings.banner_3_link || '';
+        if (error) throw error;
+
+        let currBanners: MainBanner[] = settings.main_banners;
+
+        // Migration Check: If main_banners is null or empty array, check for legacy files
+        if (!currBanners || !Array.isArray(currBanners) || currBanners.length === 0) {
+            const { data: files } = await supabaseAdmin.storage.from('banners').list();
+            const legacyBanners: MainBanner[] = [];
+
+            if (files) {
+                // Check banner_1, banner_2, banner_3
+                for (let i = 1; i <= 3; i++) {
+                    const legacyFile = files.find(f => f.name.startsWith(`banner_${i}.`));
+                    if (legacyFile) {
+                        const { data: { publicUrl } } = supabaseAdmin.storage
+                            .from('banners')
+                            .getPublicUrl(legacyFile.name);
+
+                        legacyBanners.push({
+                            id: `legacy_banner_${i}`, // Use this ID to track it
+                            imageUrl: `${publicUrl}?t=${new Date().getTime()}`,
+                            link: settings[`banner_${i}_link` as keyof typeof settings] || '',
+                            order: i - 1
+                        });
+                    }
+                }
+            }
+
+            if (legacyBanners.length > 0) {
+                // Save migrated banners to DB
+                console.log('Migrating legacy banners to dynamic structure...');
+                await supabaseAdmin
+                    .from('site_settings')
+                    .update({ main_banners: legacyBanners })
+                    .eq('id', 1);
+
+                currBanners = legacyBanners;
+            } else {
+                currBanners = [];
+            }
         }
 
-        return { success: true, banners: bannerUrls, links: bannerLinks };
+        // Sort by order
+        currBanners.sort((a, b) => a.order - b.order);
+
+        return { success: true, banners: currBanners };
     } catch (error: any) {
-        console.error('Fetch error:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-export async function saveBannerLinksAction(links: { [key: number]: string }) {
-    try {
-        // Build update object with only the columns being updated
-        const updateData: { [key: string]: string } = {};
-
-        for (const [slot, link] of Object.entries(links)) {
-            const columnName = `banner_${slot}_link`;
-            updateData[columnName] = link || '';
-        }
-
-        // Update site_settings row id=1
-        const { error } = await supabaseAdmin
-            .from('site_settings')
-            .update(updateData)
-            .eq('id', 1);
-
-        if (error) {
-            console.error('Update banner links error:', error);
-            throw error;
-        }
-
-        revalidatePath('/admin/settings');
-        revalidatePath('/home');
-        return { success: true };
-    } catch (error: any) {
-        console.error('Save banner links error:', error);
+        console.error('Fetch banners error:', error);
         return { success: false, error: error.message };
     }
 }
@@ -495,70 +566,55 @@ export async function uploadBrandLogoAction(formData: FormData) {
             return { success: false, error: 'PNG, JPG, WEBP, SVG 이미지만 업로드 가능합니다.' };
         }
 
-        // 1. site_settings 조회 (기존 이미지 확인용)
-        const { data: settings } = await supabaseAdmin
-            .from('site_settings')
-            .select('brand_logos')
-            .eq('id', 1)
+        // 1. Check for existing brand
+        const { data: existingBrand } = await supabaseAdmin
+            .from('brand_logos')
+            .select('*')
+            .eq('name', brandName)
             .single();
 
-        const currentLogos: BrandLogo[] = settings?.brand_logos || [];
-        const existingIndex = currentLogos.findIndex(b => b.name === brandName);
-
-        // 2. 기존 이미지가 있다면 삭제
-        if (existingIndex >= 0) {
-            const oldUrl = currentLogos[existingIndex].imageUrl;
-            if (oldUrl) {
+        // 2. Delete old image if exists
+        if (existingBrand?.image_url) {
+            const oldFileName = existingBrand.image_url.split('/').pop()?.split('?')[0];
+            if (oldFileName) {
                 try {
-                    const oldFileName = oldUrl.split('/').pop()?.split('?')[0];
-                    if (oldFileName) {
-                        await supabaseAdmin.storage
-                            .from('banners')
-                            .remove([oldFileName]);
-                    }
+                    await supabaseAdmin.storage
+                        .from('banners')
+                        .remove([oldFileName]);
                 } catch (e) {
                     console.error("Old image delete failed (non-fatal):", e);
                 }
             }
         }
 
-        // 3. 새 파일 업로드 (파일명 안전하게 랜덤 생성)
-        // 특수문자 이슈 방지를 위해 timestamp + random 사용
+        // 3. Upload new file
         const fileName = `brand_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const { error } = await supabaseAdmin.storage
+        const { error: uploadError } = await supabaseAdmin.storage
             .from('banners')
             .upload(fileName, buffer, {
                 contentType: file.type,
-                upsert: false // 랜덤 이름이므로 덮어쓰기 불필요
+                upsert: false
             });
 
-        if (error) throw error;
+        if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabaseAdmin.storage
             .from('banners')
             .getPublicUrl(fileName);
 
-        // 4. DB 업데이트
-        if (existingIndex >= 0) {
-            // 업데이트
-            currentLogos[existingIndex].imageUrl = publicUrl;
-        } else {
-            // 추가
-            currentLogos.push({
+        // 4. Upsert into brand_logos table
+        const { error: dbError } = await supabaseAdmin
+            .from('brand_logos')
+            .upsert({
                 name: brandName,
-                imageUrl: publicUrl,
-                order: parseInt(order) || currentLogos.length
-            });
-        }
+                image_url: publicUrl,
+                order: order ? parseInt(order) : 999
+            }, { onConflict: 'name' });
 
-        await supabaseAdmin
-            .from('site_settings')
-            .update({ brand_logos: currentLogos })
-            .eq('id', 1);
+        if (dbError) throw dbError;
 
         revalidatePath('/admin/settings');
         revalidatePath('/home');
@@ -571,37 +627,29 @@ export async function uploadBrandLogoAction(formData: FormData) {
 
 export async function deleteBrandLogoAction(brandName: string) {
     try {
-        // 1. site_settings 조회
-        const { data: settings } = await supabaseAdmin
-            .from('site_settings')
-            .select('brand_logos')
-            .eq('id', 1)
+        // 1. Get info to delete file
+        const { data: targetBrand } = await supabaseAdmin
+            .from('brand_logos')
+            .select('*')
+            .eq('name', brandName)
             .single();
 
-        const currentLogos: BrandLogo[] = settings?.brand_logos || [];
-        const targetBrand = currentLogos.find(b => b.name === brandName);
-
-        // 2. Storage에서 이미지 삭제 (URL 기반)
-        if (targetBrand && targetBrand.imageUrl) {
-            try {
-                const fileName = targetBrand.imageUrl.split('/').pop()?.split('?')[0];
-                if (fileName) {
-                    await supabaseAdmin.storage
-                        .from('banners')
-                        .remove([fileName]);
-                }
-            } catch (e) {
-                console.error("Storage delete warning:", e);
+        if (targetBrand?.image_url) {
+            const fileName = targetBrand.image_url.split('/').pop()?.split('?')[0];
+            if (fileName) {
+                await supabaseAdmin.storage
+                    .from('banners')
+                    .remove([fileName]);
             }
         }
 
-        // 3. DB 업데이트 (목록에서 제거)
-        const updatedLogos = currentLogos.filter(b => b.name !== brandName);
+        // 2. Delete from DB
+        const { error } = await supabaseAdmin
+            .from('brand_logos')
+            .delete()
+            .eq('name', brandName);
 
-        await supabaseAdmin
-            .from('site_settings')
-            .update({ brand_logos: updatedLogos })
-            .eq('id', 1);
+        if (error) throw error;
 
         revalidatePath('/admin/settings');
         revalidatePath('/home');
@@ -614,10 +662,18 @@ export async function deleteBrandLogoAction(brandName: string) {
 
 export async function saveBrandLogosAction(brands: BrandLogo[]) {
     try {
-        await supabaseAdmin
-            .from('site_settings')
-            .update({ brand_logos: brands })
-            .eq('id', 1);
+        // Prepare batch upsert
+        const updates = brands.map(b => ({
+            name: b.name,
+            image_url: b.imageUrl,
+            order: b.order
+        }));
+
+        const { error } = await supabaseAdmin
+            .from('brand_logos')
+            .upsert(updates, { onConflict: 'name' });
+
+        if (error) throw error;
 
         revalidatePath('/admin/settings');
         revalidatePath('/home');
@@ -631,17 +687,18 @@ export async function saveBrandLogosAction(brands: BrandLogo[]) {
 export async function fetchBrandLogosAction() {
     try {
         const { data, error } = await supabaseAdmin
-            .from('site_settings')
-            .select('brand_logos')
-            .eq('id', 1)
-            .single();
+            .from('brand_logos')
+            .select('*')
+            .order('order', { ascending: true });
 
         if (error) throw error;
 
-        const logos: BrandLogo[] = data?.brand_logos || [];
-
-        // 순서대로 정렬
-        logos.sort((a, b) => a.order - b.order);
+        // Map database columns to BrandLogo interface
+        const logos: BrandLogo[] = (data || []).map(row => ({
+            name: row.name,
+            imageUrl: row.image_url,
+            order: row.order
+        }));
 
         return { success: true, logos };
     } catch (error: any) {

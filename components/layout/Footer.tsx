@@ -134,9 +134,7 @@ export function Footer() {
                     <div className="flex flex-col items-end gap-6">
                         {/* Navigation Links */}
                         <div className="flex gap-6 text-sm">
-                            <Link href="/faq" className="hover:text-black transition-colors">
-                                FAQ
-                            </Link>
+
                             <Link href="/about" className="hover:text-black transition-colors">
                                 COMPANY
                             </Link>
@@ -151,15 +149,17 @@ export function Footer() {
                             </Link>
                         </div>
 
-                        {/* Logo */}
                         <div className="mt-2">
-                            <Image
-                                src="/logo.png"
-                                alt={settings.company_name}
-                                width={120}
-                                height={40}
-                                className="opacity-50 hover:opacity-100 transition-opacity"
-                            />
+                            <Link href="/" className="text-2xl md:text-3xl font-bold tracking-wider flex-shrink-0 flex gap-0.5 text-black opacity-80 hover:opacity-100" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                                {"ESSENTIA".split("").map((letter, i) => (
+                                    <span
+                                        key={i}
+                                        className="transition-all duration-500 ease-out hover:text-[#D4AF37] hover:scale-110 inline-block"
+                                    >
+                                        {letter}
+                                    </span>
+                                ))}
+                            </Link>
                         </div>
                     </div>
                 </div>

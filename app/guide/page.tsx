@@ -1,19 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Monitor, Smartphone, Share, MoreVertical, PlusSquare, ArrowRight, Download } from "lucide-react";
+import { Monitor, Smartphone, Share, MoreVertical, PlusSquare, ArrowRight, Download, Menu } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 
 export default function GuidePage() {
-    const [activeTab, setActiveTab] = useState<'ios' | 'android' | 'pc'>('ios');
+    const [activeTab, setActiveTab] = useState<'pc' | 'android' | 'ios'>('pc');
 
     return (
         <div className="min-h-screen bg-white">
             {/* Header Section */}
             <div className="bg-gray-50 py-16 md:py-24 border-b border-gray-100">
                 <div className="container mx-auto px-4 text-center">
-                    <h1 className="text-3xl md:text-5xl font-bold font-serif mb-6 text-gray-900 tracking-tight">
+                    <h1 className="text-3xl md:text-5xl font-bold font-serif mb-6 text-gray-900 tracking-tight" style={{ fontFamily: "var(--font-cinzel), serif" }}>
                         App Installation Guide
                     </h1>
                     <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
@@ -28,14 +27,14 @@ export default function GuidePage() {
                 <div className="container mx-auto px-4">
                     <div className="flex justify-center gap-2 md:gap-8 py-4">
                         <button
-                            onClick={() => setActiveTab('ios')}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm md:text-base font-bold transition-all ${activeTab === 'ios'
-                                ? 'bg-black text-white shadow-lg scale-105'
+                            onClick={() => setActiveTab('pc')}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm md:text-base font-bold transition-all ${activeTab === 'pc'
+                                ? 'bg-blue-600 text-white shadow-lg scale-105'
                                 : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                                 }`}
                         >
-                            <Smartphone className="w-5 h-5" />
-                            <span>iPhone (iOS)</span>
+                            <Monitor className="w-5 h-5" />
+                            <span>PC Chrome / Edge</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('android')}
@@ -48,14 +47,14 @@ export default function GuidePage() {
                             <span>Android</span>
                         </button>
                         <button
-                            onClick={() => setActiveTab('pc')}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm md:text-base font-bold transition-all ${activeTab === 'pc'
-                                ? 'bg-blue-600 text-white shadow-lg scale-105'
+                            onClick={() => setActiveTab('ios')}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm md:text-base font-bold transition-all ${activeTab === 'ios'
+                                ? 'bg-black text-white shadow-lg scale-105'
                                 : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                                 }`}
                         >
-                            <Monitor className="w-5 h-5" />
-                            <span>PC Chrome</span>
+                            <Smartphone className="w-5 h-5" />
+                            <span>iPhone (iOS)</span>
                         </button>
                     </div>
                 </div>
@@ -63,9 +62,9 @@ export default function GuidePage() {
 
             {/* Content Section */}
             <div className="container mx-auto px-4 py-12 mb-20">
-                {activeTab === 'ios' && <IOSGuide />}
-                {activeTab === 'android' && <AndroidGuide />}
                 {activeTab === 'pc' && <PCGuide />}
+                {activeTab === 'android' && <AndroidGuide />}
+                {activeTab === 'ios' && <IOSGuide />}
             </div>
 
             {/* Bottom CTA */}
@@ -77,6 +76,217 @@ export default function GuidePage() {
                         메인으로 돌아가기
                         <ArrowRight className="w-4 h-4" />
                     </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// PC Guide Component
+function PCGuide() {
+    return (
+        <div className="max-w-4xl mx-auto space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Google Chrome Section */}
+            <div>
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">C</div>
+                    <h2 className="text-2xl font-bold text-gray-900">Google Chrome</h2>
+                </div>
+
+                <div className="flex flex-col items-center gap-8 bg-gray-50 rounded-3xl p-8 md:p-12 border border-gray-200">
+                    <div className="text-center space-y-4 max-w-lg">
+                        <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 text-white rounded-full text-xl font-bold mb-2">1</div>
+                        <h3 className="text-2xl font-bold text-gray-900">주소창 아이콘 클릭</h3>
+                        <p className="text-gray-500 leading-relaxed">
+                            화면 상단 주소창 오른쪽의<br />
+                            <span className="font-bold text-blue-600">모니터(또는 +) 아이콘</span>을 클릭하여 설치하세요.
+                        </p>
+                    </div>
+
+                    {/* Simulated Address Bar for Chrome */}
+                    <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl border border-gray-200 p-2 flex items-center gap-4 relative overflow-visible">
+                        <div className="flex gap-2 ml-2">
+                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                        </div>
+                        <div className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm text-gray-600 flex justify-between items-center">
+                            <span>https://essentia.store</span>
+                            <div className="flex gap-2 items-center relative">
+                                <div className="absolute -inset-3 bg-blue-500/20 rounded-full animate-ping"></div>
+                                <div className="p-1 hover:bg-gray-200 rounded cursor-pointer relative z-10">
+                                    <Monitor className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div className="w-4 h-4 border-2 border-gray-400 rounded-full"></div>
+                            </div>
+                        </div>
+                        <div className="absolute top-full right-10 mt-4 text-blue-600 font-bold animate-bounce hidden md:block">
+                            👆 여기를 클릭!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="w-full h-px bg-gray-200 my-12" />
+
+            {/* Microsoft Edge Section */}
+            <div>
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 bg-[#0078D7] rounded-lg flex items-center justify-center text-white font-bold text-xl">E</div>
+                    <h2 className="text-2xl font-bold text-gray-900">Microsoft Edge</h2>
+                </div>
+
+                <div className="flex flex-col items-center gap-8 bg-gray-50 rounded-3xl p-8 md:p-12 border border-gray-200">
+                    <div className="text-center space-y-4 max-w-lg">
+                        <div className="inline-flex items-center justify-center w-12 h-12 bg-[#0078D7] text-white rounded-full text-xl font-bold mb-2">1</div>
+                        <h3 className="text-2xl font-bold text-gray-900">앱 사용 가능 버튼 클릭</h3>
+                        <p className="text-gray-500 leading-relaxed">
+                            주소창 오른쪽에 있는<br />
+                            <span className="font-bold text-[#0078D7]">앱 사용 가능 (네모+플러스)</span> 아이콘을 클릭하세요.
+                        </p>
+                    </div>
+
+                    {/* Simulated Address Bar for Edge */}
+                    <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl border border-gray-200 p-2 flex items-center gap-4 relative overflow-visible">
+                        <div className="flex-1 bg-white border border-gray-300 rounded-md px-4 py-2 text-sm text-gray-600 flex justify-between items-center">
+                            <span>https://essentia.store</span>
+                            <div className="flex gap-2 items-center relative">
+                                <div className="absolute -inset-3 bg-blue-500/20 rounded-full animate-ping"></div>
+                                <div className="p-1 hover:bg-gray-100 rounded cursor-pointer relative z-10">
+                                    <PlusSquare className="w-4 h-4 text-[#0078D7]" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="absolute top-[120%] right-8 text-[#0078D7] font-bold animate-bounce hidden md:block text-sm">
+                            👆 앱 설치 클릭
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Android Guide Component
+function AndroidGuide() {
+    return (
+        <div className="max-w-4xl mx-auto space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Google Chrome Section */}
+            <div className="space-y-12">
+                <div className="flex items-center gap-4 border-b border-gray-100 pb-4">
+                    <div className="w-10 h-10 bg-[#00704A] rounded-lg flex items-center justify-center text-white font-bold">C</div>
+                    <h2 className="text-2xl font-bold text-gray-900">Google Chrome</h2>
+                </div>
+
+                {/* Step 1 */}
+                <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
+                    <div className="flex-1 text-center md:text-left space-y-4">
+                        <div className="inline-flex items-center justify-center w-10 h-10 bg-[#00704A] text-white rounded-full text-lg font-bold mb-2">1</div>
+                        <h3 className="text-xl font-bold text-gray-900">메뉴 버튼 찾기</h3>
+                        <p className="text-gray-500 leading-relaxed">
+                            우측 상단의 <span className="font-bold text-gray-900">더보기 메뉴 (점 3개)</span>를 누르세요.
+                        </p>
+                    </div>
+                    <div className="flex-1 w-full max-w-[300px] bg-gray-800 rounded-[3rem] p-3 border-4 border-gray-700 shadow-xl">
+                        <div className="bg-white rounded-[2.5rem] h-[300px] relative overflow-hidden border border-gray-200">
+                            <div className="bg-white border-b border-gray-200 p-4 pt-8 flex justify-between items-center px-4 relative z-10 shadow-sm">
+                                <div className="w-24 h-6 bg-gray-100 rounded-full"></div>
+                                <div className="relative">
+                                    <div className="absolute -inset-3 bg-[#00704A]/20 rounded-full animate-ping"></div>
+                                    <MoreVertical className="w-6 h-6 text-gray-700" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex flex-col md:flex-row-reverse items-center gap-8 md:gap-16">
+                    <div className="flex-1 text-center md:text-right space-y-4">
+                        <div className="inline-flex items-center justify-center w-10 h-10 bg-[#00704A] text-white rounded-full text-lg font-bold mb-2">2</div>
+                        <h3 className="text-xl font-bold text-gray-900">앱 설치 선택</h3>
+                        <p className="text-gray-500 leading-relaxed">
+                            메뉴에서 <span className="font-bold text-gray-900">'앱 설치'</span>를 선택하세요.
+                        </p>
+                    </div>
+                    <div className="flex-1 w-full max-w-[300px] bg-gray-800 rounded-[3rem] p-3 border-4 border-gray-700 shadow-xl">
+                        <div className="bg-white rounded-[2.5rem] h-[300px] relative overflow-hidden border border-gray-200">
+                            <div className="absolute top-2 right-2 w-48 bg-white shadow-xl rounded-lg border border-gray-100 z-20 py-2">
+                                <div className="px-4 py-2 bg-[#00704A]/10 flex gap-3 items-center text-gray-900 font-bold border-l-4 border-[#00704A]">
+                                    <Download className="w-4 h-4 text-[#00704A]" />
+                                    <span>앱 설치</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="w-full h-px bg-gray-200 my-12" />
+
+            {/* Microsoft Edge Section */}
+            <div className="space-y-12">
+                <div className="flex items-center gap-4 border-b border-gray-100 pb-4">
+                    <div className="w-10 h-10 bg-[#0078D7] rounded-lg flex items-center justify-center text-white font-bold">E</div>
+                    <h2 className="text-2xl font-bold text-gray-900">Microsoft Edge</h2>
+                </div>
+
+                {/* Step 1 */}
+                <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
+                    <div className="flex-1 text-center md:text-left space-y-4">
+                        <div className="inline-flex items-center justify-center w-10 h-10 bg-[#0078D7] text-white rounded-full text-lg font-bold mb-2">1</div>
+                        <h3 className="text-xl font-bold text-gray-900">하단 메뉴 열기</h3>
+                        <p className="text-gray-500 leading-relaxed">
+                            화면 하단 중앙의 <span className="font-bold text-gray-900">메뉴 버튼 (가로 줄 3개)</span>을 누르세요.
+                        </p>
+                    </div>
+                    <div className="flex-1 w-full max-w-[300px] bg-gray-800 rounded-[3rem] p-3 border-4 border-gray-700 shadow-xl">
+                        <div className="bg-white rounded-[2.5rem] h-[300px] relative overflow-hidden border border-gray-200 flex flex-col justify-end">
+                            <div className="bg-gray-50 p-4 flex justify-between items-center border-t relative z-10">
+                                <div className="w-6 h-6 bg-gray-300 rounded-full"></div>
+                                <div className="relative">
+                                    <div className="absolute -inset-3 bg-[#0078D7]/20 rounded-full animate-ping"></div>
+                                    <Menu className="w-6 h-6 text-gray-700" />
+                                </div>
+                                <div className="w-6 h-6 bg-gray-300 rounded-sm"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex flex-col md:flex-row-reverse items-center gap-8 md:gap-16">
+                    <div className="flex-1 text-center md:text-right space-y-4">
+                        <div className="inline-flex items-center justify-center w-10 h-10 bg-[#0078D7] text-white rounded-full text-lg font-bold mb-2">2</div>
+                        <h3 className="text-xl font-bold text-gray-900">전화기에 추가</h3>
+                        <p className="text-gray-500 leading-relaxed">
+                            메뉴를 옆으로 넘겨 <span className="font-bold text-gray-900">'전화기에 추가'</span>를 선택하세요.
+                        </p>
+                    </div>
+                    <div className="flex-1 w-full max-w-[300px] bg-gray-800 rounded-[3rem] p-3 border-4 border-gray-700 shadow-xl">
+                        <div className="bg-white rounded-[2.5rem] h-[300px] relative overflow-hidden border border-gray-200 flex flex-col justify-end">
+                            <div className="bg-white rounded-t-2xl shadow-2xl p-4 grid grid-cols-4 gap-4">
+                                <div className="col-span-1 flex flex-col items-center gap-2 opacity-50">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-full"></div>
+                                    <div className="w-8 h-2 bg-gray-100 rounded"></div>
+                                </div>
+                                <div className="col-span-1 flex flex-col items-center gap-2 relative">
+                                    <div className="w-10 h-10 bg-[#0078D7]/10 rounded-full flex items-center justify-center border-2 border-[#0078D7]">
+                                        <PlusSquare className="w-5 h-5 text-[#0078D7]" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#0078D7]">추가</span>
+                                </div>
+                                <div className="col-span-1 flex flex-col items-center gap-2 opacity-50">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-full"></div>
+                                    <div className="w-8 h-2 bg-gray-100 rounded"></div>
+                                </div>
+                                <div className="col-span-1 flex flex-col items-center gap-2 opacity-50">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-full"></div>
+                                    <div className="w-8 h-2 bg-gray-100 rounded"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -185,119 +395,6 @@ function IOSGuide() {
                             <div className="w-16 h-16 bg-[#00704A] rounded-xl flex items-center justify-center text-white">E</div>
                             <div className="flex-1 border-b pb-2 text-gray-900 font-semibold">에센시아</div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// Android Guide Component
-function AndroidGuide() {
-    return (
-        <div className="max-w-4xl mx-auto space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Step 1 */}
-            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-                <div className="flex-1 text-center md:text-left space-y-4">
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-[#00704A] text-white rounded-full text-xl font-bold mb-2">1</div>
-                    <h3 className="text-2xl font-bold text-gray-900">메뉴 버튼 찾기</h3>
-                    <p className="text-gray-500 leading-relaxed">
-                        Chrome 브라우저 우측 상단의<br />
-                        <span className="font-bold text-gray-900">더보기 메뉴 (점 3개)</span>를 눌러주세요.
-                    </p>
-                </div>
-                <div className="flex-1 w-full max-w-[300px] bg-gray-800 rounded-[3rem] p-3 border-4 border-gray-700 shadow-2xl">
-                    <div className="bg-white rounded-[2.5rem] h-[400px] relative overflow-hidden border border-gray-200">
-                        {/* Simulated Chrome Header */}
-                        <div className="bg-white border-b border-gray-200 p-4 pt-8 flex justify-between items-center px-4 relative z-10 shadow-sm">
-                            <div className="w-24 h-6 bg-gray-100 rounded-full text-xs flex items-center px-2 text-gray-400">essentia...</div>
-                            <div className="flex gap-4 items-center">
-                                <div className="w-5 h-5 border-2 border-gray-400 rounded-md text-[10px] flex items-center justify-center font-bold text-gray-500">1</div>
-                                <div className="relative">
-                                    <div className="absolute -inset-3 bg-[#00704A]/20 rounded-full animate-ping"></div>
-                                    <MoreVertical className="w-6 h-6 text-gray-700" />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-4 opacity-10 space-y-4">
-                            <div className="h-40 bg-gray-200 rounded-xl"></div>
-                            <div className="h-4 bg-gray-200 w-2/3 rounded"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="flex flex-col md:flex-row-reverse items-center gap-8 md:gap-16">
-                <div className="flex-1 text-center md:text-right space-y-4">
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-[#00704A] text-white rounded-full text-xl font-bold mb-2">2</div>
-                    <h3 className="text-2xl font-bold text-gray-900">앱 설치 선택</h3>
-                    <p className="text-gray-500 leading-relaxed">
-                        메뉴 목록에서 <span className="font-bold text-gray-900">'앱 설치'</span> 또는<br />
-                        <span className="font-bold text-gray-900">'홈 화면에 추가'</span>를 선택하세요.
-                    </p>
-                </div>
-                <div className="flex-1 w-full max-w-[300px] bg-gray-800 rounded-[3rem] p-3 border-4 border-gray-700 shadow-2xl">
-                    <div className="bg-white rounded-[2.5rem] h-[400px] relative overflow-hidden border border-gray-200">
-                        {/* Simulated Menu Dropdown */}
-                        <div className="absolute top-2 right-2 w-48 bg-white shadow-xl rounded-lg border border-gray-100 z-20 py-2">
-                            <div className="px-4 py-2 hover:bg-gray-50 flex gap-3 text-gray-400">
-                                <span>새 탭</span>
-                            </div>
-                            <div className="px-4 py-2 hover:bg-gray-50 flex gap-3 text-gray-400">
-                                <span>북마크</span>
-                            </div>
-                            {/* Highlighted Item */}
-                            <div className="px-4 py-2 bg-[#00704A]/10 flex gap-3 items-center text-gray-900 font-bold border-l-4 border-[#00704A]">
-                                <Download className="w-4 h-4 text-[#00704A]" />
-                                <span>앱 설치</span>
-                            </div>
-                            <div className="px-4 py-2 hover:bg-gray-50 flex gap-3 text-gray-400">
-                                <span>설정</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-
-// PC Guide Component
-function PCGuide() {
-    return (
-        <div className="max-w-4xl mx-auto space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col items-center gap-8 bg-gray-50 rounded-3xl p-8 md:p-12 border border-gray-200">
-                <div className="text-center space-y-4 max-w-lg">
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 text-white rounded-full text-xl font-bold mb-2">1</div>
-                    <h3 className="text-2xl font-bold text-gray-900">주소창 아이콘 클릭</h3>
-                    <p className="text-gray-500 leading-relaxed">
-                        화면 상단 주소창("www.essentia..." 등이 적힌 곳)의<br />
-                        오른쪽에 있는 <span className="font-bold text-blue-600">설치 아이콘(모니터 또는 + 버튼)</span>을 클릭하세요.
-                    </p>
-                </div>
-
-                {/* Simulated Address Bar */}
-                <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl border border-gray-200 p-2 flex items-center gap-4 relative overflow-visible">
-                    <div className="flex gap-2 ml-2">
-                        <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                        <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                    </div>
-                    <div className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm text-gray-600 flex justify-between items-center">
-                        <span>https://essentia.store</span>
-                        <div className="flex gap-2 items-center relative">
-                            {/* Highlighted Install Icon */}
-                            <div className="absolute -inset-3 bg-blue-500/20 rounded-full animate-ping"></div>
-                            <div className="p-1 hover:bg-gray-200 rounded cursor-pointer relative z-10">
-                                <Monitor className="w-4 h-4 text-blue-600" />
-                            </div>
-                            <div className="w-4 h-4 border-2 border-gray-400 rounded-full"></div>
-                        </div>
-                    </div>
-                    <div className="absolute top-full right-10 mt-4 text-blue-600 font-bold animate-bounce hidden md:block">
-                        👆 여기를 클릭!
                     </div>
                 </div>
             </div>

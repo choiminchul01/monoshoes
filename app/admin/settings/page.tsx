@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { uploadBannerAction, deleteBannerAction, fetchBannersAction, uploadPolicyImageAction, deletePolicyImageAction, fetchPolicyImagesAction, saveBannerLinksAction, uploadPartnershipImageAction, deletePartnershipImageAction, fetchPartnershipImageAction, uploadPWAIconAction, deletePWAIconAction, fetchPWAIconsAction, uploadBrandLogoAction, deleteBrandLogoAction, saveBrandLogosAction, fetchBrandLogosAction } from "./actions";
+import { uploadBannerAction, deleteBannerAction, fetchBannersAction, uploadPolicyImageAction, deletePolicyImageAction, fetchPolicyImagesAction, saveBannerOrderAction, uploadPartnershipImageAction, deletePartnershipImageAction, fetchPartnershipImageAction, uploadPWAIconAction, deletePWAIconAction, fetchPWAIconsAction, uploadBrandLogoAction, deleteBrandLogoAction, saveBrandLogosAction, fetchBrandLogosAction, type MainBanner } from "./actions";
 import { Upload, Save, Image as ImageIcon, CheckCircle, ChevronDown, Link as LinkIcon, Smartphone, Trash2, Plus, GripVertical } from "lucide-react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,12 +13,8 @@ export default function AdminSettingsPage() {
     // Accordion state - track which section is open
     const [openSection, setOpenSection] = useState<'info' | 'shipping' | 'banner' | 'policy' | 'partnership' | 'pwa' | 'brands' | null>(null);
 
-    const [bannerSlots, setBannerSlots] = useState<Array<{ url: string | null; link: string }>>([
-        { url: null, link: '' },
-        { url: null, link: '' },
-        { url: null, link: '' }
-    ]);
-    const [uploading, setUploading] = useState<number | null>(null); // Track which slot is uploading
+    const [banners, setBanners] = useState<MainBanner[]>([]);
+    const [uploading, setUploading] = useState<boolean>(false);
 
     // Policy Images state (이용 안내 이미지)
     const [policyImages, setPolicyImages] = useState<string[]>([]);
@@ -276,32 +272,14 @@ export default function AdminSettingsPage() {
             const result = await fetchBannersAction();
 
             if (result.success && result.banners) {
-                const newSlots = [...bannerSlots];
-                // Reset slots first
-                newSlots.forEach(slot => {
-                    slot.url = null;
-                    slot.link = '';
-                });
-
-                // Update slots with fetched URLs and links
-                Object.entries(result.banners).forEach(([key, url]) => {
-                    const index = parseInt(key) - 1;
-                    if (index >= 0 && index < 3) {
-                        newSlots[index] = {
-                            url: url as string,
-                            link: result.links?.[parseInt(key)] || ''
-                        };
-                    }
-                });
-
-                setBannerSlots(newSlots);
+                setBanners(result.banners);
             }
         } catch (error) {
             console.error("Failed to fetch banners:", error);
         }
     };
 
-    const handleBannerUpload = async (slotNumber: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
 
         const file = e.target.files[0];
@@ -312,42 +290,60 @@ export default function AdminSettingsPage() {
             e.target.value = '';
             return;
         }
-        setUploading(slotNumber);
+        setUploading(true);
 
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('slotNumber', slotNumber.toString());
+            // formData.append('link', ''); // Default empty link
 
             const result = await uploadBannerAction(formData);
 
             if (!result.success) throw new Error(result.error);
 
-            toast.success(`배너 ${slotNumber}번이 업로드되었습니다.`);
+            toast.success(`배너가 추가되었습니다.`);
             await fetchBanners();
         } catch (error: any) {
             console.error("Banner upload failed:", error);
             toast.error(`배너 업로드 실패: ${error.message}`);
         } finally {
-            setUploading(null);
+            setUploading(false);
             // Reset input value to allow re-uploading same file if needed
             e.target.value = '';
         }
     };
 
-    const handleBannerDelete = async (slotNumber: number) => {
-        if (!confirm(`배너 ${slotNumber}번을 삭제하시겠습니까?`)) return;
+    const handleBannerDelete = async (bannerId: string) => {
+        if (!confirm(`배너를 삭제하시겠습니까?`)) return;
 
         try {
-            const result = await deleteBannerAction(slotNumber);
+            const result = await deleteBannerAction(bannerId);
 
             if (!result.success) throw new Error(result.error);
 
-            toast.success(`배너 ${slotNumber}번이 삭제되었습니다.`);
+            toast.success(`배너가 삭제되었습니다.`);
             await fetchBanners();
         } catch (error) {
             console.error("Banner delete failed:", error);
             toast.error("배너 삭제 중 오류가 발생했습니다.");
+        }
+    };
+
+    const handleBannerLinkChange = (id: string, link: string) => {
+        setBanners(prev => prev.map(b => b.id === id ? { ...b, link } : b));
+    };
+
+    const handleSaveBannerOrder = async () => {
+        setSavingSettings(true);
+        try {
+            const result = await saveBannerOrderAction(banners);
+            if (!result.success) throw new Error(result.error);
+            toast.success("배너 설정이 저장되었습니다.");
+        } catch (error: any) {
+            console.error(error);
+            toast.error("저장 중 오류가 발생했습니다.");
+        } finally {
+            setSavingSettings(false);
         }
     };
 
@@ -811,105 +807,84 @@ export default function AdminSettingsPage() {
                         >
                             <div className="px-8 pb-8 pt-4 border-t border-gray-100">
                                 <div className="space-y-6">
-                                    <div>
-                                        <p className="text-sm text-gray-500 mb-6 font-normal">
-                                            쇼핑몰 메인 페이지 최상단에 슬라이드되는 배너 이미지입니다.<br />
-                                            최대 3개까지 각 슬롯별로 관리할 수 있습니다.<br />
-                                            권장 사이즈: 1920 x 800 px (최대 10MB)
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-sm text-gray-500">
+                                            메인 화면 상단에 표시될 배너를 관리합니다. (권장 사이즈: 1920x800px)
                                         </p>
+                                        <label className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer text-sm font-bold shadow-sm">
+                                            <Plus className="w-4 h-4" />
+                                            배너 추가
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleBannerUpload}
+                                                disabled={uploading}
+                                            />
+                                        </label>
+                                    </div>
 
-                                        {/* 배너 슬롯 3개 */}
-                                        <div className="grid grid-cols-1 gap-6">
-                                            {[1, 2, 3].map((slotNumber) => (
-                                                <div key={slotNumber} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all">
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <h3 className="font-bold text-gray-900">배너 {slotNumber}번</h3>
-                                                        {bannerSlots[slotNumber - 1]?.url && (
-                                                            <button
-                                                                onClick={() => handleBannerDelete(slotNumber)}
-                                                                className="px-4 py-1.5 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-700 hover:text-white text-xs font-bold transition-all"
-                                                            >
-                                                                삭제
-                                                            </button>
-                                                        )}
-                                                    </div>
-
-                                                    {bannerSlots[slotNumber - 1]?.url ? (
-                                                        <div className="relative w-full aspect-[2.4/1] bg-gray-100 rounded-lg overflow-hidden mb-4">
-                                                            <Image
-                                                                src={bannerSlots[slotNumber - 1].url!}
-                                                                alt={`Banner ${slotNumber}`}
-                                                                fill
-                                                                className="object-cover"
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="relative w-full aspect-[2.4/1] bg-gray-50 rounded-lg flex items-center justify-center mb-4 border-2 border-dashed border-gray-200">
-                                                            <div className="text-center text-gray-400">
-                                                                <ImageIcon className="w-12 h-12 mx-auto mb-2 stroke-1" />
-                                                                <p className="text-sm font-normal">배너 {slotNumber}번 슬롯</p>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="flex flex-wrap gap-3 items-center">
-                                                        <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-bold text-sm">
-                                                            <Upload className="w-4 h-4" />
-                                                            {uploading === slotNumber ? "업로드 중..." : bannerSlots[slotNumber - 1]?.url ? "이미지 변경" : "이미지 업로드"}
-                                                            <input
-                                                                type="file"
-                                                                accept="image/*"
-                                                                className="hidden"
-                                                                onChange={(e) => handleBannerUpload(slotNumber, e)}
-                                                                disabled={uploading === slotNumber}
-                                                            />
-                                                        </label>
-                                                    </div>
-
-                                                    {/* 링크 입력 필드 */}
-                                                    <div className="mt-4">
-                                                        <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
-                                                            <LinkIcon className="w-3 h-3 inline mr-1" />
-                                                            배너 클릭 시 이동할 링크
-                                                        </label>
-                                                        <div className="flex gap-2">
-                                                            <input
-                                                                type="url"
-                                                                value={bannerSlots[slotNumber - 1]?.link || ''}
-                                                                onChange={(e) => {
-                                                                    const newSlots = [...bannerSlots];
-                                                                    newSlots[slotNumber - 1] = {
-                                                                        ...newSlots[slotNumber - 1],
-                                                                        link: e.target.value
-                                                                    };
-                                                                    setBannerSlots(newSlots);
-                                                                }}
-                                                                placeholder="https://example.com 또는 /shop"
-                                                                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:border-green-700 focus:ring-1 focus:ring-green-700 bg-white outline-none transition-colors font-normal text-gray-900 text-sm"
-                                                            />
-                                                            <button
-                                                                onClick={async () => {
-                                                                    const links: { [key: number]: string } = {};
-                                                                    links[slotNumber] = bannerSlots[slotNumber - 1]?.link || '';
-                                                                    const result = await saveBannerLinksAction(links);
-                                                                    if (result.success) {
-                                                                        toast.success(`배너 ${slotNumber}번 링크가 저장되었습니다.`);
-                                                                    } else {
-                                                                        toast.error('링크 저장에 실패했습니다.');
-                                                                    }
-                                                                }}
-                                                                className="px-4 py-2.5 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white transition-all font-bold text-sm whitespace-nowrap"
-                                                            >
-                                                                <Save className="w-4 h-4 inline mr-1" />
-                                                                저장
-                                                            </button>
-                                                        </div>
-                                                        <p className="text-xs text-gray-400 mt-1">비워두면 클릭해도 이동하지 않습니다</p>
+                                    <div className="space-y-4">
+                                        {banners.map((banner, index) => (
+                                            <div key={banner.id} className="flex gap-6 p-4 bg-gray-50 rounded-lg border border-gray-100 items-start group">
+                                                <div className="flex flex-col items-center gap-2 pt-2">
+                                                    <div className="p-2 bg-white rounded-md shadow-sm cursor-move text-gray-400 group-hover:text-green-700 transition-colors">
+                                                        <span className="text-xs font-bold">{index + 1}</span>
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
+
+                                                <div className="relative w-48 aspect-[2.4/1] bg-gray-200 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                                                    <Image
+                                                        src={banner.imageUrl}
+                                                        alt={`Banner ${index + 1}`}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                </div>
+
+                                                <div className="flex-1 space-y-2">
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">링크 URL</label>
+                                                    <div className="flex gap-2">
+                                                        <div className="relative flex-1">
+                                                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                            <input
+                                                                type="text"
+                                                                value={banner.link}
+                                                                onChange={(e) => handleBannerLinkChange(banner.id, e.target.value)}
+                                                                placeholder="/shop 또는 외부 링크"
+                                                                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 text-sm transition-all"
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleBannerDelete(banner.id)}
+                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title="삭제"
+                                                        >
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {banners.length === 0 && (
+                                            <div className="text-center py-12 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                                등록된 배너가 없습니다.
+                                            </div>
+                                        )}
                                     </div>
+
+                                    {banners.length > 0 && (
+                                        <div className="flex justify-end pt-4 border-t border-gray-50">
+                                            <button
+                                                onClick={handleSaveBannerOrder}
+                                                className="flex items-center gap-2 px-6 py-2 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white hover:border-green-700 transition-all duration-300 font-bold text-sm shadow-sm"
+                                            >
+                                                <Save className="w-4 h-4" />
+                                                변경사항 저장 (순서/링크)
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </motion.div>
@@ -918,7 +893,7 @@ export default function AdminSettingsPage() {
             </div>
 
             {/* 이용 안내 이미지 설정 섹션 */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden mt-8">
+            < div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden mt-8" >
                 <button
                     onClick={() => setOpenSection(openSection === 'policy' ? null : 'policy')}
                     className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -1011,10 +986,10 @@ export default function AdminSettingsPage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
+            </div >
 
             {/* 제휴 제안서 이미지 설정 섹션 */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden mt-8 mb-8">
+            < div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden mt-8 mb-8" >
                 <button
                     onClick={() => setOpenSection(openSection === 'partnership' ? null : 'partnership')}
                     className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -1106,10 +1081,10 @@ export default function AdminSettingsPage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
+            </div >
 
             {/* PWA 앱 아이콘 관리 섹션 */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-8 overflow-hidden">
+            < div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-8 overflow-hidden" >
                 <button
                     onClick={() => setOpenSection(openSection === 'pwa' ? null : 'pwa')}
                     className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -1234,10 +1209,10 @@ export default function AdminSettingsPage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
+            </div >
 
             {/* 브랜드 로고 관리 섹션 */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-8 overflow-hidden">
+            < div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-8 overflow-hidden" >
                 <button
                     onClick={() => setOpenSection(openSection === 'brands' ? null : 'brands')}
                     className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -1364,7 +1339,7 @@ export default function AdminSettingsPage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
