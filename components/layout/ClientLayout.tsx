@@ -36,7 +36,7 @@ export default function ClientLayout({
                         {!isAdminPage && <ImageProtection />}
                         <ClickRipple />
                         {!hideNavigation && !isAdminPage && <Header />}
-                        <main className={hideNavigation || isAdminPage ? "min-h-screen" : "min-h-screen pt-0 md:pt-20"}>
+                        <main className={hideNavigation || isAdminPage ? "min-h-screen" : "min-h-screen"}>
                             {children}
                         </main>
                         {!hideNavigation && !isAdminPage && <Footer />}
