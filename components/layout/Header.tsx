@@ -165,9 +165,17 @@ export function Header() {
                                     <Link href="/login" className="hover:text-[#C41E3A] hover:font-bold transition-all">
                                         LOGIN
                                     </Link>
-                                    <Link href="/signup" className="hover:text-[#C41E3A] hover:font-bold transition-all">
-                                        JOIN
-                                    </Link>
+                                    <div className="relative group">
+                                        <Link href="/signup" className="hover:text-[#C41E3A] hover:font-bold transition-all">
+                                            JOIN
+                                        </Link>
+                                        <div className="absolute top-full right-0 md:right-1/2 md:translate-x-1/2 mt-4 w-max pointer-events-none z-50">
+                                            <div className="bg-[#C41E3A] text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-lg animate-bounce relative">
+                                                회원가입시 5,000원 쿠폰
+                                                <div className="absolute -top-1 right-2 md:right-1/2 md:translate-x-1/2 w-2.5 h-2.5 bg-[#C41E3A] rotate-45"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </>
                             )}
                         </div>
@@ -272,8 +280,11 @@ export function Header() {
                                             <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-center w-full py-3 bg-black text-white font-bold hover:bg-gray-800 transition-colors">
                                                 LOGIN
                                             </Link>
-                                            <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)} className="text-center w-full py-3 border border-black font-bold hover:bg-gray-50 transition-colors">
+                                            <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)} className="text-center w-full py-3 border border-black font-bold hover:bg-gray-50 transition-colors relative flex items-center justify-center gap-2">
                                                 JOIN
+                                                <span className="bg-[#C41E3A] text-white text-[10px] px-2 py-0.5 rounded-full animate-pulse">
+                                                    + 5,000원 쿠폰
+                                                </span>
                                             </Link>
                                         </div>
                                     )}

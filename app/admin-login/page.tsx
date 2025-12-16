@@ -26,24 +26,51 @@ export default function AdminLoginPage() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const particles: Array<{
+        class Particle {
             x: number;
             y: number;
-            vx: number;
-            vy: number;
+            speedY: number;
+            speedX: number;
             size: number;
-        }> = [];
+            alpha: number;
 
-        const particleCount = 50;
+            constructor(w: number, h: number) {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h; // Start randomly on screen
+                this.speedY = Math.random() * -0.5 - 0.2; // Slow upward movement
+                this.speedX = Math.random() * 0.4 - 0.2; // Slight horizontal drift
+                this.size = Math.random() * 2 + 1; // Small, elegant size
+                this.alpha = Math.random() * 0.5 + 0.1; // Subtle opacity
+            }
+
+            update(w: number, h: number) {
+                this.y += this.speedY;
+                this.x += this.speedX;
+
+                // Reset when off screen (top)
+                if (this.y < 0) {
+                    this.y = h + 10;
+                    this.x = Math.random() * w;
+                }
+
+                // Wrap around X
+                if (this.x > w) this.x = 0;
+                if (this.x < 0) this.x = w;
+            }
+
+            draw(context: CanvasRenderingContext2D) {
+                context.beginPath();
+                context.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                context.fillStyle = `rgba(212, 175, 55, ${this.alpha})`; // Essentia Gold (#D4AF37)
+                context.fill();
+            }
+        }
+
+        const particleCount = 40; // Minimal count for "Clutter-free" look
+        const particles: Particle[] = [];
 
         for (let i = 0; i < particleCount; i++) {
-            particles.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                vx: (Math.random() - 0.5) * 2,
-                vy: (Math.random() - 0.5) * 2,
-                size: Math.random() * 4 + 2,
-            });
+            particles.push(new Particle(canvas.width, canvas.height));
         }
 
         const handleResize = () => {
@@ -54,27 +81,12 @@ export default function AdminLoginPage() {
         window.addEventListener('resize', handleResize);
 
         const animate = () => {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Clear completely for no trails (Clean look)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             particles.forEach((particle) => {
-                particle.x += particle.vx;
-                particle.y += particle.vy;
-
-                if (particle.x < 0 || particle.x > canvas.width) {
-                    particle.vx *= -1;
-                }
-                if (particle.y < 0 || particle.y > canvas.height) {
-                    particle.vy *= -1;
-                }
-
-                particle.x = Math.max(0, Math.min(canvas.width, particle.x));
-                particle.y = Math.max(0, Math.min(canvas.height, particle.y));
-
-                ctx.beginPath();
-                ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-                ctx.fillStyle = '#00704A';
-                ctx.fill();
+                particle.update(canvas.width, canvas.height);
+                particle.draw(ctx);
             });
 
             requestAnimationFrame(animate);
@@ -148,12 +160,23 @@ export default function AdminLoginPage() {
     };
 
     return (
-        <div className="min-h-screen relative bg-white">
+        <div className="min-h-screen relative bg-gradient-to-b from-[#001E10] to-[#000000]">
             <canvas
                 ref={canvasRef}
                 className="absolute inset-0 pointer-events-none"
                 style={{ width: '100%', height: '100%' }}
             />
+
+            {/* Brand Watermark */}
+            <div className="absolute inset-0 flex items-start pt-12 md:pt-0 md:items-center justify-center pointer-events-none z-0 overflow-hidden">
+                <h1
+                    className="text-[13vw] md:text-[13vw] font-bold text-[#D4AF37] opacity-30 select-none whitespace-nowrap tracking-widest"
+                    style={{ fontFamily: 'var(--font-cinzel), serif' }}
+                >
+                    ESSENTIA
+                </h1>
+            </div>
+
             <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
                 <div className="max-w-md w-full space-y-8 bg-[#FDFCF5] p-8 rounded-lg shadow-xl border border-black">
                     <div className="text-center">
