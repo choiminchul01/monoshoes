@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Plus, Smartphone } from 'lucide-react';
+import Link from 'next/link';
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -177,6 +178,9 @@ export default function AddToHomeScreenBanner() {
                                 {platform === 'android' && '안드로이드 사용자 가이드'}
                                 {platform === 'pc' && 'PC 사용자 가이드'}
                             </p>
+                            <Link href="/guide" className="text-xs text-gray-400 underline mt-2 hover:text-black inline-block">
+                                자세한 설치 가이드 보기 &gt;
+                            </Link>
                         </div>
 
                         <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 space-y-3 mb-6 text-left">
