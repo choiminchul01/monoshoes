@@ -17,6 +17,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { ToastProvider } from "@/context/ToastContext";
 
+import { PWARegister } from "@/components/PWARegister";
+
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 const cinzel = Cinzel({ subsets: ["latin"], weight: ["700"], variable: "--font-cinzel" });
@@ -35,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased ${cinzel.variable}`} suppressHydrationWarning>
+        <PWARegister />
         <AuthProvider>
           <WishlistProvider>
             <CartProvider>
