@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, ClipboardCheck, Megaphone, Handshake } from 'lucide-react';
+import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, ClipboardCheck, Megaphone, Handshake, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/context/ToastContext';
 import { useAdminPermissions } from '@/lib/useAdminPermissions';
@@ -19,6 +19,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showShopConfirm, setShowShopConfirm] = useState(false);
     const [counts, setCounts] = useState({ orders: 0, products: 0 });
+
+    // State for collapsible sidebar groups (initially all open)
+    const [expandedGroups, setExpandedGroups] = useState<string[]>(['대시보드', '쇼핑몰 관리', '고객 및 마케팅', '시스템']);
+
+    const toggleGroup = (title: string) => {
+        setExpandedGroups(prev =>
+            prev.includes(title)
+                ? prev.filter(t => t !== title)
+                : [...prev, title]
+        );
+    };
 
     useEffect(() => {
         if (!loading && !permLoading) {
@@ -75,32 +86,58 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return null;
     }
 
-    // All possible nav items with permission keys (grouped by management workflow)
-    const allNavItems = [
-        { href: '/admin', label: '대시보드', icon: Home, badge: 0, permission: 'dashboard' as const },
-        { href: '/admin/orders', label: '주문 관리', icon: ShoppingCart, badge: counts.orders, permission: 'orders' as const },
-        { href: '/admin/reviews', label: '리뷰 관리', icon: MessageSquare, badge: 0, permission: 'reviews' as const },
-        { href: '/admin/products', label: '상품 관리', icon: Package, badge: counts.products, permission: 'products' as const },
-        { href: '/admin/inspections', label: '출고관리', icon: ClipboardCheck, badge: 0, permission: 'products' as const },
-        { href: '/admin/coupons', label: '쿠폰 관리', icon: Ticket, badge: 0, permission: 'coupons' as const },
-        { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
-        { href: '/admin/inquiries', label: '문의 관리', icon: HelpCircle, badge: 0, permission: 'inquiries' as const },
-        { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
-        { href: '/admin/events', label: '이벤트 관리', icon: Megaphone, badge: 0, permission: 'board' as const },
-        { href: '/admin/settings', label: '설정', icon: Settings, badge: 0, permission: 'settings' as const },
+    // Define navigation groups
+    const navGroups = [
+        {
+            title: '대시보드',
+            icon: LayoutDashboard,
+            items: [
+                { href: '/admin', label: '대시보드', icon: Home, badge: 0, permission: 'dashboard' as const },
+            ]
+        },
+        {
+            title: '쇼핑몰 관리',
+            icon: Store,
+            items: [
+                { href: '/admin/products', label: '상품 관리', icon: Package, badge: counts.products, permission: 'products' as const },
+                { href: '/admin/orders', label: '주문 관리', icon: ShoppingCart, badge: counts.orders, permission: 'orders' as const },
+                { href: '/admin/inspections', label: '출고 관리', icon: ClipboardCheck, badge: 0, permission: 'products' as const },
+                { href: '/admin/reviews', label: '리뷰 관리', icon: MessageSquare, badge: 0, permission: 'reviews' as const },
+            ]
+        },
+        {
+            title: '고객 및 마케팅',
+            icon: Users,
+            items: [
+                { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
+                { href: '/admin/coupons', label: '쿠폰 관리', icon: Ticket, badge: 0, permission: 'coupons' as const },
+                { href: '/admin/events', label: '이벤트 관리', icon: Megaphone, badge: 0, permission: 'board' as const },
+                { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
+                { href: '/admin/inquiries', label: '문의 관리', icon: HelpCircle, badge: 0, permission: 'inquiries' as const },
+            ]
+        },
+        {
+            title: '시스템',
+            icon: Settings,
+            items: [
+                { href: '/admin/settings', label: '설정', icon: Settings, badge: 0, permission: 'settings' as const },
+                // Master only items
+                ...(isMaster ? [
+                    { href: '/admin/admins', label: '관리자 계정', icon: Shield, badge: 0, permission: null },
+                    { href: '/admin/partnership', label: '에센시아 파트너십', icon: Handshake, badge: 0, permission: null }
+                ] : [])
+            ]
+        }
     ];
 
-    // Add Admin Management for master only
-    const masterOnlyItems = isMaster ? [
-        { href: '/admin/admins', label: '관리자 계정', icon: Shield, badge: 0, permission: null },
-        { href: '/admin/partnership', label: '에센시아 파트너십', icon: Handshake, badge: 0, permission: null }
-    ] : [];
+    // Filter items based on permissions
+    const filteredGroups = navGroups.map(group => ({
+        ...group,
+        items: group.items.filter(item => item.permission === null || hasPermission(item.permission))
+    })).filter(group => group.items.length > 0);
 
-    // Filter nav items based on permissions
-    const navItems = [
-        ...allNavItems.filter(item => hasPermission(item.permission)),
-        ...masterOnlyItems
-    ];
+    // Flatten for mobile view
+    const mobileNavItems = filteredGroups.flatMap(group => group.items);
 
     return (
         <ToastProvider>
@@ -122,7 +159,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Mobile Nav Bar (Multi-row) */}
                 <nav className="md:hidden bg-white border-b border-gray-200">
                     <div className="flex flex-wrap p-2 gap-2">
-                        {navItems.map((item) => {
+                        {mobileNavItems.map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.href;
                             return (
@@ -148,40 +185,81 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </nav>
 
                 {/* Desktop Sidebar */}
-                <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col">
-                    <div className="p-6 border-b border-gray-200">
+                <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col h-full">
+                    <div className="p-6 border-b border-gray-200 flex-shrink-0">
                         <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>ESSENTIA ADMIN</h1>
                         <p className="text-sm text-gray-500 mt-1">관리자 패널</p>
                     </div>
-                    <nav className="flex-1 p-4 space-y-2">
-                        {navItems.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = pathname === item.href;
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                        {filteredGroups.map((group, groupIndex) => {
+                            const isExpanded = expandedGroups.includes(group.title);
+                            const hasActiveChild = group.items.some(item => item.href === pathname);
+                            const GroupIcon = group.icon;
+
                             return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${isActive
-                                        ? 'bg-green-100 text-green-900 border border-green-300'
-                                        : 'text-gray-700 hover:bg-gray-100'
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Icon className={`w-5 h-5 ${isActive ? 'text-green-800' : 'text-gray-500'}`} />
-                                        <span>{item.label}</span>
-                                    </div>
-                                    {item.badge > 0 && (
-                                        <span className="bg-green-700 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                                            {item.badge}
-                                        </span>
+                                <div key={group.title} className={`${groupIndex > 0 ? 'border-t border-gray-100 pt-2 mt-2' : ''}`}>
+                                    {group.title !== '대시보드' ? (
+                                        <button
+                                            onClick={() => toggleGroup(group.title)}
+                                            className="w-full flex items-center justify-between px-3 py-3 text-base font-bold text-gray-800 hover:bg-gray-50 rounded-lg transition-colors mb-1 group"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <GroupIcon className="w-5 h-5 text-gray-600" />
+                                                <span className={hasActiveChild ? 'text-green-700' : ''}>{group.title}</span>
+                                            </div>
+                                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'transform rotate-180' : ''}`} />
+                                        </button>
+                                    ) : (
+                                        <Link
+                                            href="/admin"
+                                            className="w-full flex items-center justify-between px-3 py-3 text-base font-bold text-gray-800 hover:bg-gray-50 rounded-lg transition-colors mb-1 group"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <GroupIcon className="w-5 h-5 text-gray-600" />
+                                                <span className={hasActiveChild ? 'text-green-700' : ''}>{group.title}</span>
+                                            </div>
+                                        </Link>
                                     )}
-                                </Link>
+
+                                    {group.title !== '대시보드' && (
+                                        <div className={`space-y-1 transition-all duration-300 overflow-hidden ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                                            {group.items.map((item) => {
+                                                const Icon = item.icon;
+                                                const isActive = pathname === item.href;
+                                                return (
+                                                    <Link
+                                                        key={item.href}
+                                                        href={item.href}
+                                                        className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-200 group relative ${isActive
+                                                            ? 'bg-green-50 text-green-900 font-semibold shadow-sm'
+                                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-green-700' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                                                            <span className="text-sm">{item.label}</span>
+                                                        </div>
+                                                        {item.badge > 0 && (
+                                                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center shadow-sm">
+                                                                {item.badge}
+                                                            </span>
+                                                        )}
+                                                        {isActive && (
+                                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-green-600 rounded-r-full" />
+                                                        )}
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
                             );
                         })}
-                    </nav>
+                    </div>
                     <div className="p-4 border-t border-gray-200 space-y-2">
-                        <button onClick={() => setShowShopConfirm(true)} className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors w-full font-medium">
-                            <Store className="w-4 h-4" />
+                        <button onClick={() => setShowShopConfirm(true)} className="flex items-center justify-center gap-2 px-4 py-3 text-base text-gray-800 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors w-full font-bold">
+                            <Store className="w-5 h-5 text-gray-600" />
                             <span>쇼핑몰로 이동</span>
                         </button>
                         <button
