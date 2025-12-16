@@ -104,16 +104,38 @@ export default function AdminLoginPage() {
             }
 
             // Check if user has admin role in database
-            const { data: roleData, error: roleError } = await supabase
+            let { data: roleData, error: roleError } = await supabase
                 .from('admin_roles')
                 .select('role')
                 .eq('user_id', data.user.id)
                 .single();
 
+            // If not found by user_id, check by email and link if exists
+            if (!roleData && data.user.email) {
+                const { data: emailData, error: emailError } = await supabase
+                    .from('admin_roles')
+                    .select('*')
+                    .eq('email', data.user.email)
+                    .single();
+
+                if (emailData) {
+                    // Found by email, update user_id to link account
+                    const { error: updateError } = await supabase
+                        .from('admin_roles')
+                        .update({ user_id: data.user.id })
+                        .eq('email', data.user.email);
+
+                    if (!updateError) {
+                        roleData = { role: emailData.role };
+                        roleError = null;
+                    }
+                }
+            }
+
             if (roleError || !roleData) {
                 // Sign out if not an admin
                 await supabase.auth.signOut();
-                throw new Error('관리자 권한이 없습니다. 일반 로그인은 /login을 이용해주세요.');
+                throw new Error('관리자 권한이 없습니다. 등록된 관리자 이메일로 로그인해주세요.');
             }
 
             // Login successful, redirect to admin

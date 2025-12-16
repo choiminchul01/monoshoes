@@ -6,6 +6,33 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAdminPermissions } from "@/lib/useAdminPermissions";
+
+function AdminLink() {
+    const { role } = useAdminPermissions();
+    if (!role) return null;
+
+    return (
+        <Link href="/admin" className="hover:text-[#C41E3A] hover:font-bold transition-all text-[#C41E3A]">
+            ADMIN
+        </Link>
+    );
+}
+
+function AdminMobileLink({ onClick }: { onClick: () => void }) {
+    const { role } = useAdminPermissions();
+    if (!role) return null;
+
+    return (
+        <Link
+            href="/admin"
+            onClick={onClick}
+            className="text-center w-full py-3 bg-[#C41E3A] text-white font-bold hover:bg-[#A01830] transition-colors"
+        >
+            ADMIN PAGE
+        </Link>
+    );
+}
 
 export function Header() {
     const { cartCount } = useCart();
@@ -124,6 +151,8 @@ export function Header() {
                                 <span className="text-gray-400">...</span>
                             ) : user ? (
                                 <>
+                                    {/* Admin Link if role exists */}
+                                    <AdminLink />
                                     <Link href="/mypage" className="hover:text-[#C41E3A] hover:font-bold transition-all">
                                         MYPAGE
                                     </Link>
@@ -228,6 +257,9 @@ export function Header() {
                                 <div className="mt-8 pt-8 border-t border-gray-100">
                                     {user ? (
                                         <div className="flex flex-col gap-3">
+                                            {/* Admin Link for Mobile */}
+                                            <AdminMobileLink onClick={() => setIsMobileMenuOpen(false)} />
+
                                             <Link href="/mypage" onClick={() => setIsMobileMenuOpen(false)} className="text-center w-full py-3 border border-black font-bold hover:bg-black hover:text-white transition-colors">
                                                 MYPAGE
                                             </Link>
