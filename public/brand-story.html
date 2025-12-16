@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>에센시아 | 진정한 럭셔리의 시작 (Light Version)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            /* Hiworks AI Style Colors */
+            --primary: #00A5B5;
+            /* Teal/Cyan */
+            --primary-dark: #008B99;
+            --secondary: #6366F1;
+            /* Purple */
+            --accent: #F97316;
+            /* Orange */
+            --green: #22C55E;
+            --bg-white: #FFFFFF;
+            --bg-gray: #F8FAFC;
+            --bg-light: #F1F5F9;
+            --text-dark: #1E293B;
+            --text-gray: #64748B;
+            --text-light: #94A3B8;
+            --border: #E2E8F0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: var(--bg-white);
+            color: var(--text-dark);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            z-index: 1000;
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            color: var(--text-gray);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 24px 80px;
+            background: linear-gradient(180deg, #E0F7FA 0%, var(--bg-white) 100%);
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            border-radius: 50px;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: clamp(32px, 5vw, 52px);
+            font-weight: 900;
+            line-height: 1.3;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: var(--text-gray);
+            margin-bottom: 40px;
+            max-width: 560px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 32px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 14px rgba(0, 165, 181, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 165, 181, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-white);
+            color: var(--text-dark);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-gray);
+            border-color: var(--primary);
+        }
+
+        /* Section Common */
+        section {
+            padding: 100px 24px;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-title h2 {
+            font-size: clamp(26px, 4vw, 38px);
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-dark);
+        }
+
+        .section-title p {
+            color: var(--text-gray);
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Problem Section */
+        .problem {
+            background: var(--bg-gray);
+        }
+
+        .problem-slider {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 20px 0;
+            scroll-snap-type: x mandatory;
+        }
+
+        .problem-card {
+            flex: 0 0 280px;
+            background: var(--bg-white);
+            padding: 28px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            scroll-snap-align: start;
+            transition: all 0.3s ease;
+        }
+
+        .problem-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            border-color: var(--primary);
+        }
+
+        .problem-card .icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #E0F7FA, #B2EBF2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 24px;
+        }
+
+        .problem-card h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+
+        .problem-card p {
+            color: var(--text-gray);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Solution Section */
+        .solution {
+            background: var(--bg-white);
+        }
+
+        .solution-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+        }
+
+        .solution-card {
+            background: var(--bg-white);
+            padding: 32px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .solution-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .solution-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .solution-card:hover {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .solution-card .number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .solution-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-dark);
+        }
+
+        .solution-card p {
+            color: var(--text-gray);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        /* Features Section */
+        .features {
+            background: var(--bg-gray);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .feature-item {
+            background: var(--bg-white);
+            padding: 24px 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 20px rgba(0, 165, 181, 0.1);
+        }
+
+        .feature-item .icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .feature-item h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-dark);
+        }
+
+        .feature-item p {
+            color: var(--text-light);
+            font-size: 13px;
+        }
+
+        /* Trust Section */
+        .trust {
+            background: linear-gradient(180deg, var(--bg-white) 0%, #E0F7FA 100%);
+            text-align: center;
+        }
+
+        .trust-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 32px;
+            margin-top: 48px;
+        }
+
+        .stat-item {
+            padding: 16px;
+        }
+
+        .stat-number {
+            font-size: clamp(36px, 5vw, 48px);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+        }
+
+        .stat-label {
+            color: var(--text-gray);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* CTA Section */
+        .cta {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            text-align: center;
+            padding: 80px 24px;
+        }
+
+        .cta h2 {
+            font-size: clamp(24px, 4vw, 32px);
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: white;
+        }
+
+        .cta p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 32px;
+            font-size: 15px;
+        }
+
+        .cta .btn-white {
+            background: white;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .cta .btn-white:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-white);
+            padding: 32px 24px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+        }
+
+        footer p {
+            color: var(--text-light);
+            font-size: 13px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 16px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            section {
+                padding: 60px 16px;
+            }
+
+            .hero {
+                padding: 100px 16px 60px;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .problem-slider {
+                padding: 10px 0;
+            }
+
+            .problem-card {
+                flex: 0 0 260px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">ESSENTIA</a>
+            <nav class="nav-links">
+                <a href="#about">브랜드 소개</a>
+                <a href="#solution">서비스</a>
+                <a href="#features">특별 혜택</a>
+                <a href="/">쇼핑하기</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <span class="hero-badge">PREMIUM LUXURY</span>
+            <h1>진정한 럭셔리,<br><span>에센시아</span>에서 시작됩니다</h1>
+            <p>정통 명품만을 엄선하여 선보이는 프리미엄 쇼핑 경험.<br>100% 정품 보증과 전문 검수 시스템으로 신뢰할 수 있는 쇼핑을 약속합니다.</p>
+            <div class="hero-buttons">
+                <a href="/" class="btn btn-primary">쇼핑 시작하기</a>
+                <a href="#about" class="btn btn-secondary">브랜드 스토리</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem" id="about">
+        <div class="container">
+            <div class="section-title animate-on-scroll">
+                <h2>이런 고민, 있으시죠?</h2>
+                <p>명품 구매 시 겪는 불안함과 불편함, 에센시아가 해결해 드립니다</p>
+            </div>
+            <div class="problem-slider">
+                <div class="problem-card animate-on-scroll">
+                    <div class="icon">🔍</div>
+                    <h3>정품 확인의 어려움</h3>
+                    <p>구매한 명품이 정품인지 가품인지 확인하기 어려워 불안하셨나요?</p>
+                </div>
+                <div class="problem-card animate-on-scroll">
+                    <div class="icon">⏰</div>
+                    <h3>긴 배송 기간</h3>
+                    <p>해외 직구는 배송까지 2~3주, 언제 올지 몰라 답답하셨죠?</p>
+                </div>
+                <div class="problem-card animate-on-scroll">
+                    <div class="icon">🔄</div>
+                    <h3>복잡한 교환/반품</h3>
+                    <p>해외 구매 후 교환이나 반품이 너무 복잡하고 비용도 많이 들었나요?</p>
+                </div>
+                <div class="problem-card animate-on-scroll">
+                    <div class="icon">💔</div>
+                    <h3>가품 피해 경험</h3>
+                    <p>한 번 가품에 속은 후 온라인 명품 구매가 두려우셨나요?</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="solution" id="solution">
+        <div class="container">
+            <div class="section-title animate-on-scroll">
+                <h2>에센시아가 해결합니다</h2>
+                <p>믿을 수 있는 명품 쇼핑, 이렇게 만들어집니다</p>
+            </div>
+            <div class="solution-grid">
+                <div class="solution-card animate-on-scroll">
+                    <div class="number">1</div>
+                    <h3>100% 정품 보증</h3>
+                    <p>모든 상품에 공식 정품 인증서를 제공합니다. 가품 발견 시 200% 환불 보장.</p>
+                </div>
+                <div class="solution-card animate-on-scroll">
+                    <div class="number">2</div>
+                    <h3>빠른 국내 배송</h3>
+                    <p>주문 후 1~3일 내 배송. 프리미엄 포장으로 안전하게 전달해 드립니다.</p>
+                </div>
+                <div class="solution-card animate-on-scroll">
+                    <div class="number">3</div>
+                    <h3>간편한 교환/반품</h3>
+                    <p>7일 이내 무료 교환 및 반품. 복잡한 절차 없이 간편하게 처리됩니다.</p>
+                </div>
+                <div class="solution-card animate-on-scroll">
+                    <div class="number">4</div>
+                    <h3>전문가 3단계 검수</h3>
+                    <p>입고 → 보관 → 출고 전 3단계 품질 검수로 완벽한 상태를 보장합니다.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-title animate-on-scroll">
+                <h2>에센시아만의 특별함</h2>
+                <p>고객님을 위한 특별한 혜택을 경험하세요</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-item animate-on-scroll">
+                    <div class="icon">✨</div>
+                    <h4>신상품 우선 입고</h4>
+                    <p>시즌 신상품을 가장 먼저</p>
+                </div>
+                <div class="feature-item animate-on-scroll">
+                    <div class="icon">👑</div>
+                    <h4>VIP 전용 할인</h4>
+                    <p>등급별 특별 할인 혜택</p>
+                </div>
+                <div class="feature-item animate-on-scroll">
+                    <div class="icon">💎</div>
+                    <h4>포인트 적립</h4>
+                    <p>구매 금액의 최대 5%</p>
+                </div>
+                <div class="feature-item animate-on-scroll">
+                    <div class="icon">🎁</div>
+                    <h4>프리미엄 포장</h4>
+                    <p>선물하기 좋은 고급 패키징</p>
+                </div>
+                <div class="feature-item animate-on-scroll">
+                    <div class="icon">💬</div>
+                    <h4>1:1 컨시어지</h4>
+                    <p>전담 상담사 맞춤 서비스</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Section -->
+    <section class="trust">
+        <div class="container">
+            <div class="section-title animate-on-scroll">
+                <h2>신뢰할 수 있는 이유</h2>
+                <p>숫자로 증명하는 에센시아의 가치</p>
+            </div>
+            <div class="trust-stats">
+                <div class="stat-item animate-on-scroll">
+                    <div class="stat-number">10,000+</div>
+                    <div class="stat-label">누적 회원 수</div>
+                </div>
+                <div class="stat-item animate-on-scroll">
+                    <div class="stat-number">5,000+</div>
+                    <div class="stat-label">판매 상품 수</div>
+                </div>
+                <div class="stat-item animate-on-scroll">
+                    <div class="stat-number">98.7%</div>
+                    <div class="stat-label">고객 만족도</div>
+                </div>
+                <div class="stat-item animate-on-scroll">
+                    <div class="stat-number">72%</div>
+                    <div class="stat-label">재구매율</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <h2>지금 에센시아에서 특별한 쇼핑을 시작하세요</h2>
+            <p>정통 명품과 프리미엄 서비스가 기다리고 있습니다</p>
+            <a href="/" class="btn btn-white">쇼핑 시작하기</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2024 ESSENTIA. All rights reserved. | 본 페이지는 테스트용입니다.</p>
+    </footer>
+
+    <!-- Scroll Animation Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            });
+
+            document.querySelectorAll('.animate-on-scroll').forEach((el) => {
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+
+</html>

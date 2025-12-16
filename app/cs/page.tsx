@@ -10,6 +10,7 @@ type Notice = {
     content: string;
     is_important: boolean;
     created_at: string;
+    image_url: string | null;
 };
 
 export default function NoticePage() {
@@ -71,6 +72,15 @@ export default function NoticePage() {
                             </button>
                             {expandedId === notice.id && (
                                 <div className="p-6 bg-gray-50 border-t border-gray-200 text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                    {notice.image_url && (
+                                        <div className="mb-6">
+                                            <img
+                                                src={notice.image_url}
+                                                alt={notice.title}
+                                                className="w-full max-w-2xl rounded-lg border border-gray-200"
+                                            />
+                                        </div>
+                                    )}
                                     {notice.content}
                                 </div>
                             )}

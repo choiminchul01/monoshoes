@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Plus, Edit2, Trash2, Megaphone, HelpCircle, X, Save, CheckSquare, Square, RefreshCw } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
+import { saveNoticeAction, deleteNoticeAction, saveFaqAction, deleteFaqAction } from "./actions";
 
 type Notice = {
     id: string;
@@ -12,6 +13,7 @@ type Notice = {
     is_important: boolean;
     created_at: string;
     view_count: number;
+    image_url?: string | null;
 };
 
 type FAQ = {
@@ -37,7 +39,12 @@ export default function AdminBoardPage() {
     const [editingItem, setEditingItem] = useState<any>(null); // Shared for edit mode
 
     // Form States
-    const [noticeForm, setNoticeForm] = useState({ title: "", content: "", is_important: false });
+    const [noticeForm, setNoticeForm] = useState<{ title: string; content: string; is_important: boolean; file: File | null }>({
+        title: "",
+        content: "",
+        is_important: false,
+        file: null
+    });
     const [faqForm, setFaqForm] = useState({ category: "delivery", question: "", answer: "", display_order: 0 });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -71,27 +78,33 @@ export default function AdminBoardPage() {
         setLoading(false);
     };
 
+
+
     // --- Notice Handlers ---
     const handleSaveNotice = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            if (editingItem) {
-                const { error } = await supabase.from("notices").update(noticeForm).eq("id", editingItem.id);
-                if (error) throw error;
-                toast.success("공지사항이 수정되었습니다.");
-            } else {
-                const { error } = await supabase.from("notices").insert(noticeForm);
-                if (error) throw error;
-                toast.success("공지사항이 등록되었습니다.");
-            }
+            const formData = new FormData();
+            if (editingItem?.id) formData.append("id", editingItem.id);
+            formData.append("title", noticeForm.title);
+            formData.append("content", noticeForm.content);
+            formData.append("is_important", String(noticeForm.is_important));
+            if (noticeForm.file) formData.append("file", noticeForm.file);
+
+            const result = await saveNoticeAction(formData);
+
+            if (!result.success) throw new Error(result.error);
+
+            toast.success(editingItem ? "공지사항이 수정되었습니다." : "공지사항이 등록되었습니다.");
+
             setIsNoticeModalOpen(false);
             setEditingItem(null);
-            setNoticeForm({ title: "", content: "", is_important: false });
-            fetchNotices();
-        } catch (error) {
+            setNoticeForm({ title: "", content: "", is_important: false, file: null });
+            fetchNotices(); // Refresh client list
+        } catch (error: any) {
             console.error(error);
-            toast.error("저장 중 오류가 발생했습니다.");
+            toast.error(error.message || "저장 중 오류가 발생했습니다.");
         } finally {
             setIsSubmitting(false);
         }
@@ -99,11 +112,16 @@ export default function AdminBoardPage() {
 
     const handleDeleteNotice = async (id: string) => {
         if (!confirm("정말 삭제하시겠습니까?")) return;
-        const { error } = await supabase.from("notices").delete().eq("id", id);
-        if (error) toast.error("삭제 실패");
-        else {
+
+        try {
+            const result = await deleteNoticeAction(id);
+            if (!result.success) throw new Error(result.error);
+
             toast.success("삭제되었습니다.");
             fetchNotices();
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || "삭제 실패");
         }
     };
 
@@ -112,22 +130,25 @@ export default function AdminBoardPage() {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            if (editingItem) {
-                const { error } = await supabase.from("faqs").update(faqForm).eq("id", editingItem.id);
-                if (error) throw error;
-                toast.success("FAQ가 수정되었습니다.");
-            } else {
-                const { error } = await supabase.from("faqs").insert(faqForm);
-                if (error) throw error;
-                toast.success("FAQ가 등록되었습니다.");
-            }
+            const result = await saveFaqAction({
+                id: editingItem?.id,
+                category: faqForm.category,
+                question: faqForm.question,
+                answer: faqForm.answer,
+                display_order: faqForm.display_order
+            });
+
+            if (!result.success) throw new Error(result.error);
+
+            toast.success(editingItem ? "FAQ가 수정되었습니다." : "FAQ가 등록되었습니다.");
+
             setIsFaqModalOpen(false);
             setEditingItem(null);
             setFaqForm({ category: "delivery", question: "", answer: "", display_order: 0 });
             fetchFaqs();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("저장 중 오류가 발생했습니다.");
+            toast.error(error.message || "저장 중 오류가 발생했습니다.");
         } finally {
             setIsSubmitting(false);
         }
@@ -135,21 +156,26 @@ export default function AdminBoardPage() {
 
     const handleDeleteFaq = async (id: string) => {
         if (!confirm("정말 삭제하시겠습니까?")) return;
-        const { error } = await supabase.from("faqs").delete().eq("id", id);
-        if (error) toast.error("삭제 실패");
-        else {
+
+        try {
+            const result = await deleteFaqAction(id);
+            if (!result.success) throw new Error(result.error);
+
             toast.success("삭제되었습니다.");
             fetchFaqs();
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || "삭제 실패");
         }
     };
 
     const openNoticeModal = (notice?: Notice) => {
         if (notice) {
             setEditingItem(notice);
-            setNoticeForm({ title: notice.title, content: notice.content, is_important: notice.is_important });
+            setNoticeForm({ title: notice.title, content: notice.content, is_important: notice.is_important, file: null });
         } else {
             setEditingItem(null);
-            setNoticeForm({ title: "", content: "", is_important: false });
+            setNoticeForm({ title: "", content: "", is_important: false, file: null });
         }
         setIsNoticeModalOpen(true);
     };
@@ -377,6 +403,21 @@ export default function AdminBoardPage() {
                                         />
                                         <span className="text-sm font-medium text-red-600">중요 공지 (상단 고정)</span>
                                     </label>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">이미지 첨부</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => setNoticeForm({ ...noticeForm, file: e.target.files?.[0] || null })}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                    />
+                                    {editingItem?.image_url && !noticeForm.file && (
+                                        <div className="mt-2">
+                                            <p className="text-xs text-gray-500 mb-1">현재 이미지:</p>
+                                            <img src={editingItem.image_url} alt="Current" className="h-20 object-cover rounded border" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">내용</label>
