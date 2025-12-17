@@ -136,7 +136,7 @@ export function Header() {
                             <Search className="h-6 w-6" />
                         </button>
 
-                        <Link href="/cart" className="hover:text-gray-600 transition-colors relative mr-8 p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center -m-2.5">
+                        <Link href="/cart" id="header-cart-icon" className="hover:text-gray-600 transition-colors relative mr-8 p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center -m-2.5">
                             <ShoppingBag className="h-6 w-6" />
                             {cartCount > 0 && (
                                 <span className="absolute -top-2 -right-2 bg-[#C41E3A] text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">

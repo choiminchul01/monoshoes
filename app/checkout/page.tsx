@@ -1,29 +1,77 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
+import { useCoupons } from "@/lib/useCoupons";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronDown } from "lucide-react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { ChevronLeft, ChevronDown, Ticket } from "lucide-react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { formatPrice } from "@/lib/utils";
 import { AddressSearchModal } from "@/components/ui/AddressSearchModal";
+import { supabase } from "@/lib/supabase";
+// ... imports
 
-export default function CheckoutPage() {
+function CheckoutContent() {
     const router = useRouter();
-    const { cartItems, cartTotal, clearCart } = useCart();
-    const shippingCost = cartTotal > 500000 ? 0 : 3000;
+    const searchParams = useSearchParams();
+    const mode = searchParams.get("mode");
+
+    const { user } = useAuth();
+    const { coupons, loading: couponsLoading, calculateDiscount } = useCoupons();
+    const { cartItems: allCartItems, cartTotal: cartContextTotal, clearCart, buyNowItem, deleteSelected } = useCart();
+
+    // Determine items to checkout
+    const [checkoutItems, setCheckoutItems] = useState<typeof allCartItems>([]);
+
+    useEffect(() => {
+        if (mode === "buynow") {
+            if (buyNowItem) {
+                setCheckoutItems([buyNowItem]);
+            } else {
+                // Fallback to localStorage if reload lost state
+                const savedBuyNow = localStorage.getItem("buyNowItem");
+                if (savedBuyNow) {
+                    setCheckoutItems([JSON.parse(savedBuyNow)]);
+                } else {
+                    alert("구매할 상품 정보가 없습니다.");
+                    router.push("/shop");
+                }
+            }
+        } else {
+            // Normal checkout: Filter selected items
+            const selectedItems = allCartItems.filter(item => item.selected);
+            if (selectedItems.length === 0) {
+                alert("선택된 상품이 없습니다.");
+                router.push("/cart");
+            } else {
+                setCheckoutItems(selectedItems);
+            }
+        }
+    }, [mode, buyNowItem, allCartItems, router]);
+
+    // Calculate totals based on checkoutItems
+    const checkoutTotal = checkoutItems.reduce((total, item) => total + item.price * item.quantity, 0);
+
+
 
     // Coupon state
-    const [couponCode, setCouponCode] = useState("");
-    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+    const [selectedCouponId, setSelectedCouponId] = useState<string>("");
 
-    // Calculate discount (mock logic - you can replace with real coupon validation)
-    const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0;
-    const finalTotal = cartTotal + shippingCost - couponDiscount;
+    // ... coupon logic using checkoutTotal instead of cartTotal
+    const selectedUserCoupon = coupons.find(c => c.coupon_id === selectedCouponId);
+    const couponDiscount = selectedUserCoupon
+        ? calculateDiscount(selectedUserCoupon.coupons, checkoutTotal)
+        : 0;
+
+
+    // ... rest of component
+
 
     const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false);
-    const [isSameAsOrderer, setIsSameAsOrderer] = useState(true); // Changed to true for better UX
-    const [isSubmitting, setIsSubmitting] = useState(false); // Prevent duplicate submissions
+    const [isSameAsOrderer, setIsSameAsOrderer] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -40,8 +88,26 @@ export default function CheckoutPage() {
         shippingAddress: "",
         shippingAddressDetail: "",
         shippingMemo: "",
-        customsId: "" // Added Customs ID
+        customsId: ""
     });
+
+    // Shipping Cost Logic: Default Free, +5000 for Jeju/Remote area
+    const isJejuOrRemote = formData.shippingAddress && (formData.shippingAddress.includes("제주") || formData.shippingAddress.includes("도서") || formData.shippingAddress.includes("산간"));
+    const shippingCost = isJejuOrRemote ? 5000 : 0;
+
+    const finalTotal = checkoutTotal + shippingCost - couponDiscount;
+
+    // Auto-fill user info when logged in
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                customerEmail: user.email || "",
+                customerName: user.user_metadata?.full_name || user.user_metadata?.name || "",
+                customerPhone: user.user_metadata?.phone || user.phone || ""
+            }));
+        }
+    }, [user]);
 
     // Address Search State
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -63,37 +129,16 @@ export default function CheckoutPage() {
                 ...prev,
                 customerPostalCode: data.zonecode,
                 customerAddress: data.address,
-                customerAddressDetail: '' // Reset detail address
+                customerAddressDetail: ''
             }));
         } else {
             setFormData(prev => ({
                 ...prev,
                 shippingPostalCode: data.zonecode,
                 shippingAddress: data.address,
-                shippingAddressDetail: '' // Reset detail address
+                shippingAddressDetail: ''
             }));
         }
-    };
-
-    const handleApplyCoupon = () => {
-        // Mock coupon validation
-        const validCoupons: { [key: string]: number } = {
-            "WELCOME10": 10000,
-            "VIP20": 20000,
-            "FIRST50": 50000,
-        };
-
-        const upperCode = couponCode.toUpperCase();
-        if (validCoupons[upperCode]) {
-            setAppliedCoupon({ code: upperCode, discount: validCoupons[upperCode] });
-        } else {
-            alert("유효하지 않은 쿠폰 코드입니다.");
-        }
-    };
-
-    const handleRemoveCoupon = () => {
-        setAppliedCoupon(null);
-        setCouponCode("");
     };
 
     const handleCheckout = async () => {
@@ -106,8 +151,6 @@ export default function CheckoutPage() {
 
         try {
             console.log('🚀 handleCheckout called at:', new Date().toISOString());
-            console.log('📦 Cart items:', cartItems);
-            console.log('💰 Cart total:', cartTotal, 'Shipping:', shippingCost, 'Final:', finalTotal);
 
             // Validation
             if (!formData.customerName || !formData.customerEmail || !formData.customerPhone) {
@@ -150,19 +193,17 @@ export default function CheckoutPage() {
                 shipping_address: isSameAsOrderer ? formData.customerAddress : formData.shippingAddress,
                 shipping_address_detail: isSameAsOrderer ? formData.customerAddressDetail : formData.shippingAddressDetail,
                 shipping_memo: isSameAsOrderer ? formData.customerMemo : formData.shippingMemo,
-                customs_id: formData.customsId, // Include Customs ID
-                total_amount: cartTotal,
+                customs_id: formData.customsId,
+                total_amount: checkoutTotal,
                 discount_amount: couponDiscount,
                 shipping_cost: shippingCost,
                 final_amount: finalTotal,
-                coupon_code: appliedCoupon?.code || null,
+                coupon_code: selectedUserCoupon ? selectedUserCoupon.coupons.code : null,
                 payment_status: 'pending' as const,
                 order_status: 'pending' as const
             };
 
             // Save order to Supabase
-            const { supabase } = await import('@/lib/supabase');
-
             const { data: order, error: orderError } = await supabase
                 .from('orders')
                 .insert([orderData])
@@ -170,26 +211,36 @@ export default function CheckoutPage() {
                 .single();
 
             if (orderError) {
-                console.error('Order save failed (details):', orderError);
-                alert(`주문 처리 중 오류가 발생했습니다: ${orderError.message}`);
-                setIsSubmitting(false);
-                return;
+                console.error('Order save failed (details):', JSON.stringify(orderError, null, 2));
+                throw orderError;
             }
 
-            console.log('✅ Order saved successfully:', order.id, order.order_number);
-            console.log('📋 Order data:', orderData);
+            console.log('✅ Order saved successfully:', order.id);
 
-            // Validate product IDs are UUIDs before inserting order items
+            // Mark coupon as used if applied
+            if (selectedUserCoupon) {
+                await supabase
+                    .from('user_coupons')
+                    .update({ is_used: true })
+                    .eq('id', selectedUserCoupon.id);
+
+                // Record usage history
+                await supabase.from('coupon_usages').insert({
+                    coupon_id: selectedUserCoupon.coupon_id,
+                    user_id: user?.id || 'guest',
+                    order_id: order.id,
+                    discount_amount: couponDiscount
+                });
+            }
+
+            // Validate product IDs are UUIDs
             const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
-            if (cartItems.some(item => !uuidRegex.test(item.id))) {
-                console.error('Invalid product IDs in cart:', cartItems.map(i => i.id));
-                alert('주문 처리 중 오류가 발생했습니다: 제품 ID가 올바르지 않습니다.');
-                setIsSubmitting(false);
-                return;
+            if (checkoutItems.some(item => !uuidRegex.test(item.id))) {
+                throw new Error('Invalid product IDs in cart');
             }
 
             // Save order items
-            const orderItems = cartItems.map(item => ({
+            const orderItems = checkoutItems.map(item => ({
                 order_id: order.id,
                 product_id: item.id,
                 product_name: item.name,
@@ -206,26 +257,32 @@ export default function CheckoutPage() {
                 .insert(orderItems);
 
             if (itemsError) {
-                console.error('주문 상품 저장 실패:', itemsError);
-                alert(`주문 처리 중 오류가 발생했습니다: ${itemsError.message}`);
-                setIsSubmitting(false);
-                return;
+                throw itemsError;
             }
 
-            // Clear cart and navigate to order complete page
-            clearCart();
+            // Clear processed items and navigate
+            if (mode === 'buynow') {
+                // Buy Now doesn't affect cart state usually, or optional clear
+                // If we want to be strict, we don't clear cart.
+            } else {
+                // Clear ONLY selected items
+                deleteSelected();
+            }
+
             router.push(`/order-complete?orderNumber=${orderNumber}`);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Checkout error:', error);
-            alert('주문 처리 중 오류가 발생했습니다.');
+            const errorMessage = error.message || '알 수 없는 오류가 발생했습니다.';
+            const errorDetails = error.details || error.hint || '';
+            alert(`주문 처리 중 오류가 발생했습니다.\n메시지: ${errorMessage}\n${errorDetails ? `상세: ${errorDetails}` : ''}`);
             setIsSubmitting(false);
         }
     };
 
-    // Calculate original total (with 20% markup for display purposes)
-    const originalTotal = Math.round(cartTotal * 1.25);
-    const totalDiscount = originalTotal - cartTotal;
-
+    // Calculate original total 
+    // Calculate original total 
+    // Logic removed as per new policy
+    const totalProductDiscount = 0;
     return (
         <div className="min-h-screen bg-white flex flex-col lg:flex-row">
             {/* Address Search Modal */}
@@ -261,12 +318,12 @@ export default function CheckoutPage() {
                             <span className="flex items-center gap-2 text-black font-medium">
                                 주문 요약 보기 <ChevronDown className={`w-4 h-4 transition-transform ${isOrderSummaryOpen ? "rotate-180" : ""}`} />
                             </span>
-                            <span className="font-bold">{finalTotal.toLocaleString()}원</span>
+                            <span className="font-bold">{formatPrice(finalTotal)}</span>
                         </button>
 
                         {isOrderSummaryOpen && (
                             <div className="mt-4 space-y-4">
-                                {cartItems.map((item) => {
+                                {checkoutItems.map((item) => {
                                     const itemOriginalPrice = Math.round(item.price * 1.25);
                                     const itemDiscount = itemOriginalPrice - item.price;
                                     return (
@@ -281,32 +338,32 @@ export default function CheckoutPage() {
                                                 <h4 className="text-sm font-medium text-gray-900">{item.name}</h4>
                                                 <p className="text-xs text-gray-500">{item.brand} / {item.color} / {item.size}</p>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-xs text-gray-400 line-through">{(itemOriginalPrice * item.quantity).toLocaleString()}원</span>
-                                                    <span className="text-xs font-bold text-red-600">-{itemDiscount.toLocaleString()}원</span>
+                                                    <span className="text-xs text-gray-400 line-through">{formatPrice(itemOriginalPrice * item.quantity)}</span>
+                                                    <span className="text-xs font-bold text-red-600">-{formatPrice(itemDiscount * item.quantity)}</span>
                                                 </div>
                                             </div>
-                                            <p className="text-sm font-medium text-gray-900">{(item.price * item.quantity).toLocaleString()}원</p>
+                                            <p className="text-sm font-medium text-gray-900">{formatPrice(item.price * item.quantity)}</p>
                                         </div>
                                     );
                                 })}
                                 <div className="border-t border-gray-100 pt-4 space-y-2">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500">상품금액</span>
-                                        <span className="font-medium">{cartTotal.toLocaleString()}원</span>
+                                        <span className="font-medium">{formatPrice(checkoutTotal)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500">배송비</span>
-                                        <span className="font-medium">{shippingCost === 0 ? "무료" : `${shippingCost.toLocaleString()}원`}</span>
+                                        <span className="font-medium">{shippingCost === 0 ? "무료" : formatPrice(shippingCost)}</span>
                                     </div>
-                                    {appliedCoupon && (
+                                    {selectedUserCoupon && (
                                         <div className="flex justify-between text-sm text-red-600">
                                             <span>쿠폰 할인</span>
-                                            <span className="font-medium">-{couponDiscount.toLocaleString()}원</span>
+                                            <span className="font-medium">-{formatPrice(couponDiscount)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-100">
                                         <span>최종 결제금액</span>
-                                        <span>{finalTotal.toLocaleString()}원</span>
+                                        <span>{formatPrice(finalTotal)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -501,43 +558,56 @@ export default function CheckoutPage() {
 
                     {/* Coupon Section */}
                     <section className="mb-10">
-                        <h2 className="text-lg font-bold text-gray-900 mb-4">할인 쿠폰</h2>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                placeholder="쿠폰 코드 입력 (예: WELCOME10)"
-                                value={couponCode}
-                                onChange={(e) => setCouponCode(e.target.value)}
-                                disabled={!!appliedCoupon}
-                                className="flex-1 h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm disabled:bg-gray-100"
-                            />
-                            {!appliedCoupon ? (
-                                <button
-                                    onClick={handleApplyCoupon}
-                                    className="px-6 h-12 bg-black text-white text-sm font-bold rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
+                        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <Ticket className="w-5 h-5" />
+                            할인 쿠폰
+                        </h2>
+
+                        {!user ? (
+                            <div className="bg-gray-50 p-4 rounded-md border border-gray-200 text-sm text-center text-gray-500">
+                                로그인 후 보유한 쿠폰을 사용할 수 있습니다.
+                            </div>
+                        ) : couponsLoading ? (
+                            <div className="text-sm text-gray-500">쿠폰 목록을 불러오는 중...</div>
+                        ) : coupons.length > 0 ? (
+                            <div className="space-y-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    보유 쿠폰 선택 ({coupons.length}장)
+                                </label>
+                                <select
+                                    className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all bg-white text-sm"
+                                    value={selectedCouponId}
+                                    onChange={(e) => setSelectedCouponId(e.target.value)}
                                 >
-                                    적용
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleRemoveCoupon}
-                                    className="px-6 h-12 bg-gray-500 text-white text-sm font-bold rounded-md hover:bg-gray-600 transition-colors whitespace-nowrap"
-                                >
-                                    삭제
-                                </button>
-                            )}
-                        </div>
-                        {appliedCoupon && (
-                            <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                                    <option value="">쿠폰을 선택해주세요 (미적용)</option>
+                                    {coupons.map((userCoupon) => {
+                                        const discountText = userCoupon.coupons.type === 'percentage'
+                                            ? `${userCoupon.coupons.discount_value}% 할인`
+                                            : `${formatPrice(userCoupon.coupons.discount_value)} 할인`;
+
+                                        return (
+                                            <option key={userCoupon.id} value={userCoupon.coupon_id}>
+                                                [{userCoupon.coupons.code}] {userCoupon.coupons.name} - {discountText}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                                <p className="text-xs text-gray-500">* 주문 금액에 따라 사용이 제한될 수 있습니다.</p>
+                            </div>
+                        ) : (
+                            <div className="bg-gray-50 p-4 rounded-md border border-gray-200 text-sm text-center text-gray-500">
+                                사용 가능한 쿠폰이 없습니다.
+                            </div>
+                        )}
+
+                        {selectedUserCoupon && (
+                            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
                                 <p className="text-sm text-green-800">
-                                    <span className="font-bold">{appliedCoupon.code}</span> 쿠폰이 적용되었습니다.
-                                    <span className="font-bold ml-1">{appliedCoupon.discount.toLocaleString()}원</span> 할인!
+                                    <span className="font-bold">{selectedUserCoupon.coupons.name}</span>이 적용되었습니다.
+                                    <span className="font-bold ml-1">{formatPrice(couponDiscount)}</span> 할인!
                                 </p>
                             </div>
                         )}
-                        <p className="mt-2 text-xs text-gray-500">
-                            * 사용 가능한 쿠폰: WELCOME10 (10,000원), VIP20 (20,000원), FIRST50 (50,000원)
-                        </p>
                     </section>
 
                     {/* Payment Method */}
@@ -577,46 +647,57 @@ export default function CheckoutPage() {
                         <div className="border border-gray-200 rounded-md p-6 bg-gray-50">
                             <h3 className="text-base font-bold text-gray-900 mb-4">결제 금액</h3>
                             <div className="space-y-3">
+                                {totalProductDiscount > 0 && (
+                                    <>
+
+                                    </>
+                                )}
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">상품 원가</span>
-                                    <span className="text-gray-400 line-through">{originalTotal.toLocaleString()}원</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">상품 할인</span>
-                                    <span className="font-medium text-red-600">-{totalDiscount.toLocaleString()}원</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">상품 금액</span>
-                                    <span className="font-medium text-gray-900">{cartTotal.toLocaleString()}원</span>
+                                    <span className="text-gray-600">주문 금액</span>
+                                    <span className="font-medium text-gray-900">{formatPrice(checkoutTotal)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">배송비</span>
                                     <span className="font-medium text-gray-900">
-                                        {shippingCost === 0 ? "무료" : `${shippingCost.toLocaleString()}원`}
+                                        {shippingCost === 0 ? "무료" : formatPrice(shippingCost)}
                                     </span>
                                 </div>
-                                {appliedCoupon && (
+                                {selectedUserCoupon && (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-600">쿠폰 할인</span>
-                                        <span className="font-medium text-red-600">-{couponDiscount.toLocaleString()}원</span>
+                                        <span className="font-medium text-red-600">-{formatPrice(couponDiscount)}</span>
                                     </div>
-                                )}
-                                {shippingCost > 0 && (
-                                    <p className="text-xs text-gray-500">* 50만원 이상 구매 시 배송비 무료</p>
                                 )}
 
+
                                 <div className="border-t-2 border-gray-300 pt-4 mt-4">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-sm text-gray-600">총 할인 금액</span>
-                                        <span className="text-base font-bold text-red-600">
-                                            -{(totalDiscount + couponDiscount).toLocaleString()}원
-                                        </span>
-                                    </div>
+                                    {/* Only show Total Discount row if there is a discount */}
+                                    {(couponDiscount > 0) && (
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-sm text-gray-600">총 할인 금액</span>
+                                            <span className="text-base font-bold text-red-600">
+                                                -{formatPrice(couponDiscount + totalProductDiscount)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {totalProductDiscount > 0 && couponDiscount > 0 && (
+                                        <div className="flex flex-col gap-1 mb-2 text-right">
+                                            <span className="text-xs text-gray-500">(상품할인 -{formatPrice(totalProductDiscount)})</span>
+                                            <span className="text-xs text-gray-500">(쿠폰할인 -{formatPrice(couponDiscount)})</span>
+                                        </div>
+                                    )}
+                                    {totalProductDiscount > 0 && couponDiscount === 0 && (
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-sm text-gray-600">총 할인 금액</span>
+                                            <span className="text-base font-bold text-red-600">
+                                                -{formatPrice(totalProductDiscount)}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between items-center mb-6">
                                         <span className="text-base font-bold text-gray-900">최종 결제금액</span>
                                         <div className="text-right">
-                                            <span className="text-2xl font-bold text-gray-900">{finalTotal.toLocaleString()}</span>
-                                            <span className="text-sm text-gray-600 ml-1">원</span>
+                                            <span className="text-2xl font-bold text-gray-900">{formatPrice(finalTotal)}</span>
                                         </div>
                                     </div>
 
@@ -625,23 +706,21 @@ export default function CheckoutPage() {
                                         disabled={isSubmitting}
                                         className="w-full h-14 bg-black text-white text-base font-bold rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
                                     >
-                                        {isSubmitting ? '처리 중...' : `${finalTotal.toLocaleString()}원 결제하기`}
+                                        {isSubmitting ? '처리 중...' : `${formatPrice(finalTotal)} 결제하기`}
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </section>
                 </div>
-            </div>
+            </div >
 
             {/* Right Column: Order Summary (Desktop) */}
-            <div className="hidden lg:block w-full lg:w-1/2 bg-gray-50 border-l border-gray-200 order-1 lg:order-2 h-screen sticky top-0 overflow-y-auto">
+            < div className="hidden lg:block w-full lg:w-1/2 bg-gray-50 border-l border-gray-200 order-1 lg:order-2 h-screen sticky top-0 overflow-y-auto" >
                 <div className="w-full max-w-[500px] px-10 py-16 ml-12">
                     <h2 className="text-lg font-bold tracking-wide mb-6">주문 상품</h2>
                     <div className="space-y-6">
-                        {cartItems.map((item) => {
-                            const itemOriginalPrice = Math.round(item.price * 1.25);
-                            const itemDiscount = itemOriginalPrice - item.price;
+                        {checkoutItems.map((item) => {
                             return (
                                 <div key={`${item.id}-${item.color}-${item.size}`} className="flex gap-4 items-start">
                                     <div className="relative w-16 h-20 bg-white rounded-md overflow-hidden border border-gray-200 flex-shrink-0">
@@ -653,12 +732,8 @@ export default function CheckoutPage() {
                                     <div className="flex-1 min-w-0">
                                         <h4 className="text-sm font-medium text-gray-900 truncate">{item.name}</h4>
                                         <p className="text-xs text-gray-500">{item.brand} / {item.color} / {item.size}</p>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <span className="text-xs text-gray-400 line-through">{(itemOriginalPrice * item.quantity).toLocaleString()}원</span>
-                                            <span className="text-xs font-bold text-red-600">-{(itemDiscount * item.quantity).toLocaleString()}원</span>
-                                        </div>
-                                        <p className="text-sm font-bold text-gray-900 mt-1">
-                                            {(item.price * item.quantity).toLocaleString()}원
+                                        <p className="text-sm font-bold text-gray-900 mt-2">
+                                            {formatPrice(item.price * item.quantity)}
                                         </p>
                                     </div>
                                 </div>
@@ -667,24 +742,32 @@ export default function CheckoutPage() {
                     </div>
 
                     <div className="mt-8 border-t border-gray-200 pt-6 space-y-4">
+                        {totalProductDiscount > 0 && (
+                            <>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">상품 원가</span>
+                                    <span className="text-gray-400 line-through">{formatPrice(totalOriginalPrice)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">상품 할인</span>
+                                    <span className="font-medium text-red-600">-{formatPrice(totalProductDiscount)}</span>
+                                </div>
+                            </>
+                        )}
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">상품 원가</span>
-                            <span className="text-gray-400 line-through">{originalTotal.toLocaleString()}원</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">상품 할인</span>
-                            <span className="font-medium text-red-600">-{totalDiscount.toLocaleString()}원</span>
+                            <span className="text-gray-500">주문 금액</span>
+                            <span className="font-medium text-gray-900">{formatPrice(checkoutTotal)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">배송비</span>
                             <span className="font-medium text-gray-900">
-                                {shippingCost === 0 ? "무료" : `${shippingCost.toLocaleString()}원`}
+                                {shippingCost === 0 ? "무료" : formatPrice(shippingCost)}
                             </span>
                         </div>
-                        {appliedCoupon && (
+                        {selectedUserCoupon && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-500">쿠폰 할인</span>
-                                <span className="font-medium text-red-600">-{couponDiscount.toLocaleString()}원</span>
+                                <span className="font-medium text-red-600">-{formatPrice(couponDiscount)}</span>
                             </div>
                         )}
                         {shippingCost > 0 && (
@@ -693,17 +776,27 @@ export default function CheckoutPage() {
                     </div>
 
                     <div className="mt-6 border-t-2 border-gray-300 pt-6">
-                        <div className="flex justify-between items-end mb-2">
-                            <span className="text-sm text-gray-500">총 할인 금액</span>
-                            <span className="text-lg font-bold text-red-600">
-                                -{(totalDiscount + couponDiscount).toLocaleString()}원
-                            </span>
-                        </div>
+                        {/* Only show Total Discount row if there is a discount */}
+                        {(couponDiscount > 0) && (
+                            <div className="flex justify-between items-end mb-2">
+                                <span className="text-sm text-gray-500">총 할인 금액</span>
+                                <span className="text-lg font-bold text-red-600">
+                                    -{formatPrice(couponDiscount + totalProductDiscount)}
+                                </span>
+                            </div>
+                        )}
+                        {totalProductDiscount > 0 && couponDiscount === 0 && (
+                            <div className="flex justify-between items-end mb-2">
+                                <span className="text-sm text-gray-500">총 할인 금액</span>
+                                <span className="text-lg font-bold text-red-600">
+                                    -{formatPrice(totalProductDiscount)}
+                                </span>
+                            </div>
+                        )}
                         <div className="flex justify-between items-end mb-6">
                             <span className="text-base font-bold text-gray-900">최종 결제금액</span>
                             <div className="text-right">
-                                <span className="text-2xl font-bold text-gray-900">{finalTotal.toLocaleString()}</span>
-                                <span className="text-sm text-gray-500 ml-1">원</span>
+                                <span className="text-2xl font-bold text-gray-900">{formatPrice(finalTotal)}</span>
                             </div>
                         </div>
 
@@ -712,11 +805,23 @@ export default function CheckoutPage() {
                             disabled={isSubmitting}
                             className="w-full h-14 bg-black text-white text-sm font-bold rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
-                            {isSubmitting ? '처리 중...' : `${finalTotal.toLocaleString()}원 결제하기`}
+                            {isSubmitting ? '처리 중...' : `${formatPrice(finalTotal)} 결제하기`}
                         </button>
                     </div>
                 </div>
+            </div >
+        </div >
+    );
+}
+
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-gray-600">결제 페이지를 불러오는 중...</div>
             </div>
-        </div>
+        }>
+            <CheckoutContent />
+        </Suspense>
     );
 }

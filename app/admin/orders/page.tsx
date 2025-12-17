@@ -189,33 +189,45 @@ export default function OrdersPage() {
 
     const deleteOrder = async (orderId: string) => {
         try {
+            // 1. 주문 상품 먼저 삭제 시도 (FK 제약 조건 방지)
             const { error: itemsError } = await supabase
                 .from("order_items")
                 .delete()
                 .eq("order_id", orderId);
-            if (itemsError) throw itemsError;
 
+            // 아이템 삭제 에러가 있어도 주문 삭제를 시도해봄 (CASCADE가 설정되어 있을 수 있으므로)
+            if (itemsError) {
+                console.warn("주문 상품 삭제 경고 (CASCADE가 처리할 수도 있음):", itemsError);
+            }
+
+            // 2. 주문 삭제
             const { error: orderError } = await supabase.from("orders").delete().eq("id", orderId);
             if (orderError) throw orderError;
 
-            return true;
-        } catch (e) {
+            return { success: true };
+        } catch (e: any) {
             console.error("주문 삭제 실패:", e);
-            return false;
+            return { success: false, message: e.message || "알 수 없는 오류" };
         }
     };
 
     const deleteSelectedOrders = async () => {
         let success = 0;
         let fail = 0;
+        let lastError = "";
 
         for (const id of selectedOrders) {
-            const ok = await deleteOrder(id);
-            ok ? success++ : fail++;
+            const result = await deleteOrder(id);
+            if (result.success) {
+                success++;
+            } else {
+                fail++;
+                lastError = result.message || "알 수 없는 오류";
+            }
         }
 
         if (fail > 0) {
-            toast.warning(`${success}건 삭제 완료, ${fail}건 실패`);
+            toast.warning(`${success}건 삭제 완료, ${fail}건 실패. (사유: ${lastError})`);
         } else {
             toast.success(`${success}건의 주문이 삭제되었습니다.`);
         }

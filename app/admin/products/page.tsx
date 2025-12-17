@@ -14,7 +14,6 @@ type Product = {
     name: string;
     brand: string;
     price: number;
-    original_price?: number;
     category: string;
     images: string[];
     detail_images?: string[];
@@ -67,7 +66,6 @@ export default function AdminProductsPage() {
         name: "",
         brand: "",
         price: 0,
-        original_price: 0,
         category: "BAG",
         images: [],
         detailImages: [],
@@ -380,7 +378,6 @@ export default function AdminProductsPage() {
                 name: formData.name,
                 brand: formData.brand,
                 price: formData.price,
-                original_price: formData.original_price,
                 category: formData.category,
                 images: imageUrls,
                 detail_images: detailImageUrls,
@@ -445,7 +442,6 @@ export default function AdminProductsPage() {
             name: product.name,
             brand: product.brand,
             price: product.price,
-            original_price: product.original_price || 0,
             category: product.category,
             images: [],
             existingImages: product.images,
@@ -671,7 +667,6 @@ export default function AdminProductsPage() {
             name: "",
             brand: "",
             price: 0,
-            original_price: 0,
             category: "BAG",
             images: [],
             existingImages: [],
@@ -1275,21 +1270,7 @@ export default function AdminProductsPage() {
                                         </p>
                                     )}
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-2">브랜드 판매가 (원) <span className="text-gray-400 text-xs">선택</span></label>
-                                    <input
-                                        type="number"
-                                        value={formData.original_price || ""}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, original_price: parseInt(e.target.value) || 0 }))}
-                                        placeholder="할인 전 가격"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    />
-                                    {(formData.original_price || 0) > 0 && (
-                                        <p className="text-sm text-gray-400 mt-1 line-through">
-                                            ₩{(formData.original_price || 0).toLocaleString()}
-                                        </p>
-                                    )}
-                                </div>
+
                             </div>
 
                             {/* 할인율 */}
@@ -1334,15 +1315,9 @@ export default function AdminProductsPage() {
                                 {/* 할인가 미리보기 */}
                                 {formData.price > 0 && (formData.discount_percent || 0) > 0 && (
                                     <div className="mt-2 p-2 bg-red-50 rounded-lg">
-                                        <p className="text-sm">
-                                            <span className="text-red-600 font-bold">
-                                                ₩{Math.round(formData.price * (1 - (formData.discount_percent || 0) / 100)).toLocaleString()}
-                                            </span>
-                                            <span className="text-gray-400 line-through ml-2">
-                                                ₩{formData.price.toLocaleString()}
-                                            </span>
-                                            <span className="text-red-500 ml-2 text-xs font-medium">
-                                                (-{formData.discount_percent}%)
+                                        <p className="flex items-center text-sm">
+                                            <span className="font-bold text-gray-900">
+                                                판매가: ₩{Math.round(formData.price * (1 - (formData.discount_percent || 0) / 100)).toLocaleString()}
                                             </span>
                                         </p>
                                     </div>

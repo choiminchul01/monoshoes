@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { Monitor, Smartphone, Share, MoreVertical, PlusSquare, ArrowRight, Download, Menu } from "lucide-react";
 import Link from "next/link";
+import { usePWA } from "@/context/PWAContext";
 
 export default function GuidePage() {
     const [activeTab, setActiveTab] = useState<'pc' | 'android' | 'ios'>('pc');
+    const { isInstallable, promptToInstall } = usePWA();
 
     return (
         <div className="min-h-screen bg-white">
@@ -67,12 +69,34 @@ export default function GuidePage() {
                 {activeTab === 'ios' && <IOSGuide />}
             </div>
 
-            {/* Bottom CTA */}
+            {/* Bottom CTA - Install Action */}
             <div className="bg-gray-50 py-16 border-t border-gray-100">
                 <div className="container mx-auto px-4 text-center">
                     <h2 className="text-2xl font-bold mb-4">지금 바로 시작해보세요</h2>
                     <p className="text-gray-500 mb-8">설치가 완료되면 홈 화면에서 에센시아 아이콘을 찾아 실행해주세요.</p>
-                    <Link href="/home" className="inline-flex items-center gap-2 bg-black text-white px-8 py-4 rounded-full font-bold hover:bg-gray-800 transition-colors">
+
+                    {isInstallable ? (
+                        <div className="flex justify-center">
+                            <button
+                                onClick={promptToInstall}
+                                className="inline-flex items-center gap-2 bg-[#00704A] text-white px-8 py-4 rounded-full font-bold hover:bg-[#005a3c] transition-colors shadow-lg animate-bounce"
+                            >
+                                <PlusSquare className="w-5 h-5" />
+                                홈 화면에 추가하기
+                            </button>
+                        </div>
+                    ) : (
+                        <p className="text-gray-400 text-sm">
+                            (기기 환경에 따라 설치 버튼이 나타나지 않을 수 있습니다)
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {/* Footer Navigation - Separated */}
+            <div className="bg-white py-8 border-t border-gray-100">
+                <div className="container mx-auto px-4 text-center">
+                    <Link href="/home" className="inline-flex items-center gap-2 text-gray-400 hover:text-black transition-colors font-medium hover:underline">
                         메인으로 돌아가기
                         <ArrowRight className="w-4 h-4" />
                     </Link>

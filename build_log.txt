@@ -1,0 +1,34 @@
+
+> essentia@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.7
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · serverActions
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 2.9s
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+✅ SUPABASE_SERVICE_ROLE_KEY loaded successfully.
+   Generating static pages (0/40) ...
+✅ SUPABASE_SERVICE_ROLE_KEY loaded successfully.
+✅ SUPABASE_SERVICE_ROLE_KEY loaded successfully.
+✅ SUPABASE_SERVICE_ROLE_KEY loaded successfully.
+Error occurred prerendering page "/checkout". Read more: https://nextjs.org/docs/messages/prerender-error
+Error: Attempted to call generateViewport() from the server but generateViewport is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.
+    at <unknown> (C:\Users\Master\Desktop\안티그래비티\essentia\.next\server\chunks\7347.js:18:324)
+    at <unknown> (C:\Users\Master\Desktop\안티그래비티\essentia\.next\server\chunks\4586.js:15:4601)
+    at e.with (C:\Users\Master\Desktop\안티그래비티\essentia\.next\server\chunks\4586.js:22:28575)
+    at i.with (C:\Users\Master\Desktop\안티그래비티\essentia\.next\server\chunks\4586.js:22:22822)
+    at i.startActiveSpan (C:\Users\Master\Desktop\안티그래비티\essentia\.next\server\chunks\4586.js:22:37788)
+    at e.startActiveSpan (C:\Users\Master\Desktop\안티그래비티\essentia\.next\server\chunks\4586.js:22:38322)
+    at <unknown> (C:\Users\Master\Desktop\안티그래비티\essentia\.next\server\chunks\4586.js:15:4109)
+    at e.with (C:\Users\Master\Desktop\안티그래비티\essentia\.next\server\chunks\4586.js:22:28575)
+    at i.with (C:\Users\Master\Desktop\안티그래비티\essentia\.next\server\chunks\4586.js:22:22822) {
+  digest: '1979514306'
+}
+Export encountered an error on /checkout/page: /checkout, exiting the build.
+ ⨯ Next.js build worker exited with code: 1 and signal: null

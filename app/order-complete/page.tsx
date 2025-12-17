@@ -136,7 +136,7 @@ function OrderCompleteContent() {
                     <div className="grid grid-cols-2 gap-6 mb-6 pb-6 border-b border-gray-200">
                         <div>
                             <p className="text-sm text-gray-500 mb-1">주문번호</p>
-                            <p className="text-lg font-bold text-gray-900">{orderNumber}</p>
+                            <p className="text-lg font-bold text-red-600">{orderNumber}</p>
                         </div>
                         <div>
                             <p className="text-sm text-gray-500 mb-1">주문일시</p>

@@ -75,9 +75,11 @@ export function useAdminPermissions() {
             }
 
             if (error) {
-                console.error('Error fetching admin permissions:', error);
-                // If no role found, user is not an admin
-                // router.push('/admin-login'); // Optional: redirect immediately
+                // PGRST116: JSON object requested, multiple (or no) rows returned
+                // If code is PGRST116, it just means the user has no admin role, which is normal for customers.
+                if (error.code !== 'PGRST116') {
+                    console.error('Error fetching admin permissions:', error);
+                }
                 return;
             }
 

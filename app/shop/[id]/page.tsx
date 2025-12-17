@@ -13,6 +13,8 @@ import { useRouter, notFound } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
 import { Button } from "@/components/ui/button";
 import ProductQnA from "@/components/product/ProductQnA";
+import ProductFloatingBar from "@/components/shop/ProductFloatingBar";
+import { formatPrice } from "@/lib/utils";
 
 type ProductDetails = {
     colors?: { name: string; value: string }[];
@@ -58,7 +60,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const [loading, setLoading] = useState(true);
     const [productId, setProductId] = useState<string | null>(null);
 
-    const { addToCart } = useCart();
+    const { addToCart, setBuyNowItem } = useCart();
     const { isInWishlist, toggleWishlist } = useWishlist();
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
@@ -66,6 +68,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const [isAddingToCart, setIsAddingToCart] = useState(false);
     const [isBuyingNow, setIsBuyingNow] = useState(false);
     const [isFlying, setIsFlying] = useState(false);
+    const [flyTarget, setFlyTarget] = useState({ top: "40px", left: "calc(100% - 40px)" }); // Default fallback
+
+    // Calculate Cart Icon Position for Animation
+    useEffect(() => {
+        const updateFlyTarget = () => {
+            const cartIcon = document.getElementById("header-cart-icon");
+            if (cartIcon) {
+                const rect = cartIcon.getBoundingClientRect();
+                setFlyTarget({
+                    top: `${rect.top + rect.height / 2}px`,
+                    left: `${rect.left + rect.width / 2}px`,
+                });
+            }
+        };
+
+        // Update on mount and resize
+        updateFlyTarget();
+        window.addEventListener("resize", updateFlyTarget);
+        return () => window.removeEventListener("resize", updateFlyTarget);
+    }, []);
 
     useEffect(() => {
         const fetchProductData = async () => {
@@ -197,7 +219,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         setIsBuyingNow(true);
 
-        addToCart({
+        const buyNowProduct = {
             id: product.id,
             name: product.name,
             price: product.price,
@@ -205,11 +227,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             color: selectedColor?.name,
             size: selectedSize || undefined,
             quantity: quantity,
+
             brand: product.brand,
-        });
+            selected: true
+        };
+
+        setBuyNowItem(buyNowProduct);
+
+        // Optional: Also save to local storage for persistence across reloads if needed
+        localStorage.setItem("buyNowItem", JSON.stringify(buyNowProduct));
 
         toast.success("주문 페이지로 이동합니다.");
-        router.push("/checkout");
+        router.push("/checkout?mode=buynow");
     };
 
     const handleWishlistClick = async () => {
@@ -277,7 +306,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 {isFlying && product?.images?.[0] && (
                     <motion.div
                         initial={{ position: "fixed", top: "50%", left: "50%", x: "-50%", y: "-50%", scale: 1, opacity: 1, zIndex: 100 }}
-                        animate={{ top: "40px", left: "calc(100% - 100px)", scale: 0.1, opacity: 0.5 }}
+                        animate={{
+                            top: flyTarget.top,
+                            left: flyTarget.left,
+                            scale: 0.1,
+                            opacity: 0.5
+                        }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.8, ease: "easeInOut" }}
                         onAnimationComplete={() => setIsFlying(false)}
@@ -401,20 +435,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     <div className="h-5 md:h-6 w-24 md:w-32 bg-gray-100 animate-pulse rounded" />
                                 ) : user ? (
                                     <>
-                                        {product.original_price && product.original_price > product.price ? (
-                                            <>
-                                                <p className="text-base md:text-xl font-normal text-gray-900">
-                                                    ₩{product.price.toLocaleString()}
-                                                </p>
-                                                <p className="text-sm md:text-base font-normal text-gray-400 line-through">
-                                                    ₩{product.original_price.toLocaleString()}
-                                                </p>
-                                            </>
-                                        ) : (
-                                            <p className="text-base md:text-xl font-normal text-gray-900">
-                                                ₩{product.price.toLocaleString()}
-                                            </p>
-                                        )}
+                                        <p className="text-base md:text-xl font-normal text-gray-900">
+                                            {formatPrice(product.price)}
+                                        </p>
                                     </>
                                 ) : (
                                     <div className="flex items-center gap-1.5 text-gray-500">
@@ -529,7 +552,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </div>
 
                         {/* Actions - Hidden on mobile (using fixed bottom bar instead) */}
-                        <div className="hidden md:grid grid-cols-2 lg:grid-cols-[1fr_auto_auto] gap-2 lg:gap-3 pt-4">
+                        <div id="main-product-actions" className="hidden md:grid grid-cols-2 lg:grid-cols-[1fr_auto_auto] gap-2 lg:gap-3 pt-4">
                             {/* Cart & Buy Now - Left side */}
                             <div className="space-y-2 col-span-1">
                                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -591,6 +614,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             </div>
                         </div>
 
+                        {/* PC Floating Action Bar */}
+                        <ProductFloatingBar
+                            product={product}
+                            isAddingToCart={isAddingToCart}
+                            isBuyingNow={isBuyingNow}
+                            isInWishlist={isInWishlist(product.id)}
+                            onAddToCart={handleAddToCart}
+                            onBuyNow={handleBuyNow}
+                            onWishlist={handleWishlistClick}
+                            onShare={handleShare}
+                        />
+
                         {/* Description - Below Actions */}
                         <div className="pt-6 border-t border-gray-200">
                             <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
@@ -602,12 +637,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Common Policy Images Section (이용 안내 - 1번 이미지) */}
-            <PolicyImagesSection
-                startId={1}
-                endId={1}
-                title="GUIDE"
-                subtitle="(이용 안내)"
-            />
+            <div id="guide-section">
+                <PolicyImagesSection
+                    startId={1}
+                    endId={1}
+                    title="GUIDE"
+                    subtitle="(이용 안내)"
+                />
+            </div>
 
             {/* Detail Images Section */}
             {product && product.detail_images && product.detail_images.length > 0 && (
@@ -647,7 +684,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             )}
 
             {/* Mobile Bottom Fixed Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-3 md:hidden safe-area-pb">
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-3 min-[1600px]:hidden safe-area-pb">
                 <div className="flex gap-2">
                     {/* 왼쪽: 장바구니 + 바로구매 (세로 스택) - 50% */}
                     <div className="w-1/2 flex flex-col gap-2">
@@ -703,7 +740,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Bottom padding for fixed bar on mobile */}
-            <div className="h-32 md:hidden" />
+            <div className="h-32 min-[1600px]:hidden" />
         </div>
     );
 }
