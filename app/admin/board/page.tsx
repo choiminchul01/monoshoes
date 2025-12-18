@@ -225,20 +225,20 @@ export default function AdminBoardPage() {
             {/* Notice Modal */}
             {
                 isNoticeModalOpen && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg w-full max-w-lg p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold">{editingItem ? '공지사항 수정' : '공지사항 등록'}</h2>
-                                <button onClick={() => setIsNoticeModalOpen(false)}><X className="w-6 h-6" /></button>
+                    <div className="admin-modal-overlay">
+                        <div className="admin-modal-card w-full max-w-lg">
+                            <div className="admin-modal-header">
+                                <h2>{editingItem ? '공지사항 수정' : '공지사항 등록'}</h2>
+                                <button onClick={() => setIsNoticeModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
                             </div>
-                            <form onSubmit={handleSaveNotice} className="space-y-4">
+                            <form onSubmit={handleSaveNotice} className="admin-modal-body space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1">제목</label>
                                     <input
                                         type="text"
                                         value={noticeForm.title}
                                         onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
-                                        className="w-full px-4 py-2 border rounded-lg"
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                         required
                                     />
                                 </div>
@@ -273,13 +273,13 @@ export default function AdminBoardPage() {
                                     <textarea
                                         value={noticeForm.content}
                                         onChange={(e) => setNoticeForm({ ...noticeForm, content: e.target.value })}
-                                        className="w-full px-4 py-2 border rounded-lg h-40 resize-none"
+                                        className="w-full px-4 py-2 border rounded-lg h-40 resize-none focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                         required
                                     />
                                 </div>
                                 <div className="flex justify-end gap-2 pt-4">
                                     <button type="button" onClick={() => setIsNoticeModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">취소</button>
-                                    <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800">저장</button>
+                                    <button type="submit" disabled={isSubmitting} className="admin-btn-primary px-6 py-2">저장</button>
                                 </div>
                             </form>
                         </div>

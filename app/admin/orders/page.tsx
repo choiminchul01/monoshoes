@@ -9,6 +9,8 @@ import ConfirmModal from "@/components/admin/ConfirmModal";
 import TrackingNumberModal from "@/components/admin/TrackingNumberModal";
 import OrderDetailModal from "@/components/admin/OrderDetailModal";
 import BulkTrackingModal from "@/components/admin/BulkTrackingModal";
+import OrderEditModal from "@/components/admin/OrderEditModal";
+import OrderPreparingCard from "@/components/admin/OrderPreparingCard";
 import { useToast } from "@/context/ToastContext";
 
 type Order = {
@@ -22,6 +24,8 @@ type Order = {
     shipping_postal_code: string;
     shipping_address: string;
     shipping_address_detail: string;
+    total_amount: number;
+    shipping_cost: number;
     final_amount: number;
     payment_status: string;
     order_status: string;
@@ -58,6 +62,12 @@ export default function OrdersPage() {
         show: boolean;
         orderId: string;
     }>({ show: false, orderId: "" });
+
+    const [editModal, setEditModal] = useState<{
+        show: boolean;
+        orderId: string;
+        orderNumber: string;
+    }>({ show: false, orderId: "", orderNumber: "" });
 
     const [showBulkModal, setShowBulkModal] = useState(false);
 
@@ -177,7 +187,7 @@ export default function OrdersPage() {
             .eq("id", trackingModal.orderId);
 
         if (!error) {
-            toast.success("송장번호가 입력되고 배송중 상태로 변경되었습니다.");
+            toast.success("송장번호가 입력되고 발송완료 상태로 변경되었습니다.");
             await fetchOrders();
         } else {
             console.error("송장 입력 실패:", error);
@@ -328,7 +338,7 @@ export default function OrdersPage() {
             </div>
 
             <div className="flex gap-2 mb-6">
-                {["all", "pending", "paid", "shipped", "delivered"].map((status) => (
+                {["all", "pending", "paid", "preparing", "shipped"].map((status) => (
                     <button
                         key={status}
                         onClick={() => setFilter(status)}
@@ -340,8 +350,8 @@ export default function OrdersPage() {
                         {status === "all" && "전체"}
                         {status === "pending" && "입금대기"}
                         {status === "paid" && "입금완료"}
-                        {status === "shipped" && "배송중"}
-                        {status === "delivered" && "배송완료"}
+                        {status === "preparing" && "상품준비중"}
+                        {status === "shipped" && "발송완료"}
                     </button>
                 ))}
             </div>
@@ -407,6 +417,21 @@ export default function OrdersPage() {
                     <div className="p-8 text-center text-gray-500">
                         {searchQuery ? "검색 결과가 없습니다" : "주문 내역이 없습니다"}
                     </div>
+                ) : filter === "preparing" ? (
+                    /* 상품준비중 전용 카드 뷰 */
+                    <div className="p-4 space-y-4">
+                        {filteredOrders.map((order) => (
+                            <OrderPreparingCard
+                                key={order.id}
+                                order={order}
+                                onStatusChange={updatePaymentStatus}
+                                onTrackingInput={(orderId, orderNumber) =>
+                                    setTrackingModal({ show: true, orderId, orderNumber })
+                                }
+                                onRefresh={fetchOrders}
+                            />
+                        ))}
+                    </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full hidden md:table">
@@ -446,9 +471,9 @@ export default function OrdersPage() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">{order.final_amount.toLocaleString()}원</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span
-                                                className={`px-2 py-1 text-xs font-semibold rounded-full ${order.payment_status === "delivered"
+                                                className={`px-2 py-1 text-xs font-semibold rounded-full ${order.payment_status === "shipped"
                                                     ? "bg-blue-100 text-blue-800"
-                                                    : order.payment_status === "shipped"
+                                                    : order.payment_status === "preparing"
                                                         ? "bg-purple-100 text-purple-800"
                                                         : order.payment_status === "paid"
                                                             ? "bg-green-100 text-green-800"
@@ -457,8 +482,8 @@ export default function OrdersPage() {
                                             >
                                                 {order.payment_status === "pending" && "입금대기"}
                                                 {order.payment_status === "paid" && "입금완료"}
-                                                {order.payment_status === "shipped" && "배송중"}
-                                                {order.payment_status === "delivered" && "배송완료"}
+                                                {order.payment_status === "preparing" && "상품준비중"}
+                                                {order.payment_status === "shipped" && "발송완료"}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -493,32 +518,46 @@ export default function OrdersPage() {
                                                 {order.payment_status === "paid" && (
                                                     <button
                                                         onClick={() =>
-                                                            setTrackingModal({
+                                                            setConfirmModal({
                                                                 show: true,
-                                                                orderId: order.id,
-                                                                orderNumber: order.order_number,
+                                                                title: "상품 준비 시작",
+                                                                message: `주문번호: ${order.order_number}\n고객명: ${order.shipping_name}\n\n상품 준비(포장/검수)를 시작하시겠습니까?`,
+                                                                onConfirm: () => updatePaymentStatus(order.id, "preparing"),
                                                             })
                                                         }
                                                         className="text-purple-600 hover:text-purple-900 hover:bg-purple-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
                                                     >
-                                                        송장 입력
+                                                        상품준비
                                                     </button>
                                                 )}
 
-                                                {order.payment_status === "shipped" && (
-                                                    <button
-                                                        onClick={() =>
-                                                            setConfirmModal({
-                                                                show: true,
-                                                                title: "배송 완료 처리",
-                                                                message: `주문번호: ${order.order_number}\n\n배송이 완료되었습니까?\n배송 완료 후에는 반품/교환 처리가 제한될 수 있습니다.`,
-                                                                onConfirm: () => updatePaymentStatus(order.id, "delivered"),
-                                                            })
-                                                        }
-                                                        className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
-                                                    >
-                                                        배송 완료
-                                                    </button>
+                                                {order.payment_status === "preparing" && (
+                                                    <>
+                                                        <button
+                                                            onClick={() =>
+                                                                setEditModal({
+                                                                    show: true,
+                                                                    orderId: order.id,
+                                                                    orderNumber: order.order_number,
+                                                                })
+                                                            }
+                                                            className="text-orange-600 hover:text-orange-900 hover:bg-orange-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
+                                                        >
+                                                            수정
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                setTrackingModal({
+                                                                    show: true,
+                                                                    orderId: order.id,
+                                                                    orderNumber: order.order_number,
+                                                                })
+                                                            }
+                                                            className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
+                                                        >
+                                                            송장입력
+                                                        </button>
+                                                    </>
                                                 )}
                                             </div>
                                         </td>
@@ -542,9 +581,9 @@ export default function OrdersPage() {
                                             <span className="font-bold text-gray-900">{order.shipping_name}</span>
                                         </div>
                                         <span
-                                            className={`px-2 py-1 text-xs font-semibold rounded-full ${order.payment_status === "delivered"
+                                            className={`px-2 py-1 text-xs font-semibold rounded-full ${order.payment_status === "shipped"
                                                 ? "bg-blue-100 text-blue-800"
-                                                : order.payment_status === "shipped"
+                                                : order.payment_status === "preparing"
                                                     ? "bg-purple-100 text-purple-800"
                                                     : order.payment_status === "paid"
                                                         ? "bg-green-100 text-green-800"
@@ -553,8 +592,8 @@ export default function OrdersPage() {
                                         >
                                             {order.payment_status === "pending" && "입금대기"}
                                             {order.payment_status === "paid" && "입금완료"}
-                                            {order.payment_status === "shipped" && "배송중"}
-                                            {order.payment_status === "delivered" && "배송완료"}
+                                            {order.payment_status === "preparing" && "상품준비중"}
+                                            {order.payment_status === "shipped" && "발송완료"}
                                         </span>
                                     </div>
 
@@ -606,32 +645,46 @@ export default function OrdersPage() {
                                         {order.payment_status === "paid" && (
                                             <button
                                                 onClick={() =>
-                                                    setTrackingModal({
+                                                    setConfirmModal({
                                                         show: true,
-                                                        orderId: order.id,
-                                                        orderNumber: order.order_number,
+                                                        title: "상품 준비 시작",
+                                                        message: `주문번호: ${order.order_number}\n고객명: ${order.shipping_name}\n\n상품 준비(포장/검수)를 시작하시겠습니까?`,
+                                                        onConfirm: () => updatePaymentStatus(order.id, "preparing"),
                                                     })
                                                 }
                                                 className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
                                             >
-                                                송장입력
+                                                상품준비
                                             </button>
                                         )}
 
-                                        {order.payment_status === "shipped" && (
-                                            <button
-                                                onClick={() =>
-                                                    setConfirmModal({
-                                                        show: true,
-                                                        title: "배송 완료 처리",
-                                                        message: `주문번호: ${order.order_number}\n\n배송이 완료되었습니까?\n배송 완료 후에는 반품/교환 처리가 제한될 수 있습니다.`,
-                                                        onConfirm: () => updatePaymentStatus(order.id, "delivered"),
-                                                    })
-                                                }
-                                                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
-                                            >
-                                                배송완료
-                                            </button>
+                                        {order.payment_status === "preparing" && (
+                                            <>
+                                                <button
+                                                    onClick={() =>
+                                                        setEditModal({
+                                                            show: true,
+                                                            orderId: order.id,
+                                                            orderNumber: order.order_number,
+                                                        })
+                                                    }
+                                                    className="px-3 py-1.5 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
+                                                >
+                                                    수정
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        setTrackingModal({
+                                                            show: true,
+                                                            orderId: order.id,
+                                                            orderNumber: order.order_number,
+                                                        })
+                                                    }
+                                                    className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
+                                                >
+                                                    송장입력
+                                                </button>
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -666,6 +719,14 @@ export default function OrdersPage() {
             <BulkTrackingModal
                 isOpen={showBulkModal}
                 onClose={() => setShowBulkModal(false)}
+                onSuccess={fetchOrders}
+            />
+
+            <OrderEditModal
+                isOpen={editModal.show}
+                onClose={() => setEditModal({ show: false, orderId: "", orderNumber: "" })}
+                orderId={editModal.orderId}
+                orderNumber={editModal.orderNumber}
                 onSuccess={fetchOrders}
             />
         </div>

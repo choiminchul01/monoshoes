@@ -34,20 +34,23 @@ function CheckoutContent() {
                 const savedBuyNow = localStorage.getItem("buyNowItem");
                 if (savedBuyNow) {
                     setCheckoutItems([JSON.parse(savedBuyNow)]);
-                } else {
-                    alert("구매할 상품 정보가 없습니다.");
-                    router.push("/shop");
                 }
+                // Don't alert - just wait or let user add items
             }
         } else {
-            // Normal checkout: Filter selected items
-            const selectedItems = allCartItems.filter(item => item.selected);
-            if (selectedItems.length === 0) {
-                alert("선택된 상품이 없습니다.");
-                router.push("/cart");
-            } else {
-                setCheckoutItems(selectedItems);
+            // Normal checkout: Use all cart items (selected or not)
+            // This ensures checkout always works even if selection state is lost
+            if (allCartItems.length > 0) {
+                // Use selected items if any, otherwise use all items
+                const selectedItems = allCartItems.filter(item => item.selected);
+                if (selectedItems.length > 0) {
+                    setCheckoutItems(selectedItems);
+                } else {
+                    // Fallback: use all cart items
+                    setCheckoutItems(allCartItems.map(item => ({ ...item, selected: true })));
+                }
             }
+            // Don't redirect - just show empty state if cart is empty
         }
     }, [mode, buyNowItem, allCartItems, router]);
 

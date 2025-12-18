@@ -77,13 +77,26 @@ export default function OrderDetailModal({ isOpen, onClose, orderId }: OrderDeta
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#001E10] to-[#000000] opacity-95" />
+
+            {/* Brand Watermark */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+                <h1
+                    className="text-[15vw] font-bold text-[#D4AF37] opacity-10 select-none whitespace-nowrap tracking-widest"
+                    style={{ fontFamily: 'var(--font-cinzel), serif' }}
+                >
+                    ESSENTIA
+                </h1>
+            </div>
+
+            <div className="relative z-10 bg-[#FDFCF5] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-[#D4AF37]/30 shadow-xl">
                 {/* Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">주문 상세</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <X className="w-6 h-6" />
+                <div className="sticky top-0 bg-[#FDFCF5] border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-lg">
+                    <h2 className="text-2xl font-bold text-gray-900">주문 상세</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -102,15 +115,19 @@ export default function OrderDetailModal({ isOpen, onClose, orderId }: OrderDeta
                                 </div>
                                 <div className="flex gap-2">
                                     <span
-                                        className={`px-3 py-1 text-sm font-semibold rounded-full ${order.payment_status === "paid"
-                                                ? "bg-green-100 text-green-800"
-                                                : "bg-yellow-100 text-yellow-800"
+                                        className={`px-3 py-1 text-sm font-semibold rounded-full ${order.payment_status === "shipped"
+                                            ? "bg-blue-100 text-blue-800"
+                                            : order.payment_status === "preparing"
+                                                ? "bg-purple-100 text-purple-800"
+                                                : order.payment_status === "paid"
+                                                    ? "bg-green-100 text-green-800"
+                                                    : "bg-yellow-100 text-yellow-800"
                                             }`}
                                     >
                                         {order.payment_status === "pending" && "입금대기"}
                                         {order.payment_status === "paid" && "입금완료"}
-                                        {order.payment_status === "shipped" && "배송중"}
-                                        {order.payment_status === "delivered" && "배송완료"}
+                                        {order.payment_status === "preparing" && "상품준비중"}
+                                        {order.payment_status === "shipped" && "발송완료"}
                                     </span>
                                 </div>
                             </div>

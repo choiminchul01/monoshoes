@@ -199,16 +199,16 @@ export default function PartnershipPage() {
 
             {/* Detail Modal */}
             {selectedInquiry && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">제휴 문의 상세</h2>
-                            <button onClick={() => setSelectedInquiry(null)} className="text-gray-500 hover:text-black">
-                                <X className="w-6 h-6" />
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal-card w-full max-w-lg">
+                        <div className="admin-modal-header">
+                            <h2>제휴 문의 상세</h2>
+                            <button onClick={() => setSelectedInquiry(null)} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="admin-modal-body space-y-4">
                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                                 <User className="w-5 h-5 text-gray-400" />
                                 <div>
@@ -221,7 +221,7 @@ export default function PartnershipPage() {
                                 <Mail className="w-5 h-5 text-gray-400" />
                                 <div>
                                     <div className="text-xs text-gray-500">이메일</div>
-                                    <a href={`mailto:${selectedInquiry.email}`} className="font-medium text-blue-600 hover:underline">
+                                    <a href={`mailto:${selectedInquiry.email}`} className="font-medium text-[#00704A] hover:underline">
                                         {selectedInquiry.email}
                                     </a>
                                 </div>
@@ -231,7 +231,7 @@ export default function PartnershipPage() {
                                 <Phone className="w-5 h-5 text-gray-400" />
                                 <div>
                                     <div className="text-xs text-gray-500">전화번호</div>
-                                    <a href={`tel:${selectedInquiry.phone}`} className="font-medium text-blue-600 hover:underline">
+                                    <a href={`tel:${selectedInquiry.phone}`} className="font-medium text-[#00704A] hover:underline">
                                         {selectedInquiry.phone}
                                     </a>
                                 </div>
@@ -268,7 +268,7 @@ export default function PartnershipPage() {
                                     </button>
                                     <button
                                         onClick={() => handleStatusChange(selectedInquiry.id, 'replied')}
-                                        className={`px-3 py-2 rounded-lg text-sm ${selectedInquiry.status === 'replied' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                        className={`px-3 py-2 rounded-lg text-sm ${selectedInquiry.status === 'replied' ? 'bg-[#00704A] text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
                                     >
                                         답변완료
                                     </button>
@@ -282,10 +282,10 @@ export default function PartnershipPage() {
                             </div>
                         </div>
 
-                        <div className="mt-6 pt-4 border-t">
+                        <div className="p-6 pt-0 border-t border-gray-100 mt-4 pt-4">
                             <button
                                 onClick={() => setSelectedInquiry(null)}
-                                className="w-full px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
+                                className="w-full admin-btn-primary"
                             >
                                 닫기
                             </button>

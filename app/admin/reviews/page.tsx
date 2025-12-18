@@ -333,16 +333,16 @@ export default function AdminReviewsPage() {
 
             {/* Create Review Modal */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">리뷰 생성 (관리자)</h2>
-                            <button onClick={() => setIsCreateModalOpen(false)} className="text-gray-500 hover:text-black">
-                                <X className="w-6 h-6" />
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal-card w-full max-w-md">
+                        <div className="admin-modal-header">
+                            <h2>리뷰 생성 (관리자)</h2>
+                            <button onClick={() => setIsCreateModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleCreateReview} className="space-y-4">
+                        <form onSubmit={handleCreateReview} className="admin-modal-body space-y-4">
                             {/* Product Search */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">상품 선택</label>
@@ -367,7 +367,7 @@ export default function AdminReviewsPage() {
                                             placeholder="상품명 검색..."
                                             value={productSearch}
                                             onChange={(e) => setProductSearch(e.target.value)}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                         />
                                         {searchedProducts.length > 0 && (
                                             <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-10 max-h-48 overflow-y-auto">
@@ -400,7 +400,7 @@ export default function AdminReviewsPage() {
                                     type="text"
                                     value={newReview.authorName}
                                     onChange={(e) => setNewReview({ ...newReview, authorName: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                     placeholder="예: 김철수"
                                 />
                             </div>
@@ -428,7 +428,7 @@ export default function AdminReviewsPage() {
                                 <textarea
                                     value={newReview.content}
                                     onChange={(e) => setNewReview({ ...newReview, content: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent h-32 resize-none"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent h-32 resize-none"
                                     placeholder="리뷰 내용을 입력하세요..."
                                 />
                             </div>
@@ -469,7 +469,7 @@ export default function AdminReviewsPage() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-400"
+                                    className="admin-btn-primary px-6 py-2 disabled:bg-gray-400"
                                 >
                                     {isSubmitting ? "생성 중..." : "리뷰 생성"}
                                 </button>

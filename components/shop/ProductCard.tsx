@@ -139,20 +139,10 @@ export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "a
                                 <div className="h-5 w-24 bg-gray-100 animate-pulse rounded" />
                             ) : user ? (
                                 <>
-                                    {originalPrice && originalPrice > price ? (
-                                        <>
-                                            <p className="text-base font-normal text-gray-900">
-                                                ₩{price.toLocaleString()}
-                                            </p>
-                                            <p className="text-sm font-normal text-gray-400 line-through">
-                                                ₩{originalPrice.toLocaleString()}
-                                            </p>
-                                        </>
-                                    ) : (
-                                        <p className="text-base font-normal text-gray-900">
-                                            ₩{price.toLocaleString()}
-                                        </p>
-                                    )}
+                                    {/* Always show only the current (sale) price */}
+                                    <p className="text-base font-normal text-gray-900">
+                                        ₩{price.toLocaleString()}
+                                    </p>
                                 </>
                             ) : (
                                 <div className="flex items-center gap-1.5 text-gray-500">

@@ -228,8 +228,8 @@ export default function AdminInquiriesPage() {
                 <button
                     onClick={() => { setActiveTab('inquiry'); setCurrentPage(1); }}
                     className={`flex items-center gap-2 px-6 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'inquiry'
-                            ? 'bg-white text-black shadow-sm'
-                            : 'text-gray-500 hover:text-gray-900'
+                        ? 'bg-white text-black shadow-sm'
+                        : 'text-gray-500 hover:text-gray-900'
                         }`}
                 >
                     <HelpCircle className="w-4 h-4" />
@@ -238,8 +238,8 @@ export default function AdminInquiriesPage() {
                 <button
                     onClick={() => { setActiveTab('product_qna'); setCurrentPage(1); }}
                     className={`flex items-center gap-2 px-6 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'product_qna'
-                            ? 'bg-white text-black shadow-sm'
-                            : 'text-gray-500 hover:text-gray-900'
+                        ? 'bg-white text-black shadow-sm'
+                        : 'text-gray-500 hover:text-gray-900'
                         }`}
                 >
                     <ShoppingBag className="w-4 h-4" />
@@ -380,54 +380,56 @@ export default function AdminInquiriesPage() {
 
             {/* Inquiry Detail Modal */}
             {(selectedInquiry || selectedQnA) && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-start mb-6 border-b border-gray-100 pb-4">
-                            <div>
-                                {selectedInquiry ? (
-                                    <>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-800">
-                                                일반문의
-                                            </span>
-                                            <span className="text-sm text-gray-500">
-                                                {new Date(selectedInquiry.created_at).toLocaleString()}
-                                            </span>
-                                        </div>
-                                        <h2 className="text-xl font-bold">{selectedInquiry.title}</h2>
-                                        <p className="text-sm text-gray-500 mt-1">작성자: {selectedInquiry.author_name} ({selectedInquiry.user?.email})</p>
-                                    </>
-                                ) : selectedQnA && (
-                                    <>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
-                                                상품문의
-                                            </span>
-                                            <span className="text-sm text-gray-500">
-                                                {new Date(selectedQnA.created_at).toLocaleString()}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-3 mb-2">
-                                            {selectedQnA.product?.image_url && (
-                                                <div className="relative w-12 h-12 rounded overflow-hidden bg-gray-100">
-                                                    <Image src={selectedQnA.product.image_url} alt={selectedQnA.product.name} fill className="object-cover" />
-                                                </div>
-                                            )}
-                                            <h2 className="text-lg font-bold">{selectedQnA.product?.name}</h2>
-                                        </div>
-                                        <p className="text-sm text-gray-500">작성자: {selectedQnA.author_name} ({selectedQnA.user?.email})</p>
-                                    </>
-                                )}
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal-card w-full max-w-2xl">
+                        <div className="admin-modal-header flex-col items-start gap-2">
+                            <div className="w-full flex justify-between items-start">
+                                <div>
+                                    {selectedInquiry ? (
+                                        <>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-800">
+                                                    일반문의
+                                                </span>
+                                                <span className="text-sm text-gray-500">
+                                                    {new Date(selectedInquiry.created_at).toLocaleString()}
+                                                </span>
+                                            </div>
+                                            <h2 className="text-xl font-bold">{selectedInquiry.title}</h2>
+                                            <p className="text-sm text-gray-500 mt-1">작성자: {selectedInquiry.author_name} ({selectedInquiry.user?.email})</p>
+                                        </>
+                                    ) : selectedQnA && (
+                                        <>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                                                    상품문의
+                                                </span>
+                                                <span className="text-sm text-gray-500">
+                                                    {new Date(selectedQnA.created_at).toLocaleString()}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                {selectedQnA.product?.image_url && (
+                                                    <div className="relative w-12 h-12 rounded overflow-hidden bg-gray-100">
+                                                        <Image src={selectedQnA.product.image_url} alt={selectedQnA.product.name} fill className="object-cover" />
+                                                    </div>
+                                                )}
+                                                <h2 className="text-lg font-bold">{selectedQnA.product?.name}</h2>
+                                            </div>
+                                            <p className="text-sm text-gray-500">작성자: {selectedQnA.author_name} ({selectedQnA.user?.email})</p>
+                                        </>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => { setSelectedInquiry(null); setSelectedQnA(null); }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
-                            <button
-                                onClick={() => { setSelectedInquiry(null); setSelectedQnA(null); }}
-                                className="text-gray-400 hover:text-black"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
                         </div>
 
-                        <div className="space-y-6">
+                        <div className="admin-modal-body space-y-6">
                             {/* Content */}
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <p className="whitespace-pre-wrap text-gray-800 leading-relaxed">
@@ -444,7 +446,7 @@ export default function AdminInquiriesPage() {
                                 <textarea
                                     value={answerText}
                                     onChange={(e) => setAnswerText(e.target.value)}
-                                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent h-40 resize-none mb-3"
+                                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent h-40 resize-none mb-3"
                                     placeholder="답변 내용을 입력하세요..."
                                 />
                                 <div className="flex justify-end gap-2">
@@ -457,7 +459,7 @@ export default function AdminInquiriesPage() {
                                     <button
                                         onClick={handleSubmitAnswer}
                                         disabled={isSubmitting}
-                                        className="flex items-center gap-2 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-400"
+                                        className="flex items-center gap-2 px-6 py-2 admin-btn-primary disabled:bg-gray-400"
                                     >
                                         <Send className="w-4 h-4" />
                                         {isSubmitting ? "등록 중..." : "답변 등록"}

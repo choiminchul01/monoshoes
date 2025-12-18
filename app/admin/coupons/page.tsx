@@ -232,13 +232,13 @@ export default function AdminCouponsPage() {
             </div>
 
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">{editingCoupon ? '쿠폰 수정' : '새 쿠폰 생성'}</h2>
-                            <button onClick={() => setIsModalOpen(false)}><X className="w-6 h-6" /></button>
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal-card w-full max-w-2xl">
+                        <div className="admin-modal-header">
+                            <h2>{editingCoupon ? '쿠폰 수정' : '새 쿠폰 생성'}</h2>
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
                         </div>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="admin-modal-body space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1">쿠폰 코드</label>
@@ -246,7 +246,7 @@ export default function AdminCouponsPage() {
                                         type="text"
                                         value={formData.code}
                                         onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                                        className="w-full border rounded p-2 uppercase"
+                                        className="w-full border rounded-lg p-2 uppercase focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                         placeholder="WELCOME2024"
                                         required
                                     />
@@ -257,7 +257,7 @@ export default function AdminCouponsPage() {
                                         type="text"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full border rounded p-2"
+                                        className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                         placeholder="신규 가입 환영 쿠폰"
                                         required
                                     />
@@ -269,7 +269,7 @@ export default function AdminCouponsPage() {
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full border rounded p-2"
+                                    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                     rows={2}
                                 />
                             </div>
@@ -280,7 +280,7 @@ export default function AdminCouponsPage() {
                                     <select
                                         value={formData.type}
                                         onChange={(e) => setFormData({ ...formData, type: e.target.value as 'percentage' | 'fixed' })}
-                                        className="w-full border rounded p-2"
+                                        className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                     >
                                         <option value="percentage">퍼센트 (%)</option>
                                         <option value="fixed">정액 (원)</option>
@@ -292,7 +292,7 @@ export default function AdminCouponsPage() {
                                         type="number"
                                         value={formData.discount_value}
                                         onChange={(e) => setFormData({ ...formData, discount_value: Number(e.target.value) })}
-                                        className="w-full border rounded p-2"
+                                        className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                         required
                                     />
                                 </div>
@@ -305,7 +305,7 @@ export default function AdminCouponsPage() {
                                         type="number"
                                         value={formData.min_order_amount}
                                         onChange={(e) => setFormData({ ...formData, min_order_amount: Number(e.target.value) })}
-                                        className="w-full border rounded p-2"
+                                        className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                     />
                                 </div>
                                 <div>
@@ -314,7 +314,7 @@ export default function AdminCouponsPage() {
                                         type="number"
                                         value={formData.max_discount_amount || ''}
                                         onChange={(e) => setFormData({ ...formData, max_discount_amount: e.target.value ? Number(e.target.value) : null })}
-                                        className="w-full border rounded p-2"
+                                        className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                         placeholder="제한 없음"
                                     />
                                 </div>
@@ -327,7 +327,7 @@ export default function AdminCouponsPage() {
                                         type="date"
                                         value={formData.valid_until}
                                         onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })}
-                                        className="w-full border rounded p-2"
+                                        className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                     />
                                 </div>
                                 <div className="flex items-center pt-6">
@@ -347,13 +347,13 @@ export default function AdminCouponsPage() {
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 px-4 py-2 border rounded hover:bg-gray-50"
+                                    className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
                                 >
                                     취소
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
+                                    className="flex-1 admin-btn-primary"
                                 >
                                     <Save className="w-4 h-4 inline mr-2" />
                                     저장

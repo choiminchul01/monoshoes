@@ -234,16 +234,17 @@ export default function AdminEventsPage() {
     }
 
     return (
-        <div className="p-8">
+        <div>
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">이벤트 관리</h1>
-                    <p className="text-sm text-gray-500 mt-1">이벤트 등록 및 팝업 노출 관리</p>
-                </div>
+            <div className="mb-4">
+                <h1 className="text-3xl font-bold">이벤트 관리</h1>
+            </div>
+
+            {/* Action Buttons Row */}
+            <div className="flex justify-end mb-6">
                 <button
                     onClick={() => openModal()}
-                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-[#00704A] text-white rounded-lg hover:bg-[#005A3C] transition-colors"
                 >
                     <Plus className="w-4 h-4" />
                     이벤트 등록
@@ -348,28 +349,28 @@ export default function AdminEventsPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        className="admin-modal-overlay"
                         onClick={closeModal}
                     >
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                            className="admin-modal-card w-full max-w-lg"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Modal Header */}
-                            <div className="flex items-center justify-between p-6 border-b">
-                                <h2 className="text-lg font-bold">
+                            <div className="admin-modal-header">
+                                <h2>
                                     {editingEvent ? "이벤트 수정" : "이벤트 등록"}
                                 </h2>
-                                <button onClick={closeModal} className="p-1 hover:bg-gray-100 rounded-lg">
+                                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
 
                             {/* Modal Body */}
-                            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                            <form onSubmit={handleSubmit} className="admin-modal-body space-y-6">
                                 {/* Title */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -379,7 +380,7 @@ export default function AdminEventsPage() {
                                         type="text"
                                         value={formData.title}
                                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent outline-none"
                                         placeholder="이벤트 제목"
                                     />
                                 </div>
@@ -392,7 +393,7 @@ export default function AdminEventsPage() {
                                     <textarea
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none resize-none"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent outline-none resize-none"
                                         rows={4}
                                         placeholder="이벤트 설명"
                                     />
@@ -452,14 +453,14 @@ export default function AdminEventsPage() {
                                             type="checkbox"
                                             checked={formData.is_popup}
                                             onChange={(e) => setFormData({ ...formData, is_popup: e.target.checked })}
-                                            className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
+                                            className="w-5 h-5 rounded border-gray-300 text-[#00704A] focus:ring-[#00704A]"
                                         />
                                     </label>
 
                                     {/* Active Toggle */}
                                     <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer">
                                         <div className="flex items-center gap-3">
-                                            <Eye className="w-5 h-5 text-green-500" />
+                                            <Eye className="w-5 h-5 text-[#00704A]" />
                                             <div>
                                                 <p className="font-medium text-gray-900">이벤트 활성화</p>
                                                 <p className="text-xs text-gray-500">이벤트 페이지에 표시됩니다</p>
@@ -469,7 +470,7 @@ export default function AdminEventsPage() {
                                             type="checkbox"
                                             checked={formData.is_active}
                                             onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                                            className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
+                                            className="w-5 h-5 rounded border-gray-300 text-[#00704A] focus:ring-[#00704A]"
                                         />
                                     </label>
                                 </div>
@@ -478,7 +479,7 @@ export default function AdminEventsPage() {
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="w-full py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                                    className="w-full py-3 admin-btn-primary font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {saving ? (
                                         <>
@@ -500,3 +501,4 @@ export default function AdminEventsPage() {
         </div>
     );
 }
+

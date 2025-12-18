@@ -286,18 +286,18 @@ export default function AdminAccountsPage() {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal-card w-full max-w-md">
+                        <div className="admin-modal-header">
+                            <h2>
                                 {editingAdmin ? '관리자 수정' : '관리자 추가'}
                             </h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-black">
-                                <X className="w-6 h-6" />
+                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSave} className="space-y-4">
+                        <form onSubmit={handleSave} className="admin-modal-body space-y-4">
                             {/* Email */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
@@ -306,7 +306,7 @@ export default function AdminAccountsPage() {
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     disabled={!!editingAdmin}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00704A] disabled:bg-gray-100"
                                     required
                                 />
                                 {!editingAdmin && (
@@ -320,7 +320,7 @@ export default function AdminAccountsPage() {
                                 <select
                                     value={formData.role}
                                     onChange={(e) => setFormData({ ...formData, role: e.target.value as AdminRole })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00704A]"
                                 >
                                     <option value="staff">스태프 (Staff)</option>
                                     <option value="manager">매니저 (Manager)</option>
@@ -347,7 +347,7 @@ export default function AdminAccountsPage() {
                                                 type="checkbox"
                                                 checked={formData.permissions[key]}
                                                 onChange={() => togglePermission(key)}
-                                                className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                                                className="w-4 h-4 text-[#00704A] border-gray-300 rounded focus:ring-[#00704A]"
                                             />
                                             <span className="text-sm">{label}</span>
                                         </label>
@@ -366,7 +366,7 @@ export default function AdminAccountsPage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                                    className="flex-1 admin-btn-primary"
                                 >
                                     <Save className="w-4 h-4 inline mr-2" />
                                     저장

@@ -43,7 +43,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const savedCart = localStorage.getItem("cart");
         if (savedCart) {
             try {
-                setCartItems(JSON.parse(savedCart));
+                const parsedCart = JSON.parse(savedCart);
+                // Ensure all items have selected property (default true for backward compatibility)
+                const cartWithSelection = parsedCart.map((item: CartItem) => ({
+                    ...item,
+                    selected: item.selected !== undefined ? item.selected : true
+                }));
+                setCartItems(cartWithSelection);
             } catch (e) {
                 console.error("Failed to parse cart from localStorage", e);
             }

@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { ArrowLeft, Package, Truck, Copy, Check, Star, X, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
+import { formatPrice } from '@/lib/utils';
 
 type Order = {
     id: string;
@@ -36,6 +37,7 @@ type OrderItem = {
     size: string;
     quantity: number;
     price: number;
+    image?: string; // Product image URL
     has_review?: boolean; // Added for frontend logic
 };
 
@@ -224,14 +226,23 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                 </div>
 
-                {/* Order Items */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                     <h2 className="text-xl font-bold mb-4">주문 상품</h2>
                     <div className="space-y-4">
                         {orderItems.map((item) => (
                             <div key={item.id} className="flex items-center gap-4 pb-4 border-b last:border-b-0">
-                                <div className="w-20 h-20 bg-gray-100 rounded flex items-center justify-center">
-                                    <Package className="w-8 h-8 text-gray-400" />
+                                <div className="w-20 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                                    {item.image ? (
+                                        <img
+                                            src={item.image}
+                                            alt={item.product_name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <Package className="w-8 h-8 text-gray-400" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex-1">
                                     <p className="font-medium text-gray-900">{item.product_name}</p>
@@ -241,7 +252,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                                     </p>
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-2">
-                                    <p className="font-bold">{item.price.toLocaleString()} KRW</p>
+                                    <p className="font-bold">{formatPrice(item.price * item.quantity)}</p>
                                     {order.payment_status === 'delivered' && (
                                         item.has_review ? (
                                             <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
@@ -262,7 +273,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                     <div className="mt-4 pt-4 border-t flex justify-between items-center">
                         <span className="font-bold">총 결제금액</span>
-                        <span className="text-2xl font-bold">{order.final_amount.toLocaleString()} KRW</span>
+                        <span className="text-2xl font-bold">{formatPrice(order.final_amount)}</span>
                     </div>
                 </div>
 

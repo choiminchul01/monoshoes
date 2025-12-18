@@ -28,12 +28,25 @@ export default function ConfirmModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#001E10] to-[#000000] opacity-95" />
+
+            {/* Brand Watermark */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+                <h1
+                    className="text-[15vw] font-bold text-[#D4AF37] opacity-10 select-none whitespace-nowrap tracking-widest"
+                    style={{ fontFamily: 'var(--font-cinzel), serif' }}
+                >
+                    ESSENTIA
+                </h1>
+            </div>
+
+            <div className="relative z-10 bg-[#FDFCF5] rounded-lg p-6 max-w-md w-full mx-4 border border-[#D4AF37]/30 shadow-xl">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <X className="w-6 h-6" />
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -54,8 +67,8 @@ export default function ConfirmModal({
                             onClose();
                         }}
                         className={`px-4 py-2 text-white rounded-lg transition-colors ${isDangerous
-                                ? "bg-red-600 hover:bg-red-700"
-                                : "bg-green-600 hover:bg-green-700"
+                            ? "bg-red-600 hover:bg-red-700"
+                            : "bg-[#00704A] hover:bg-[#005A3C]"
                             }`}
                     >
                         {confirmText}
