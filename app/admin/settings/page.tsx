@@ -6,19 +6,19 @@ import {
     uploadBannerAction, deleteBannerAction, fetchBannersAction,
     uploadPolicyImageAction, deletePolicyImageAction, fetchPolicyImagesAction,
     saveBannerOrderAction,
-    uploadPartnershipImageAction, deletePartnershipImageAction, fetchPartnershipImageAction,
+    uploadPartnershipImageAction, deletePartnershipImageAction, fetchPartnershipImageAction, savePartnershipImagesOrderAction,
     uploadPWAIconAction, deletePWAIconAction, fetchPWAIconsAction,
     uploadBrandLogoAction, deleteBrandLogoAction, saveBrandLogosAction, fetchBrandLogosAction,
     type MainBanner
 } from "./actions";
-import { Upload, Save, Image as ImageIcon, CheckCircle, ChevronDown, Link as LinkIcon, Smartphone, Trash2, Plus, GripVertical, Info } from "lucide-react";
+import { Upload, Save, Image as ImageIcon, CheckCircle, ChevronDown, ChevronUp, Link as LinkIcon, Smartphone, Trash2, Plus, GripVertical, Info } from "lucide-react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/context/ToastContext";
 
 export default function AdminSettingsPage() {
     const toast = useToast();
-    const [activeTab, setActiveTab] = useState<'shop' | 'design' | 'policy'>('shop');
+    const [activeTab, setActiveTab] = useState<'shop' | 'design'>('shop');
 
     // --- State ---
     const [banners, setBanners] = useState<MainBanner[]>([]);
@@ -29,6 +29,12 @@ export default function AdminSettingsPage() {
 
     const [partnershipImages, setPartnershipImages] = useState<string[]>([]);
     const [partnershipUploading, setPartnershipUploading] = useState(false);
+
+    // 디자인 탭 아코디언 상태 (한 번에 하나만 열림, 기본 모두 닫힘)
+    const [designAccordion, setDesignAccordion] = useState<string | null>(null);
+    const toggleDesignAccordion = (section: string) => {
+        setDesignAccordion(prev => prev === section ? null : section);
+    };
 
     const [pwaIcons, setPwaIcons] = useState<{ [key: string]: string }>({});
     const [pwaUploading, setPwaUploading] = useState<string | null>(null);
@@ -123,6 +129,38 @@ export default function AdminSettingsPage() {
         } catch (error) {
             console.error("Partnership image delete failed:", error);
             toast.error("삭제 중 오류가 발생했습니다.");
+        }
+    };
+
+    const handlePartnershipMoveUp = async (index: number) => {
+        if (index === 0) return; // Already at top
+        const newImages = [...partnershipImages];
+        [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
+        setPartnershipImages(newImages);
+        try {
+            const result = await savePartnershipImagesOrderAction(newImages);
+            if (!result.success) throw new Error(result.error);
+            toast.success("순서가 변경되었습니다.");
+        } catch (error) {
+            console.error("Partnership image reorder failed:", error);
+            toast.error("순서 변경 중 오류가 발생했습니다.");
+            await fetchPartnershipImage(); // Revert on error
+        }
+    };
+
+    const handlePartnershipMoveDown = async (index: number) => {
+        if (index === partnershipImages.length - 1) return; // Already at bottom
+        const newImages = [...partnershipImages];
+        [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
+        setPartnershipImages(newImages);
+        try {
+            const result = await savePartnershipImagesOrderAction(newImages);
+            if (!result.success) throw new Error(result.error);
+            toast.success("순서가 변경되었습니다.");
+        } catch (error) {
+            console.error("Partnership image reorder failed:", error);
+            toast.error("순서 변경 중 오류가 발생했습니다.");
+            await fetchPartnershipImage(); // Revert on error
         }
     };
 
@@ -462,21 +500,6 @@ export default function AdminSettingsPage() {
                         />
                     )}
                 </button>
-                <button
-                    onClick={() => setActiveTab('policy')}
-                    className={`px-8 py-4 text-base font-bold transition-all relative ${activeTab === 'policy'
-                        ? 'text-green-700'
-                        : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                >
-                    운영 정책
-                    {activeTab === 'policy' && (
-                        <motion.div
-                            layoutId="activeTab"
-                            className="absolute bottom-0 left-0 right-0 h-1 bg-green-700 rounded-t-full"
-                        />
-                    )}
-                </button>
             </div>
 
             {/* Content Area */}
@@ -743,370 +766,390 @@ export default function AdminSettingsPage() {
                     >
                         {/* 메인 배너 설정 */}
                         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
+                            <button
+                                onClick={() => toggleDesignAccordion('banner')}
+                                className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
                                 <div className="flex items-center gap-3">
                                     <div className="w-1 h-6 bg-green-700 rounded-full"></div>
                                     <h2 className="text-xl font-bold tracking-tight text-gray-900">메인 배너 관리</h2>
+                                    <span className="text-sm text-gray-400 ml-2">{banners.length}개</span>
                                 </div>
-                            </div>
-                            <div className="p-8">
-                                <div className="space-y-6">
-                                    <div className="flex justify-between items-center">
-                                        <p className="text-sm text-gray-500">
-                                            메인 화면 상단에 표시될 배너를 관리합니다. (권장 사이즈: 1920x800px)
-                                        </p>
-                                        <label className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer text-sm font-bold shadow-sm">
-                                            <Plus className="w-4 h-4" />
-                                            배너 추가
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handleBannerUpload}
-                                                disabled={uploading}
-                                            />
-                                        </label>
-                                    </div>
+                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${designAccordion === 'banner' ? 'rotate-180' : ''}`} />
+                            </button>
+                            {designAccordion === 'banner' && (
+                                <div className="p-8 border-t border-gray-100">
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <p className="text-sm text-gray-500">
+                                                메인 화면 상단에 표시될 배너를 관리합니다. (권장 사이즈: 1920x800px)
+                                            </p>
+                                            <label className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer text-sm font-bold shadow-sm">
+                                                <Plus className="w-4 h-4" />
+                                                배너 추가
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handleBannerUpload}
+                                                    disabled={uploading}
+                                                />
+                                            </label>
+                                        </div>
 
-                                    <div className="space-y-4">
-                                        {banners.map((banner, index) => (
-                                            <div key={banner.id} className="flex gap-6 p-4 bg-gray-50 rounded-lg border border-gray-100 items-start group">
-                                                <div className="flex flex-col items-center gap-2 pt-2">
-                                                    <div className="p-2 bg-white rounded-md shadow-sm cursor-move text-gray-400 group-hover:text-green-700 transition-colors">
-                                                        <span className="text-xs font-bold">{index + 1}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="relative w-48 aspect-[2.4/1] bg-gray-200 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
-                                                    <Image
-                                                        src={banner.imageUrl}
-                                                        alt={`Banner ${index + 1}`}
-                                                        fill
-                                                        className="object-cover"
-                                                    />
-                                                </div>
-
-                                                <div className="flex-1 space-y-2">
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">링크 URL</label>
-                                                    <div className="flex gap-2">
-                                                        <div className="relative flex-1">
-                                                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                                            <input
-                                                                type="text"
-                                                                value={banner.link}
-                                                                onChange={(e) => handleBannerLinkChange(banner.id, e.target.value)}
-                                                                placeholder="/shop 또는 외부 링크"
-                                                                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 text-sm transition-all"
-                                                            />
+                                        <div className="space-y-4">
+                                            {banners.map((banner, index) => (
+                                                <div key={banner.id} className="flex gap-6 p-4 bg-gray-50 rounded-lg border border-gray-100 items-start group">
+                                                    <div className="flex flex-col items-center gap-2 pt-2">
+                                                        <div className="p-2 bg-white rounded-md shadow-sm cursor-move text-gray-400 group-hover:text-green-700 transition-colors">
+                                                            <span className="text-xs font-bold">{index + 1}</span>
                                                         </div>
-                                                        <button
-                                                            onClick={() => handleBannerDelete(banner.id)}
-                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                            title="삭제"
-                                                        >
-                                                            <Trash2 className="w-5 h-5" />
-                                                        </button>
+                                                    </div>
+
+                                                    <div className="relative w-48 aspect-[2.4/1] bg-gray-200 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                                                        <Image
+                                                            src={banner.imageUrl}
+                                                            alt={`Banner ${index + 1}`}
+                                                            fill
+                                                            className="object-cover"
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex-1 space-y-2">
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">링크 URL</label>
+                                                        <div className="flex gap-2">
+                                                            <div className="relative flex-1">
+                                                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                                <input
+                                                                    type="text"
+                                                                    value={banner.link}
+                                                                    onChange={(e) => handleBannerLinkChange(banner.id, e.target.value)}
+                                                                    placeholder="/shop 또는 외부 링크"
+                                                                    className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 text-sm transition-all"
+                                                                />
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleBannerDelete(banner.id)}
+                                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="삭제"
+                                                            >
+                                                                <Trash2 className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
 
-                                        {banners.length === 0 && (
-                                            <div className="text-center py-12 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                                등록된 배너가 없습니다.
+                                            {banners.length === 0 && (
+                                                <div className="text-center py-12 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                                    등록된 배너가 없습니다.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {banners.length > 0 && (
+                                            <div className="flex justify-end pt-4 border-t border-gray-50">
+                                                <button
+                                                    onClick={handleSaveBannerOrder}
+                                                    className="flex items-center gap-2 px-6 py-2 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white hover:border-green-700 transition-all duration-300 font-bold text-sm shadow-sm"
+                                                >
+                                                    <Save className="w-4 h-4" />
+                                                    변경사항 저장 (순서/링크)
+                                                </button>
                                             </div>
                                         )}
                                     </div>
-
-                                    {banners.length > 0 && (
-                                        <div className="flex justify-end pt-4 border-t border-gray-50">
-                                            <button
-                                                onClick={handleSaveBannerOrder}
-                                                className="flex items-center gap-2 px-6 py-2 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white hover:border-green-700 transition-all duration-300 font-bold text-sm shadow-sm"
-                                            >
-                                                <Save className="w-4 h-4" />
-                                                변경사항 저장 (순서/링크)
-                                            </button>
-                                        </div>
-                                    )}
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* 브랜드 로고 관리 */}
                         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
+                            <button
+                                onClick={() => toggleDesignAccordion('brand')}
+                                className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
                                 <div className="flex items-center gap-3">
                                     <div className="w-1 h-6 bg-green-700 rounded-full"></div>
                                     <h2 className="text-xl font-bold text-gray-900">브랜드 로고 관리</h2>
+                                    <span className="text-sm text-gray-400 ml-2">{brandLogos.length}개</span>
                                 </div>
-                            </div>
-                            <div className="p-8">
-                                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                    <div className="flex items-start gap-3">
-                                        <ImageIcon className="w-5 h-5 text-blue-600 mt-0.5" />
-                                        <div className="text-sm text-blue-800">
-                                            <p className="font-semibold mb-1">홈페이지 브랜드 슬라이더</p>
-                                            <p className="text-blue-700">홈페이지에 표시되는 명품 브랜드 로고입니다.</p>
-                                            <ul className="mt-2 space-y-1 text-blue-600">
-                                                <li>• 권장 크기: <strong>200x200px</strong> (정사각형)</li>
-                                                <li>• 투명 배경 PNG 권장</li>
-                                                <li>• 원형으로 표시됩니다</li>
-                                            </ul>
+                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${designAccordion === 'brand' ? 'rotate-180' : ''}`} />
+                            </button>
+                            {designAccordion === 'brand' && (
+                                <div className="p-8 border-t border-gray-100">
+                                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                        <div className="flex items-start gap-3">
+                                            <ImageIcon className="w-5 h-5 text-blue-600 mt-0.5" />
+                                            <div className="text-sm text-blue-800">
+                                                <p className="font-semibold mb-1">홈페이지 브랜드 슬라이더</p>
+                                                <p className="text-blue-700">홈페이지에 표시되는 명품 브랜드 로고입니다.</p>
+                                                <ul className="mt-2 space-y-1 text-blue-600">
+                                                    <li>• 권장 크기: <strong>200x200px</strong> (정사각형)</li>
+                                                    <li>• 투명 배경 PNG 권장</li>
+                                                    <li>• 원형으로 표시됩니다</li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* 새 브랜드 추가 */}
-                                <div className="mb-6 flex gap-3">
-                                    <input
-                                        type="text"
-                                        value={newBrandName}
-                                        onChange={(e) => setNewBrandName(e.target.value)}
-                                        placeholder="새 브랜드명 입력 (예: GUCCI)"
-                                        className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                        onKeyPress={(e) => e.key === 'Enter' && handleAddBrand()}
-                                    />
-                                    <button
-                                        onClick={handleAddBrand}
-                                        className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-semibold"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        브랜드 추가
-                                    </button>
-                                </div>
+                                    {/* 새 브랜드 추가 */}
+                                    <div className="mb-6 flex gap-3">
+                                        <input
+                                            type="text"
+                                            value={newBrandName}
+                                            onChange={(e) => setNewBrandName(e.target.value)}
+                                            placeholder="새 브랜드명 입력 (예: GUCCI)"
+                                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                            onKeyPress={(e) => e.key === 'Enter' && handleAddBrand()}
+                                        />
+                                        <button
+                                            onClick={handleAddBrand}
+                                            className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-semibold"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            브랜드 추가
+                                        </button>
+                                    </div>
 
-                                {/* 브랜드 목록 */}
-                                <div className="space-y-3">
-                                    {brandLogos.length === 0 ? (
-                                        <div className="text-center py-8 text-gray-500">
-                                            등록된 브랜드가 없습니다. 위에서 브랜드를 추가해주세요.
+                                    {/* 브랜드 목록 */}
+                                    <div className="space-y-3">
+                                        {brandLogos.length === 0 ? (
+                                            <div className="text-center py-8 text-gray-500">
+                                                등록된 브랜드가 없습니다. 위에서 브랜드를 추가해주세요.
+                                            </div>
+                                        ) : (
+                                            brandLogos.map((brand, index) => (
+                                                <div
+                                                    key={brand.name}
+                                                    className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:shadow-sm transition-shadow"
+                                                >
+                                                    {/* 순서 표시 */}
+                                                    <div className="flex items-center gap-2 text-gray-400">
+                                                        <GripVertical className="w-4 h-4" />
+                                                        <span className="text-sm font-mono">{index + 1}</span>
+                                                    </div>
+
+                                                    {/* 로고 이미지 */}
+                                                    <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                        {brand.imageUrl ? (
+                                                            <Image
+                                                                src={`${brand.imageUrl}?t=${Date.now()}`}
+                                                                alt={brand.name}
+                                                                width={64}
+                                                                height={64}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-[8px] font-bold text-gray-400 text-center px-1">
+                                                                {brand.name}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* 브랜드명 */}
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold text-gray-900">{brand.name}</p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {brand.imageUrl ? '✅ 로고 등록됨' : '⚠️ 로고 미등록'}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* 액션 버튼 */}
+                                                    <div className="flex items-center gap-2">
+                                                        <label className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors text-sm font-medium flex items-center gap-1">
+                                                            <Upload className="w-3 h-3" />
+                                                            {brandUploading === brand.name ? '업로드 중...' : '로고 업로드'}
+                                                            <input
+                                                                type="file"
+                                                                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                                                className="hidden"
+                                                                onChange={(e) => handleBrandLogoUpload(brand.name, e)}
+                                                                disabled={brandUploading !== null}
+                                                            />
+                                                        </label>
+                                                        <button
+                                                            onClick={() => handleBrandDelete(brand.name)}
+                                                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title="브랜드 삭제"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 제휴 제안서 이미지 관리 */}
+                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                            <button
+                                onClick={() => toggleDesignAccordion('partnership')}
+                                className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-1 h-6 bg-green-700 rounded-full"></div>
+                                    <h2 className="text-xl font-bold text-gray-900">제휴 제안서 이미지</h2>
+                                    <span className="text-sm text-gray-400 ml-2">{partnershipImages.length}장</span>
+                                </div>
+                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${designAccordion === 'partnership' ? 'rotate-180' : ''}`} />
+                            </button>
+                            {designAccordion === 'partnership' && (
+                                <div className="p-8 border-t border-gray-100">
+                                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                        <div className="flex items-start gap-3">
+                                            <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+                                            <div className="text-sm text-blue-800">
+                                                <p className="font-semibold mb-1">제휴 문의 페이지 이미지</p>
+                                                <p className="text-blue-700">제휴 문의 페이지(/partner/inquiry)에 표시되는 제안서 이미지입니다.</p>
+                                                <ul className="mt-2 space-y-1 text-blue-600">
+                                                    <li>• 여러 장의 이미지를 순서대로 업로드할 수 있습니다</li>
+                                                    <li>• 권장 형식: PNG, JPG (최대 10MB)</li>
+                                                    <li>• 권장 사이즈: 1200px 너비 이상</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 이미지 업로드 버튼 */}
+                                    <div className="flex justify-between items-center mb-6">
+                                        <p className="text-sm text-gray-500">현재 등록된 이미지: {partnershipImages.length}장</p>
+                                        <label className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer text-sm font-bold shadow-sm">
+                                            <Plus className="w-4 h-4" />
+                                            {partnershipUploading ? '업로드 중...' : '이미지 추가'}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handlePartnershipUpload}
+                                                disabled={partnershipUploading}
+                                            />
+                                        </label>
+                                    </div>
+
+                                    {/* 이미지 목록 */}
+                                    {partnershipImages.length === 0 ? (
+                                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-12 text-center">
+                                            <ImageIcon className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                                            <p className="text-gray-500 mb-2">등록된 제휴 제안서 이미지가 없습니다</p>
+                                            <p className="text-sm text-gray-400">이미지를 업로드하여 제휴 문의 페이지에 표시하세요</p>
                                         </div>
                                     ) : (
-                                        brandLogos.map((brand, index) => (
-                                            <div
-                                                key={brand.name}
-                                                className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:shadow-sm transition-shadow"
-                                            >
-                                                {/* 순서 표시 */}
-                                                <div className="flex items-center gap-2 text-gray-400">
-                                                    <GripVertical className="w-4 h-4" />
-                                                    <span className="text-sm font-mono">{index + 1}</span>
-                                                </div>
+                                        <div className="space-y-4">
+                                            {partnershipImages.map((imageUrl, index) => (
+                                                <div key={index} className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100 items-start group">
+                                                    {/* 순서 번호 + 이동 버튼 */}
+                                                    <div className="flex flex-col items-center gap-1 pt-2">
+                                                        <button
+                                                            onClick={() => handlePartnershipMoveUp(index)}
+                                                            disabled={index === 0}
+                                                            className={`p-1.5 rounded-md transition-colors ${index === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:bg-white hover:text-green-700 hover:shadow-sm'}`}
+                                                            title="위로 이동"
+                                                        >
+                                                            <ChevronUp className="w-4 h-4" />
+                                                        </button>
+                                                        <div className="p-2 bg-white rounded-md shadow-sm text-gray-600 group-hover:text-green-700 transition-colors">
+                                                            <span className="text-xs font-bold">{index + 1}</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handlePartnershipMoveDown(index)}
+                                                            disabled={index === partnershipImages.length - 1}
+                                                            className={`p-1.5 rounded-md transition-colors ${index === partnershipImages.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:bg-white hover:text-green-700 hover:shadow-sm'}`}
+                                                            title="아래로 이동"
+                                                        >
+                                                            <ChevronDown className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
 
-                                                {/* 로고 이미지 */}
-                                                <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                                                    {brand.imageUrl ? (
+                                                    <div className="relative w-48 aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
                                                         <Image
-                                                            src={`${brand.imageUrl}?t=${Date.now()}`}
-                                                            alt={brand.name}
-                                                            width={64}
-                                                            height={64}
-                                                            className="w-full h-full object-cover"
+                                                            src={imageUrl}
+                                                            alt={`제휴 제안서 ${index + 1}`}
+                                                            fill
+                                                            className="object-cover"
                                                         />
-                                                    ) : (
-                                                        <span className="text-[8px] font-bold text-gray-400 text-center px-1">
-                                                            {brand.name}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                    </div>
 
-                                                {/* 브랜드명 */}
-                                                <div className="flex-1">
-                                                    <p className="font-semibold text-gray-900">{brand.name}</p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {brand.imageUrl ? '✅ 로고 등록됨' : '⚠️ 로고 미등록'}
-                                                    </p>
+                                                    <div className="flex-1 flex flex-col justify-between h-full py-2">
+                                                        <div>
+                                                            <p className="font-semibold text-gray-900 mb-1">제안서 이미지 {index + 1}</p>
+                                                            <p className="text-xs text-gray-500 truncate max-w-xs">{imageUrl.split('/').pop()}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handlePartnershipDelete(imageUrl)}
+                                                            className="mt-4 flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium w-fit"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                            삭제
+                                                        </button>
+                                                    </div>
                                                 </div>
-
-                                                {/* 액션 버튼 */}
-                                                <div className="flex items-center gap-2">
-                                                    <label className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors text-sm font-medium flex items-center gap-1">
-                                                        <Upload className="w-3 h-3" />
-                                                        {brandUploading === brand.name ? '업로드 중...' : '로고 업로드'}
-                                                        <input
-                                                            type="file"
-                                                            accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                                                            className="hidden"
-                                                            onChange={(e) => handleBrandLogoUpload(brand.name, e)}
-                                                            disabled={brandUploading !== null}
-                                                        />
-                                                    </label>
-                                                    <button
-                                                        onClick={() => handleBrandDelete(brand.name)}
-                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="브랜드 삭제"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
-                            </div>
+                            )}
                         </div>
 
-                        {/* 앱 아이콘 관리 */}
+                        {/* 이용안내 이미지 관리 */}
                         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
+                            <button
+                                onClick={() => toggleDesignAccordion('policy')}
+                                className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
                                 <div className="flex items-center gap-3">
                                     <div className="w-1 h-6 bg-green-700 rounded-full"></div>
-                                    <h2 className="text-xl font-bold text-gray-900">앱 아이콘 관리</h2>
+                                    <h2 className="text-xl font-bold text-gray-900">이용안내 이미지</h2>
+                                    <span className="text-sm text-gray-400 ml-2">{policyImages.length}장</span>
                                 </div>
-                            </div>
-                            <div className="p-8">
-                                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                    <div className="flex items-start gap-3">
-                                        <Smartphone className="w-5 h-5 text-blue-600 mt-0.5" />
-                                        <div className="text-sm text-blue-800">
-                                            <p className="font-semibold mb-1">홈 화면 바로가기 아이콘</p>
-                                            <p className="text-blue-700">사용자가 홈 화면에 추가할 때 표시되는 앱 아이콘입니다.</p>
-                                            <ul className="mt-2 space-y-1 text-blue-600">
-                                                <li>• <strong>512x512px</strong> - 고해상도 기기용 (필수)</li>
-                                                <li>• <strong>192x192px</strong> - 일반 기기용 (필수)</li>
-                                                <li>• PNG 형식 권장, 정사각형 이미지</li>
-                                            </ul>
+                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${designAccordion === 'policy' ? 'rotate-180' : ''}`} />
+                            </button>
+                            {designAccordion === 'policy' && (
+                                <div className="p-8 border-t border-gray-100">
+                                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                        <div className="flex items-start gap-3">
+                                            <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+                                            <div className="text-sm text-blue-800">
+                                                <p className="font-semibold mb-1">상품 상세 페이지 하단 이용안내</p>
+                                                <p className="text-blue-700">모든 상품 상세 페이지 하단에 공통으로 노출되는 이미지입니다.</p>
+                                                <ul className="mt-2 space-y-1 text-blue-600">
+                                                    <li>• 배송/교환/반품 정책 등을 안내할 때 사용</li>
+                                                    <li>• 권장 형식: PNG, JPG (최대 10MB)</li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* 512x512 아이콘 */}
-                                    <div className="border border-gray-200 rounded-xl p-4">
-                                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                            <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded">필수</span>
-                                            512 x 512 px
-                                        </h4>
-                                        {pwaIcons['512'] ? (
-                                            <div className="relative mb-3">
-                                                <div className="w-32 h-32 mx-auto rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-                                                    <Image
-                                                        src={pwaIcons['512']}
-                                                        alt="PWA Icon 512"
-                                                        width={128}
-                                                        height={128}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                </div>
-                                                <button
-                                                    onClick={() => handlePwaIconDelete('512')}
-                                                    className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-md"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="w-32 h-32 mx-auto rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 mb-3">
-                                                <ImageIcon className="w-8 h-8" />
-                                            </div>
-                                        )}
-                                        <label className="flex items-center justify-center gap-2 px-4 py-2 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-semibold text-sm">
-                                            <Upload className="w-4 h-4" />
-                                            {pwaUploading === '512' ? '업로드 중...' : '이미지 업로드'}
-                                            <input
-                                                type="file"
-                                                accept="image/png,image/jpeg,image/webp"
-                                                className="hidden"
-                                                onChange={(e) => handlePwaIconUpload('512', e)}
-                                                disabled={pwaUploading !== null}
-                                            />
-                                        </label>
-                                    </div>
-
-                                    {/* 192x192 아이콘 */}
-                                    <div className="border border-gray-200 rounded-xl p-4">
-                                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                            <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded">필수</span>
-                                            192 x 192 px
-                                        </h4>
-                                        {pwaIcons['192'] ? (
-                                            <div className="relative mb-3">
-                                                <div className="w-24 h-24 mx-auto rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-                                                    <Image
-                                                        src={pwaIcons['192']}
-                                                        alt="PWA Icon 192"
-                                                        width={96}
-                                                        height={96}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                </div>
-                                                <button
-                                                    onClick={() => handlePwaIconDelete('192')}
-                                                    className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-md"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="w-24 h-24 mx-auto rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 mb-3">
-                                                <ImageIcon className="w-8 h-8" />
-                                            </div>
-                                        )}
-                                        <label className="flex items-center justify-center gap-2 px-4 py-2 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-semibold text-sm">
-                                            <Upload className="w-4 h-4" />
-                                            {pwaUploading === '192' ? '업로드 중...' : '이미지 업로드'}
-                                            <input
-                                                type="file"
-                                                accept="image/png,image/jpeg,image/webp"
-                                                className="hidden"
-                                                onChange={(e) => handlePwaIconUpload('192', e)}
-                                                disabled={pwaUploading !== null}
-                                            />
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-                {activeTab === 'policy' && (
-                    <motion.div
-                        key="policy"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-8"
-                    >
-                        {/* 이용 안내 이미지 */}
-                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-1 h-6 bg-green-700 rounded-full"></div>
-                                    <h2 className="text-xl font-bold tracking-tight text-gray-900">이용 안내 (Policy) 이미지</h2>
-                                </div>
-                            </div>
-                            <div className="p-8">
-                                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div className="flex items-start gap-3">
-                                        <Info className="w-5 h-5 text-gray-400 mt-0.5" />
-                                        <div className="text-sm text-gray-600">
-                                            <p className="font-semibold text-gray-900 mb-1">상세 페이지 하단 이용 안내</p>
-                                            <p>모든 상품 상세 페이지 하단에 공통으로 노출되는 이미지입니다. 배송/교환/반품 정책 등을 안내할 때 사용하세요.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex justify-end">
+                                    {/* 이미지 업로드 버튼 */}
+                                    <div className="flex justify-between items-center mb-6">
+                                        <p className="text-sm text-gray-500">현재 등록된 이미지: {policyImages.length}장</p>
                                         <label className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer text-sm font-bold shadow-sm">
-                                            <Upload className="w-4 h-4" />
+                                            <Plus className="w-4 h-4" />
                                             이미지 추가
                                             <input
                                                 type="file"
                                                 accept="image/*"
                                                 className="hidden"
-                                                multiple
-                                                onChange={(e) => handleImageUpload('policy', e)}
-                                                disabled={uploading}
+                                                onChange={(e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                        const newIndex = policyImages.length + 1;
+                                                        handlePolicyImageUpload(newIndex, e);
+                                                    }
+                                                }}
+                                                disabled={policyUploading !== null}
                                             />
                                         </label>
                                     </div>
 
+                                    {/* 이미지 목록 */}
                                     {policyImages.length === 0 ? (
-                                        <div className="text-center py-12 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                            등록된 이미지가 없습니다.
+                                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-12 text-center">
+                                            <ImageIcon className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                                            <p className="text-gray-500 mb-2">등록된 이용안내 이미지가 없습니다</p>
+                                            <p className="text-sm text-gray-400">이미지를 업로드하여 상품 상세 페이지에 표시하세요</p>
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1114,14 +1157,14 @@ export default function AdminSettingsPage() {
                                                 <div key={index} className="relative aspect-[3/4] group rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
                                                     <Image
                                                         src={url}
-                                                        alt={`Policy ${index + 1}`}
+                                                        alt={`이용안내 ${index + 1}`}
                                                         fill
                                                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                                                     />
                                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                         <button
-                                                            onClick={() => handleImageDelete('policy', url)}
-                                                            className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50 transition-colors shadow-lg transform translate-y-2 group-hover:translate-y-0 duration-300"
+                                                            onClick={() => handlePolicyImageDelete(index + 1)}
+                                                            className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50 transition-colors shadow-lg"
                                                             title="삭제"
                                                         >
                                                             <Trash2 className="w-5 h-5" />
@@ -1135,76 +1178,126 @@ export default function AdminSettingsPage() {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            )}
                         </div>
 
-                        {/* 제휴 제안서 이미지 */}
+                        {/* 앱 아이콘 관리 */}
                         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
+                            <button
+                                onClick={() => toggleDesignAccordion('pwa')}
+                                className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
                                 <div className="flex items-center gap-3">
                                     <div className="w-1 h-6 bg-green-700 rounded-full"></div>
-                                    <h2 className="text-xl font-bold tracking-tight text-gray-900">제휴 안내 (Partnership) 이미지</h2>
+                                    <h2 className="text-xl font-bold text-gray-900">앱 아이콘 관리</h2>
+                                    <span className="text-sm text-gray-400 ml-2">{Object.keys(pwaIcons).length}개</span>
                                 </div>
-                            </div>
-                            <div className="p-8">
-                                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div className="flex items-start gap-3">
-                                        <Info className="w-5 h-5 text-gray-400 mt-0.5" />
-                                        <div className="text-sm text-gray-600">
-                                            <p className="font-semibold text-gray-900 mb-1">제휴 안내 페이지 이미지</p>
-                                            <p>'/partnership' 페이지에 순서대로 노출되는 이미지입니다. 브랜드 소개나 제휴 제안 내용을 등록하세요.</p>
+                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${designAccordion === 'pwa' ? 'rotate-180' : ''}`} />
+                            </button>
+                            {designAccordion === 'pwa' && (
+                                <div className="p-8 border-t border-gray-100">
+                                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                        <div className="flex items-start gap-3">
+                                            <Smartphone className="w-5 h-5 text-blue-600 mt-0.5" />
+                                            <div className="text-sm text-blue-800">
+                                                <p className="font-semibold mb-1">홈 화면 바로가기 아이콘</p>
+                                                <p className="text-blue-700">사용자가 홈 화면에 추가할 때 표시되는 앱 아이콘입니다.</p>
+                                                <ul className="mt-2 space-y-1 text-blue-600">
+                                                    <li>• <strong>512x512px</strong> - 고해상도 기기용 (필수)</li>
+                                                    <li>• <strong>192x192px</strong> - 일반 기기용 (필수)</li>
+                                                    <li>• PNG 형식 권장, 정사각형 이미지</li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="space-y-4">
-                                    <div className="flex justify-end">
-                                        <label className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer text-sm font-bold shadow-sm">
-                                            <Upload className="w-4 h-4" />
-                                            이미지 추가
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                multiple
-                                                onChange={(e) => handleImageUpload('partnership', e)}
-                                                disabled={uploading}
-                                            />
-                                        </label>
-                                    </div>
-
-                                    {partnershipImages.length === 0 ? (
-                                        <div className="text-center py-12 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                            등록된 이미지가 없습니다.
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            {partnershipImages.map((url, index) => (
-                                                <div key={index} className="relative aspect-[3/4] group rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
-                                                    <Image
-                                                        src={url}
-                                                        alt={`Partnership ${index + 1}`}
-                                                        fill
-                                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <button
-                                                            onClick={() => handleImageDelete('partnership', url)}
-                                                            className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50 transition-colors shadow-lg transform translate-y-2 group-hover:translate-y-0 duration-300"
-                                                            title="삭제"
-                                                        >
-                                                            <Trash2 className="w-5 h-5" />
-                                                        </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* 512x512 아이콘 */}
+                                        <div className="border border-gray-200 rounded-xl p-4">
+                                            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                                <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded">필수</span>
+                                                512 x 512 px
+                                            </h4>
+                                            {pwaIcons['512'] ? (
+                                                <div className="relative mb-3">
+                                                    <div className="w-32 h-32 mx-auto rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                                                        <Image
+                                                            src={pwaIcons['512']}
+                                                            alt="PWA Icon 512"
+                                                            width={128}
+                                                            height={128}
+                                                            className="w-full h-full object-cover"
+                                                        />
                                                     </div>
-                                                    <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-sm">
-                                                        {index + 1}
-                                                    </div>
+                                                    <button
+                                                        onClick={() => handlePwaIconDelete('512')}
+                                                        className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-md"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
-                                            ))}
+                                            ) : (
+                                                <div className="w-32 h-32 mx-auto rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 mb-3">
+                                                    <ImageIcon className="w-8 h-8" />
+                                                </div>
+                                            )}
+                                            <label className="flex items-center justify-center gap-2 px-4 py-2 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-semibold text-sm">
+                                                <Upload className="w-4 h-4" />
+                                                {pwaUploading === '512' ? '업로드 중...' : '이미지 업로드'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/png,image/jpeg,image/webp"
+                                                    className="hidden"
+                                                    onChange={(e) => handlePwaIconUpload('512', e)}
+                                                    disabled={pwaUploading !== null}
+                                                />
+                                            </label>
                                         </div>
-                                    )}
+
+                                        {/* 192x192 아이콘 */}
+                                        <div className="border border-gray-200 rounded-xl p-4">
+                                            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                                <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded">필수</span>
+                                                192 x 192 px
+                                            </h4>
+                                            {pwaIcons['192'] ? (
+                                                <div className="relative mb-3">
+                                                    <div className="w-24 h-24 mx-auto rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                                                        <Image
+                                                            src={pwaIcons['192']}
+                                                            alt="PWA Icon 192"
+                                                            width={96}
+                                                            height={96}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handlePwaIconDelete('192')}
+                                                        className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-md"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="w-24 h-24 mx-auto rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 mb-3">
+                                                    <ImageIcon className="w-8 h-8" />
+                                                </div>
+                                            )}
+                                            <label className="flex items-center justify-center gap-2 px-4 py-2 bg-green-100 text-green-900 border border-green-300 rounded-lg hover:bg-green-700 hover:text-white cursor-pointer transition-all font-semibold text-sm">
+                                                <Upload className="w-4 h-4" />
+                                                {pwaUploading === '192' ? '업로드 중...' : '이미지 업로드'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/png,image/jpeg,image/webp"
+                                                    className="hidden"
+                                                    onChange={(e) => handlePwaIconUpload('192', e)}
+                                                    disabled={pwaUploading !== null}
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </motion.div>
                 )}
@@ -1212,3 +1305,4 @@ export default function AdminSettingsPage() {
         </div>
     );
 }
+

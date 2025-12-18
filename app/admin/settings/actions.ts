@@ -444,6 +444,25 @@ export async function fetchPartnershipImageAction() { // Name kept same but retu
     }
 }
 
+// 제휴 이미지 순서 저장
+export async function savePartnershipImagesOrderAction(images: string[]) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('site_settings')
+            .update({ partnership_proposal_images: images })
+            .eq('id', 1);
+
+        if (error) throw error;
+
+        revalidatePath('/admin/settings');
+        revalidatePath('/partner/inquiry');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Partnership images order save error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // ============================================
 // PWA 아이콘 관리 액션
 // ============================================
