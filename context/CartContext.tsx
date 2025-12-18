@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export type CartItem = {
     id: string;
@@ -30,21 +31,45 @@ type CartContextType = {
     // Buy Now Logic
     buyNowItem: CartItem | null;
     setBuyNowItem: (item: CartItem | null) => void;
+    // Auth status
+    isAuthenticated: boolean;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+    const { user } = useAuth();
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
-    const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null); // New state
+    const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null);
+    const [isInitialized, setIsInitialized] = useState(false);
 
-    // Load cart from localStorage on mount
+    // Get localStorage key for the current user
+    const getCartKey = (userId: string | undefined) => {
+        return userId ? `cart_${userId}` : null;
+    };
+
+    // Load cart from localStorage when user changes
     useEffect(() => {
-        const savedCart = localStorage.getItem("cart");
+        // Clear old non-user-specific cart on first load
+        if (!isInitialized) {
+            localStorage.removeItem("cart"); // Remove legacy cart data
+            setIsInitialized(true);
+        }
+
+        const cartKey = getCartKey(user?.id);
+
+        if (!cartKey) {
+            // No user logged in - clear cart
+            setCartItems([]);
+            return;
+        }
+
+        // Load user-specific cart
+        const savedCart = localStorage.getItem(cartKey);
         if (savedCart) {
             try {
                 const parsedCart = JSON.parse(savedCart);
-                // Ensure all items have selected property (default true for backward compatibility)
+                // Ensure all items have selected property
                 const cartWithSelection = parsedCart.map((item: CartItem) => ({
                     ...item,
                     selected: item.selected !== undefined ? item.selected : true
@@ -52,16 +77,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 setCartItems(cartWithSelection);
             } catch (e) {
                 console.error("Failed to parse cart from localStorage", e);
+                setCartItems([]);
             }
+        } else {
+            setCartItems([]);
         }
-    }, []);
+    }, [user?.id, isInitialized]);
 
-    // Save cart to localStorage whenever it changes
+    // Save cart to localStorage whenever it changes (only if user is logged in)
     useEffect(() => {
-        localStorage.setItem("cart", JSON.stringify(cartItems));
-    }, [cartItems]);
+        const cartKey = getCartKey(user?.id);
+        if (cartKey && isInitialized) {
+            localStorage.setItem(cartKey, JSON.stringify(cartItems));
+        }
+    }, [cartItems, user?.id, isInitialized]);
 
     const addToCart = (newItem: CartItem) => {
+        // Only allow adding to cart if user is logged in
+        if (!user) {
+            console.warn("Cannot add to cart: User not authenticated");
+            return;
+        }
+
         setCartItems((prevItems) => {
             const existingItemIndex = prevItems.findIndex(
                 (item) =>
@@ -72,7 +109,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
             if (existingItemIndex > -1) {
                 const newItems = [...prevItems];
-                // Create a shallow copy of the item to update to avoid direct mutation
                 newItems[existingItemIndex] = {
                     ...newItems[existingItemIndex],
                     quantity: newItems[existingItemIndex].quantity + newItem.quantity,
@@ -80,7 +116,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 };
                 return newItems;
             } else {
-                return [...prevItems, { ...newItem, selected: true }]; // Default selected
+                return [...prevItems, { ...newItem, selected: true }];
             }
         });
     };
@@ -152,6 +188,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 deleteSelected,
                 buyNowItem,
                 setBuyNowItem,
+                isAuthenticated: !!user,
             }}
         >
             {children}
@@ -166,3 +203,4 @@ export function useCart() {
     }
     return context;
 }
+

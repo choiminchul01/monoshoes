@@ -1,9 +1,10 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
-import { Minus, Plus, Trash2, CheckSquare, Square } from "lucide-react";
+import { Minus, Plus, Trash2, CheckSquare, Square, ShoppingBag, LogIn } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import { formatPrice } from "@/lib/utils";
 
@@ -14,8 +15,11 @@ export default function CartPage() {
         updateQuantity,
         toggleItemSelection,
         selectAll,
-        deselectAll
+        deselectAll,
+        clearCart,
+        isAuthenticated
     } = useCart();
+    const { loading: authLoading } = useAuth();
 
     const toast = useToast();
     // Calculate totals
@@ -29,6 +33,47 @@ export default function CartPage() {
     };
 
     const allSelected = cartItems.length > 0 && cartItems.every(item => item.selected);
+
+    // Show loading state
+    if (authLoading) {
+        return (
+            <div className="container mx-auto px-4 py-32 text-center">
+                <div className="animate-pulse">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-4"></div>
+                    <div className="h-6 bg-gray-200 rounded w-48 mx-auto"></div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show login prompt for unauthenticated users
+    if (!isAuthenticated) {
+        return (
+            <div className="container mx-auto px-4 py-32 text-center">
+                <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+                <h1 className="text-2xl font-bold mb-4">로그인이 필요합니다</h1>
+                <p className="text-gray-500 mb-8">
+                    장바구니는 회원 전용 서비스입니다.<br />
+                    로그인 후 이용해 주세요.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Link
+                        href="/login"
+                        className="inline-flex items-center justify-center gap-2 bg-black text-white px-8 py-4 text-sm font-bold tracking-widest hover:bg-gray-800 transition-colors uppercase"
+                    >
+                        <LogIn className="w-4 h-4" />
+                        로그인
+                    </Link>
+                    <Link
+                        href="/signup"
+                        className="inline-flex items-center justify-center gap-2 border-2 border-black text-black px-8 py-4 text-sm font-bold tracking-widest hover:bg-gray-100 transition-colors uppercase"
+                    >
+                        회원가입
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     if (cartItems.length === 0) {
         return (

@@ -4,7 +4,18 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { MessageCircle, Lock, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { MessageCircle, Lock, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
+
+// 문의 카테고리 정의
+const INQUIRY_CATEGORIES = [
+    { id: 'color', label: '색상 문의' },
+    { id: 'size', label: '사이즈 문의' },
+    { id: 'delivery', label: '배송 문의' },
+    { id: 'payment', label: '결제 문의' },
+    { id: 'other', label: '기타 문의' },
+] as const;
+
+type InquiryCategoryId = typeof INQUIRY_CATEGORIES[number]['id'];
 
 type QnA = {
     id: string;
@@ -16,10 +27,48 @@ type QnA = {
     user_id: string | null;
     created_at: string;
     answered_at: string | null;
+    category?: string;
 };
 
 type ProductQnAProps = {
     productId: string;
+};
+
+// 이름 마스킹 함수: 홍길동 → 홍*동, 성춘향 → 성*향
+const maskName = (name: string | null): string => {
+    if (!name) return '익명';
+
+    const trimmed = name.trim();
+    if (trimmed.length === 0) return '익명';
+    if (trimmed.length === 1) return trimmed;
+    if (trimmed.length === 2) return trimmed[0] + '*';
+
+    // 3글자 이상: 첫 글자 + * + 마지막 글자
+    // 예: 홍길동 → 홍*동, 김철수 → 김*수
+    const first = trimmed[0];
+    const last = trimmed[trimmed.length - 1];
+    const middleStars = '*'.repeat(trimmed.length - 2);
+    return first + middleStars + last;
+};
+
+// 카테고리 ID로 라벨 가져오기
+const getCategoryLabel = (categoryId: string | undefined): string => {
+    const category = INQUIRY_CATEGORIES.find(c => c.id === categoryId);
+    return category ? category.label : categoryId || '문의';
+};
+
+// 문의 내용 마스킹 함수: 기타 문의인 경우 내용 숨김
+const maskQuestionContent = (qna: QnA, isOwner: boolean): string => {
+    // 본인 문의는 전체 표시
+    if (isOwner) return qna.question;
+
+    // 기타 문의(other)가 아닌 경우 그대로 표시 (색상/사이즈/배송/결제 문의)
+    if (qna.category && qna.category !== 'other') {
+        return getCategoryLabel(qna.category);
+    }
+
+    // 기타 문의인 경우 또는 카테고리가 없는 레거시 데이터는 마스킹
+    return '비공개 문의입니다';
 };
 
 export default function ProductQnA({ productId }: ProductQnAProps) {
@@ -30,8 +79,8 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
     const [form, setForm] = useState({
-        question: '',
-        is_private: false
+        category: '' as InquiryCategoryId | '',
+        question: '', // 기타 문의일 때만 사용
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -41,6 +90,7 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
 
     const fetchQnA = async () => {
         setLoading(true);
+
         const { data } = await supabase
             .from('product_qna')
             .select('*')
@@ -48,13 +98,8 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
             .order('created_at', { ascending: false });
 
         if (data) {
-            // 로그인하지 않은 경우 비공개 문의는 제외
-            const filteredData = data.filter((qna: QnA) => {
-                if (!qna.is_private) return true;
-                if (user && qna.user_id === user.id) return true;
-                return false;
-            });
-            setQnas(filteredData);
+            // 모든 문의를 표시 (내용은 마스킹 처리)
+            setQnas(data);
         }
         setLoading(false);
     };
@@ -67,25 +112,38 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
             return;
         }
 
-        if (!form.question.trim()) {
+        if (!form.category) {
+            toast.error('문의 유형을 선택해주세요.');
+            return;
+        }
+
+        // 기타 문의일 때만 내용 필수
+        if (form.category === 'other' && !form.question.trim()) {
             toast.error('문의 내용을 입력해주세요.');
             return;
         }
 
         setIsSubmitting(true);
         try {
+            // 질문 내용 구성: 카테고리 라벨 사용, 기타일 경우 사용자 입력 추가
+            const categoryLabel = getCategoryLabel(form.category);
+            const questionContent = form.category === 'other'
+                ? `[${categoryLabel}] ${form.question.trim()}`
+                : categoryLabel;
+
             const { error } = await supabase.from('product_qna').insert({
                 product_id: productId,
                 user_id: user.id,
                 author_name: user.user_metadata?.full_name || user.email?.split('@')[0] || '익명',
-                question: form.question.trim(),
-                is_private: form.is_private
+                question: questionContent,
+                is_private: true, // 모든 문의는 기본 비공개
+                category: form.category
             });
 
             if (error) throw error;
 
             toast.success('문의가 등록되었습니다.');
-            setForm({ question: '', is_private: false });
+            setForm({ category: '', question: '' });
             setIsWriteModalOpen(false);
             fetchQnA();
         } catch (error: any) {
@@ -95,6 +153,10 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
         }
     };
 
+    const handleCategorySelect = (categoryId: InquiryCategoryId) => {
+        setForm({ ...form, category: categoryId, question: '' });
+    };
+
     return (
         <div className="mt-24 border-t border-gray-200 pt-16 max-w-5xl mx-auto">
             {/* Header */}
@@ -102,7 +164,7 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
                 <h3 className="text-2xl font-bold tracking-widest">PRODUCT Q&A</h3>
                 <button
                     onClick={() => user ? setIsWriteModalOpen(true) : toast.error('로그인이 필요합니다.')}
-                    className="px-6 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                    className="px-6 py-2.5 bg-[#00704A] text-white rounded-lg hover:bg-[#005A3C] transition-colors font-medium"
                 >
                     문의하기
                 </button>
@@ -126,14 +188,20 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
                                 className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50 transition-colors text-left"
                             >
                                 <div className="flex items-center gap-3 flex-1">
-                                    {qna.is_private && <Lock className="w-4 h-4 text-gray-400" />}
+                                    {/* 기타 문의이거나 본인 문의가 아닌 경우 자물쇠 표시 */}
+                                    {(qna.category === 'other' || !qna.category) && (!user || user.id !== qna.user_id) && (
+                                        <Lock className="w-4 h-4 text-gray-400" />
+                                    )}
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="font-semibold text-gray-900">Q.</span>
-                                            <span className="font-medium">{qna.question}</span>
+                                            <span className="font-medium">
+                                                {maskQuestionContent(qna, !!user && user.id === qna.user_id)}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm text-gray-500">
-                                            <span>{qna.author_name || '익명'}</span>
+                                            {/* 이름 마스킹 적용 */}
+                                            <span>{maskName(qna.author_name)}</span>
                                             <span>•</span>
                                             <span>{new Date(qna.created_at).toLocaleDateString('ko-KR')}</span>
                                             {qna.is_answered && (
@@ -152,16 +220,28 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
                                 )}
                             </button>
 
+                            {/* 답변 표시 - 본인만 실제 내용 확인 가능 */}
                             {expandedId === qna.id && qna.answer && (
-                                <div className="p-5 bg-blue-50 border-t border-gray-200">
+                                <div className="p-5 bg-[#F0FAF5] border-t border-gray-200">
                                     <div className="flex items-start gap-3">
-                                        <span className="font-semibold text-blue-900">A.</span>
+                                        {/* 비공개 답변일 경우 자물쇠 아이콘 먼저 표시 */}
+                                        {(!user || user.id !== qna.user_id) && (
+                                            <Lock className="w-4 h-4 text-gray-400 mt-0.5" />
+                                        )}
+                                        <span className="font-semibold text-[#00704A]">A.</span>
                                         <div className="flex-1">
-                                            <p className="text-gray-800 whitespace-pre-wrap">{qna.answer}</p>
-                                            {qna.answered_at && (
-                                                <p className="text-sm text-gray-500 mt-2">
-                                                    {new Date(qna.answered_at).toLocaleDateString('ko-KR')}
-                                                </p>
+                                            {/* 본인만 답변 내용 확인 가능 */}
+                                            {user && user.id === qna.user_id ? (
+                                                <>
+                                                    <p className="text-gray-800 whitespace-pre-wrap">{qna.answer}</p>
+                                                    {qna.answered_at && (
+                                                        <p className="text-sm text-gray-500 mt-2">
+                                                            {new Date(qna.answered_at).toLocaleDateString('ko-KR')}
+                                                        </p>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <span className="text-gray-500">비공개 답변입니다. 로그인 후 본인 문의에서 확인하세요.</span>
                                             )}
                                         </div>
                                     </div>
@@ -178,59 +258,93 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
                 </div>
             )}
 
-            {/* Write Modal */}
+            {/* Write Modal - ESSENTIA 스타일 적용 */}
             {isWriteModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg w-full max-w-md p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">제품 문의</h2>
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal-card w-full max-w-md">
+                        {/* Modal Header */}
+                        <div className="admin-modal-header">
+                            <h2>제품 문의</h2>
                             <button
-                                onClick={() => setIsWriteModalOpen(false)}
-                                className="text-gray-500 hover:text-black"
+                                onClick={() => {
+                                    setIsWriteModalOpen(false);
+                                    setForm({ category: '', question: '' });
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
                             >
-                                <X className="w-6 h-6" />
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2">문의 내용</label>
-                                <textarea
-                                    value={form.question}
-                                    onChange={(e) => setForm({ ...form, question: e.target.value })}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-black h-32 resize-none"
-                                    placeholder="제품에 대해 궁금한 점을 작성해주세요."
-                                />
+                        {/* Modal Body */}
+                        <form onSubmit={handleSubmit} className="admin-modal-body">
+                            {/* Category Selection */}
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-3">문의 유형 선택</label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {INQUIRY_CATEGORIES.map((category) => (
+                                        <button
+                                            key={category.id}
+                                            type="button"
+                                            onClick={() => handleCategorySelect(category.id)}
+                                            className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${form.category === category.id
+                                                ? 'border-[#00704A] bg-[#F0FAF5]'
+                                                : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                }`}
+                                        >
+                                            <span className={`font-medium ${form.category === category.id ? 'text-[#00704A]' : 'text-gray-700'
+                                                }`}>
+                                                {category.label}
+                                            </span>
+                                            {form.category === category.id && (
+                                                <Check className="w-5 h-5 text-[#00704A]" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={form.is_private}
-                                        onChange={(e) => setForm({ ...form, is_private: e.target.checked })}
-                                        className="w-4 h-4"
+                            {/* Custom Content Input - Only for 기타 문의 */}
+                            {form.category === 'other' && (
+                                <div className="mb-6">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">문의 내용</label>
+                                    <textarea
+                                        value={form.question}
+                                        onChange={(e) => setForm({ ...form, question: e.target.value })}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00704A] focus:border-transparent h-32 resize-none"
+                                        placeholder="궁금한 점을 자세히 작성해주세요."
                                     />
-                                    <span className="text-sm text-gray-700">비공개 문의</span>
-                                </label>
-                                <p className="text-xs text-gray-500 mt-1 ml-6">
-                                    비공개 문의는 본인과 관리자만 확인할 수 있습니다.
+                                </div>
+                            )}
+
+                            {/* Privacy Notice */}
+                            <div className="bg-[#F0FAF5] rounded-lg p-4 mb-6 border border-[#00704A]/20">
+                                <div className="flex items-center gap-2 text-sm text-[#00704A]">
+                                    <Lock className="w-4 h-4" />
+                                    <span className="font-medium">모든 문의는 비공개로 처리됩니다.</span>
+                                </div>
+                                <p className="text-xs text-gray-600 mt-1 ml-6">
+                                    본인과 관리자만 확인할 수 있습니다.
                                 </p>
                             </div>
 
-                            <div className="flex gap-3 pt-4">
+                            {/* Submit Buttons */}
+                            <div className="flex gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => setIsWriteModalOpen(false)}
-                                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                    onClick={() => {
+                                        setIsWriteModalOpen(false);
+                                        setForm({ category: '', question: '' });
+                                    }}
+                                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                                     disabled={isSubmitting}
                                 >
                                     취소
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400"
-                                    disabled={isSubmitting}
+                                    className="flex-1 px-6 py-3 admin-btn-primary disabled:bg-gray-400 font-medium"
+                                    disabled={isSubmitting || !form.category}
                                 >
                                     {isSubmitting ? '등록 중...' : '문의 등록'}
                                 </button>

@@ -73,7 +73,7 @@ export default function NoticePage() {
                             {expandedId === notice.id && (
                                 <div className="p-6 bg-gray-50 border-t border-gray-200 text-gray-700 whitespace-pre-wrap leading-relaxed">
                                     {notice.image_url && (
-                                        <div className="mb-6">
+                                        <div className="mb-6 flex justify-center">
                                             <img
                                                 src={notice.image_url}
                                                 alt={notice.title}
