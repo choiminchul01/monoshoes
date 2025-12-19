@@ -134,13 +134,6 @@ export function Footer() {
                     <div className="flex flex-col items-end gap-6">
                         {/* Navigation Links */}
                         <div className="flex gap-6 text-sm">
-
-                            <Link href="/about" className="hover:text-black transition-colors">
-                                COMPANY
-                            </Link>
-                            <Link href="/agreement" className="hover:text-black transition-colors">
-                                AGREEMENT
-                            </Link>
                             <Link href="/privacy" className="hover:text-black font-bold transition-colors">
                                 PRIVACY POLICY
                             </Link>
@@ -166,7 +159,7 @@ export function Footer() {
 
                 {/* Copyright */}
                 <div className="mt-8 pt-8 border-t text-xs text-center md:text-left">
-                    © {new Date().getFullYear()} {settings.company_name}. All rights reserved.
+                    © 2020~ ESSENTIA. All rights reserved.
                 </div>
             </div>
         </footer>
