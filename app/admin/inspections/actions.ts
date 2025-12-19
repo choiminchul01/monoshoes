@@ -46,7 +46,10 @@ export async function createInspectionAction(formData: FormData) {
                     upsert: true,
                 });
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+                console.error("Storage upload error:", uploadError);
+                throw new Error(`이미지 업로드 실패: ${uploadError.message}`);
+            }
 
             const { data: { publicUrl } } = supabaseAdmin.storage
                 .from("inspections")
@@ -65,14 +68,17 @@ export async function createInspectionAction(formData: FormData) {
                 customer_name: customerName,
             });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+            console.error("Database insert error:", insertError);
+            throw new Error(`데이터베이스 저장 실패: ${insertError.message}`);
+        }
 
         revalidatePath("/admin/inspections");
         revalidatePath("/about/inspection");
         return { success: true };
     } catch (error: any) {
         console.error("Create inspection error:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: error.message || "알 수 없는 오류가 발생했습니다." };
     }
 }
 
