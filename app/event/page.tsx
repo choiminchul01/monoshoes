@@ -31,10 +31,18 @@ export default function EventPage() {
                     .eq("is_active", true)
                     .order("created_at", { ascending: false });
 
-                if (error) throw error;
+                if (error) {
+                    // Silently handle table not found or no permission errors
+                    if (error.code !== "PGRST116" && error.code !== "42P01" && !error.message?.includes("406")) {
+                        console.error("Error fetching events:", error);
+                    }
+                    setEvents([]);
+                    return;
+                }
                 setEvents(data || []);
             } catch (error) {
-                console.error("Error fetching events:", error);
+                // Silently fail for events - not critical
+                setEvents([]);
             } finally {
                 setLoading(false);
             }

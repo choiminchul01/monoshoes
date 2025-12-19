@@ -42,8 +42,8 @@ export default function EventPopup() {
                     .single();
 
                 if (error) {
-                    // No popup event found is not an error
-                    if (error.code !== "PGRST116") {
+                    // No popup event found or table doesn't exist is not an error
+                    if (error.code !== "PGRST116" && error.code !== "406") {
                         console.error("Error fetching popup event:", error);
                     }
                     return;

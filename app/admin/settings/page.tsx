@@ -934,7 +934,7 @@ export default function AdminSettingsPage() {
                                                     <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                                                         {brand.imageUrl ? (
                                                             <Image
-                                                                src={`${brand.imageUrl}?t=${Date.now()}`}
+                                                                src={brand.imageUrl}
                                                                 alt={brand.name}
                                                                 width={64}
                                                                 height={64}
