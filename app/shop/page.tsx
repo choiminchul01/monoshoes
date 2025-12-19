@@ -8,7 +8,8 @@ import { Crown, Sparkles, Star, Filter, X, Search } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { fetchBrandAliasesAction, findMatchingBrands, type BrandAliases } from "@/lib/brandAliases";
+import { fetchBrandAliasesAction, type BrandAliases } from "@/lib/brandAliases";
+import { findMatchingBrands } from "@/lib/brandAliasUtils";
 
 type Product = {
     id: string;
