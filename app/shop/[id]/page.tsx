@@ -506,23 +506,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             </div>
 
                             {/* Details/Features */}
-                            <div className="bg-gray-50 rounded-xl p-4">
+                            <div className="bg-gray-50 rounded-xl p-4 overflow-hidden">
                                 <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
                                     Details
                                 </span>
                                 {product.details?.features && product.details.features.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
-                                        {product.details.features.slice(0, 3).map((feature, index) => (
+                                        {product.details.features.slice(0, 2).map((feature, index) => (
                                             <span
                                                 key={index}
-                                                className="inline-flex items-center h-11 px-3 text-sm font-medium bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] rounded-lg"
+                                                className="inline-flex items-center h-11 px-3 text-sm font-medium bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] rounded-lg max-w-full truncate"
+                                                title={feature}
                                             >
-                                                {feature}
+                                                <span className="truncate max-w-[100px] md:max-w-[120px]">{feature}</span>
                                             </span>
                                         ))}
-                                        {product.details.features.length > 3 && (
+                                        {product.details.features.length > 2 && (
                                             <span className="inline-flex items-center h-11 px-3 text-sm text-gray-400 bg-white border border-gray-200 rounded-lg">
-                                                +{product.details.features.length - 3} more
+                                                +{product.details.features.length - 2}
                                             </span>
                                         )}
                                     </div>
