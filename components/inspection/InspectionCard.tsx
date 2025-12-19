@@ -17,6 +17,7 @@ export function InspectionCard({ id, imageUrl, date, customerName }: InspectionC
                     alt={`Inspection ${customerName}`}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    unoptimized
                 />
             </div>
             <div className="mt-3 space-y-2">

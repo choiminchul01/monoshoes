@@ -1001,6 +1001,7 @@ function PolicyImagesSection({
                             height={1200}
                             className="w-full h-auto rounded-2xl"
                             loading="lazy"
+                            unoptimized
                         />
                     </motion.div>
                 ))}

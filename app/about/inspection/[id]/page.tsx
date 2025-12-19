@@ -129,6 +129,7 @@ export default function InspectionDetailPage() {
                                 alt={`Inspection for ${inspection.customer_name}`}
                                 fill
                                 className="object-contain"
+                                unoptimized
                             />
                         </div>
 
@@ -167,8 +168,8 @@ export default function InspectionDetailPage() {
                                 key={index}
                                 onClick={() => setCurrentImageIndex(index)}
                                 className={`relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${currentImageIndex === index
-                                        ? "border-[#C41E3A] ring-2 ring-[#C41E3A]"
-                                        : "border-gray-200 hover:border-gray-400"
+                                    ? "border-[#C41E3A] ring-2 ring-[#C41E3A]"
+                                    : "border-gray-200 hover:border-gray-400"
                                     }`}
                             >
                                 <Image
@@ -176,6 +177,7 @@ export default function InspectionDetailPage() {
                                     alt={`Thumbnail ${index + 1}`}
                                     fill
                                     className="object-cover"
+                                    unoptimized
                                 />
                             </button>
                         ))}
@@ -193,40 +195,42 @@ export default function InspectionDetailPage() {
                         className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
                         onClick={() => setIsGalleryOpen(false)}
                     >
-                        <button
-                            onClick={() => setIsGalleryOpen(false)}
-                            className="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-full transition-colors"
-                        >
-                            <X className="w-8 h-8" />
-                        </button>
-
                         <div className="relative w-full h-full flex items-center justify-center p-8">
+                            {/* Close Button - z-60 ensures it's above the image */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setIsGalleryOpen(false); }}
+                                className="absolute top-4 right-4 z-10 p-2 text-white hover:bg-white/10 rounded-full transition-colors"
+                            >
+                                <X className="w-8 h-8" />
+                            </button>
+
                             <Image
                                 src={allImages[currentImageIndex]}
                                 alt={`Inspection ${currentImageIndex + 1}`}
                                 fill
                                 className="object-contain"
                                 onClick={(e) => e.stopPropagation()}
+                                unoptimized
                             />
 
                             {allImages.length > 1 && (
                                 <>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); prevImage(); }}
-                                        className="absolute left-4 p-3 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                                        className="absolute left-4 z-10 p-3 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
                                     >
                                         <ChevronLeft className="w-8 h-8" />
                                     </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                                        className="absolute right-4 p-3 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                                        className="absolute right-4 z-10 p-3 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
                                     >
                                         <ChevronRight className="w-8 h-8" />
                                     </button>
                                 </>
                             )}
 
-                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/50 text-white rounded-full">
+                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/50 text-white rounded-full z-10">
                                 {currentImageIndex + 1} / {allImages.length}
                             </div>
                         </div>
