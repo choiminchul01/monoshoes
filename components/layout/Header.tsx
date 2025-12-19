@@ -119,14 +119,18 @@ export function Header() {
                     {/* Icons & Auth */}
                     <div className="flex items-center">
                         {/* Search Bar */}
-                        <div className="relative hidden md:block mr-4">
+                        <form onSubmit={handleSearchSubmit} className="relative hidden md:block mr-4">
                             <input
                                 type="text"
                                 placeholder="SEARCH"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 pr-4 py-2 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 text-sm focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] w-48 transition-all"
                             />
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        </div>
+                            <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2">
+                                <Search className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                            </button>
+                        </form>
 
                         {/* Mobile Search Icon (visible only on mobile) */}
                         <button
