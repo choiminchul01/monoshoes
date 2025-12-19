@@ -323,6 +323,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             width={300}
                             height={400}
                             className="rounded-lg shadow-2xl object-cover"
+                            unoptimized
                         />
                     </motion.div>
                 )}
@@ -367,6 +368,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 draggable={false}
                                 className="object-cover pointer-events-none"
                                 priority
+                                unoptimized
                             />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -412,6 +414,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         alt={`View ${index + 1}`}
                                         fill
                                         className="object-cover"
+                                        unoptimized
                                     />
                                 </button>
                             ))}
@@ -815,6 +818,7 @@ function ReviewSection({ productId }: { productId: string }) {
                                                     alt="Review"
                                                     fill
                                                     className="object-cover"
+                                                    unoptimized
                                                 />
                                             </div>
                                         </div>
@@ -916,6 +920,7 @@ function DetailImagesSection({ images }: { images: string[] }) {
                             height={800}
                             className="w-full h-auto rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500"
                             loading="lazy"
+                            unoptimized
                         />
                     </motion.div>
                 ))}
