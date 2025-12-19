@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { Trash2, Edit, Plus, Upload, X, RefreshCw, Download, FileSpreadsheet } from "lucide-react";
 import Image from "next/image";
@@ -116,6 +116,15 @@ export default function AdminProductsPage() {
 
     // 중복 제거된 브랜드 목록 생성 및 정렬
     const uniqueBrands = Array.from(new Set(products.map(p => p.brand))).sort();
+
+    // 이미지 프리뷰 URL 캐시 (깜빡임 방지)
+    const imagePreviewUrls = useMemo(() => {
+        return formData.images.map(file => URL.createObjectURL(file));
+    }, [formData.images]);
+
+    const detailImagePreviewUrls = useMemo(() => {
+        return formData.detailImages.map(file => URL.createObjectURL(file));
+    }, [formData.detailImages]);
 
     // 입력된 값에 따라 필터링된 브랜드 목록
     const filteredBrands = uniqueBrands.filter(brand =>
@@ -1157,7 +1166,7 @@ export default function AdminProductsPage() {
                                                             'border-green-300 hover:border-green-400'
                                                         }`}
                                                 >
-                                                    <Image src={URL.createObjectURL(file)} alt={`New ${index}`} fill className="object-cover pointer-events-none" />
+                                                    <Image src={imagePreviewUrls[index]} alt={`New ${index}`} fill className="object-cover pointer-events-none" />
                                                     {/* 순서 번호 뱃지 */}
                                                     <div className={`absolute top-1 left-1 text-white text-xs px-2 py-0.5 rounded-full font-bold ${actualIndex === 0 ? 'bg-green-600' : 'bg-blue-600'
                                                         }`}>
@@ -1221,7 +1230,7 @@ export default function AdminProductsPage() {
                                         {/* 새 상세 이미지 표시 */}
                                         {formData.detailImages.map((file, index) => (
                                             <div key={`new-detail-${index}`} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-blue-300 bg-white">
-                                                <Image src={URL.createObjectURL(file)} alt={`New Detail ${index}`} fill className="object-cover" />
+                                                <Image src={detailImagePreviewUrls[index]} alt={`New Detail ${index}`} fill className="object-cover" />
                                                 <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
                                                     NEW {(formData.existingDetailImages?.length || 0) + index + 1}
                                                 </div>

@@ -67,9 +67,9 @@ export default function EventPage() {
     return (
         <div className="container mx-auto px-4 py-12">
             <div className="mb-10 text-center">
-                <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Event</p>
-                <h1 className="text-3xl font-bold tracking-widest" style={{ fontFamily: "'S-Core Dream', sans-serif" }}>이벤트</h1>
-                <p className="mt-4 text-sm text-gray-500">에센시아의 특별한 이벤트와 혜택을 확인하세요</p>
+                <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">News</p>
+                <h1 className="text-3xl font-bold tracking-widest" style={{ fontFamily: "'S-Core Dream', sans-serif" }}>뉴스</h1>
+                <p className="mt-4 text-sm text-gray-500">에센시아의 새로운 소식과 이벤트를 확인하세요</p>
             </div>
 
             {events.length === 0 ? (

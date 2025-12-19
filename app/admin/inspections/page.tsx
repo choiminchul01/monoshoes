@@ -381,7 +381,17 @@ export default function AdminInspectionsPage() {
                                 <input
                                     type="date"
                                     value={inspectionDate}
-                                    onChange={(e) => setInspectionDate(e.target.value)}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        // 년도가 4자리를 초과하면 차단
+                                        const parts = value.split('-');
+                                        if (parts[0] && parts[0].length > 4) {
+                                            return;
+                                        }
+                                        setInspectionDate(value);
+                                    }}
+                                    max="9999-12-31"
+                                    min="2000-01-01"
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
                                 />
                                 <p className="text-xs text-gray-400 mt-1">

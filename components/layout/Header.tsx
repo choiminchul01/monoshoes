@@ -86,6 +86,9 @@ export function Header() {
 
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center gap-8 text-[15px] font-medium">
+                        <Link href="/cs" className="hover:text-[#C41E3A] hover:font-bold transition-all">
+                            NOTICE
+                        </Link>
                         <Link href="/about/inspection" className="hover:text-[#C41E3A] hover:font-bold transition-all">
                             INSPECTION
                         </Link>
@@ -103,10 +106,7 @@ export function Header() {
                             </div>
                         </div>
                         <Link href="/event" className="hover:text-[#C41E3A] hover:font-bold transition-all">
-                            EVENT
-                        </Link>
-                        <Link href="/cs" className="hover:text-[#C41E3A] hover:font-bold transition-all">
-                            C/S
+                            NEWS
                         </Link>
                         <div className="relative group">
                             <Link href="/partner" className="hover:text-[#C41E3A] hover:font-bold transition-all py-4">
@@ -218,6 +218,14 @@ export function Header() {
                                 </div>
 
                                 <div className="flex flex-col gap-6 flex-1">
+                                    <Link href="/cs" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium hover:text-[#C41E3A]">
+                                        NOTICE
+                                    </Link>
+
+                                    <Link href="/about/inspection" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium hover:text-[#C41E3A]">
+                                        INSPECTION
+                                    </Link>
+
                                     <div className="space-y-4">
                                         <button
                                             onClick={toggleShop}
@@ -249,15 +257,8 @@ export function Header() {
                                         </AnimatePresence>
                                     </div>
 
-                                    <Link href="/about/inspection" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium hover:text-[#C41E3A]">
-                                        INSPECTION
-                                    </Link>
                                     <Link href="/event" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium hover:text-[#C41E3A]">
-                                        EVENT
-                                    </Link>
-
-                                    <Link href="/cs" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium hover:text-[#C41E3A]">
-                                        C/S
+                                        NEWS
                                     </Link>
 
                                     <div className="space-y-3">
