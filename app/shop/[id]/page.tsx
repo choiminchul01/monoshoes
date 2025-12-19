@@ -942,33 +942,18 @@ function PolicyImagesSection({
     useEffect(() => {
         const fetchPolicyImages = async () => {
             try {
-                const validUrls: string[] = [];
+                // Fetch all policy images dynamically
+                const { fetchPolicyImagesAction } = await import('@/app/admin/settings/actions');
+                const result = await fetchPolicyImagesAction();
 
-                for (let i = startId; i <= endId; i++) {
-                    // 다양한 확장자 시도
-                    const extensions = ['png', 'jpg', 'jpeg', 'webp'];
-
-                    for (const ext of extensions) {
-                        const fileName = `policy_${i}.${ext}`;
-                        const { data: { publicUrl } } = supabase.storage
-                            .from('banners')
-                            .getPublicUrl(fileName);
-
-                        // 이미지가 존재하는지 HEAD 요청으로 확인 (캐시 우회)
-                        try {
-                            const urlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
-                            const response = await fetch(urlWithTimestamp, { method: 'HEAD', cache: 'no-store' });
-                            if (response.ok) {
-                                validUrls.push(urlWithTimestamp);
-                                break; // 해당 슬롯은 찾았으니 다음 슬롯으로
-                            }
-                        } catch {
-                            // 이미지 없음, 다음 확장자 시도
-                        }
-                    }
+                if (result.success && result.images) {
+                    // Filter images by index range (startId to endId)
+                    const filteredImages = result.images.filter((url: string, index: number) => {
+                        const imageIndex = index + 1; // 1-based index
+                        return imageIndex >= startId && imageIndex <= endId;
+                    });
+                    setPolicyImages(filteredImages);
                 }
-
-                setPolicyImages(validUrls);
             } catch (error) {
                 console.error('Failed to fetch policy images:', error);
             } finally {
