@@ -8,6 +8,7 @@ import { Crown, Sparkles, Star, Filter, X, Search } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { fetchBrandAliasesAction, findMatchingBrands, type BrandAliases } from "@/lib/brandAliases";
 
 type Product = {
     id: string;
@@ -41,29 +42,40 @@ function ShopContent() {
     const [celebPickCount, setCelebPickCount] = useState(4);
     const [searchTerm, setSearchTerm] = useState(urlSearchTerm || ""); // 초기값을 URL 검색어로 설정
     const [isLoading, setIsLoading] = useState(true);
+    const [brandAliases, setBrandAliases] = useState<BrandAliases>({});
 
     useEffect(() => {
         if (urlSearchTerm) {
             setSearchTerm(urlSearchTerm);
         }
 
-        const fetchProducts = async () => {
+        const fetchData = async () => {
             setIsLoading(true);
-            const { data, error } = await supabase
-                .from('products')
-                .select('*')
-                .eq('is_available', true)
-                .order("created_at", { ascending: false });
 
-            if (error) {
-                console.error('Error fetching products:', error);
+            // 상품과 브랜드 별칭 병렬 로드
+            const [productsResult, aliasesResult] = await Promise.all([
+                supabase
+                    .from('products')
+                    .select('*')
+                    .eq('is_available', true)
+                    .order("created_at", { ascending: false }),
+                fetchBrandAliasesAction()
+            ]);
+
+            if (productsResult.error) {
+                console.error('Error fetching products:', productsResult.error);
             } else {
-                setProducts(data || []);
+                setProducts(productsResult.data || []);
             }
+
+            if (aliasesResult.success && aliasesResult.aliases) {
+                setBrandAliases(aliasesResult.aliases);
+            }
+
             setIsLoading(false);
         };
 
-        fetchProducts();
+        fetchData();
     }, [urlSearchTerm]);
 
     // Reset counts when filters change
@@ -76,15 +88,28 @@ function ShopContent() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Filter products based on category, brand, and search term
+    // Filter products based on category, brand, and search term (with alias support)
     const filterProducts = (productList: Product[]) => {
         return productList.filter(product => {
             const matchCategory = selectedCategory ? product.category === selectedCategory : true;
             const matchBrand = selectedBrand ? product.brand.toUpperCase() === selectedBrand.toUpperCase() : true;
-            const matchSearch = searchTerm
-                ? product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.brand.toLowerCase().includes(searchTerm.toLowerCase())
-                : true;
+
+            // 검색어 매칭 (별칭 지원)
+            let matchSearch = true;
+            if (searchTerm) {
+                const loweredSearch = searchTerm.toLowerCase();
+                const nameMatch = product.name.toLowerCase().includes(loweredSearch);
+                const brandMatch = product.brand.toLowerCase().includes(loweredSearch);
+
+                // 별칭으로 매칭되는 브랜드 목록 가져오기
+                const matchedBrands = findMatchingBrands(searchTerm, brandAliases);
+                const aliasMatch = matchedBrands.some(mb =>
+                    product.brand.toUpperCase() === mb.toUpperCase()
+                );
+
+                matchSearch = nameMatch || brandMatch || aliasMatch;
+            }
+
             return matchCategory && matchBrand && matchSearch;
         });
     };

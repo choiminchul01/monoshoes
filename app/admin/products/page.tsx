@@ -8,6 +8,7 @@ import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
 import * as XLSX from "xlsx";
+import { fetchBrandAliasesAction, saveBrandAliasesAction, type BrandAliases } from "@/lib/brandAliases";
 
 type Product = {
     id: string;
@@ -90,6 +91,10 @@ export default function AdminProductsPage() {
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
     const [isContinue, setIsContinue] = useState(false);
 
+    // 브랜드 별칭 (한글명) 관련 state
+    const [brandAliases, setBrandAliases] = useState<BrandAliases>({});
+    const [brandKoreanName, setBrandKoreanName] = useState('');
+
     // Bulk delete state
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -147,9 +152,16 @@ export default function AdminProductsPage() {
     useEffect(() => {
         if (isMounted) {
             fetchProducts();
+            fetchBrandAliases();
         }
     }, [isMounted]);
 
+    const fetchBrandAliases = async () => {
+        const result = await fetchBrandAliasesAction();
+        if (result.success && result.aliases) {
+            setBrandAliases(result.aliases);
+        }
+    };
     const fetchProducts = async () => {
         setLoading(true);
         const { data, error } = await supabase
@@ -426,6 +438,17 @@ export default function AdminProductsPage() {
                 }
             }
 
+            // 브랜드 한글명이 입력된 경우 별칭 저장
+            if (formData.brand && brandKoreanName.trim()) {
+                const upperBrand = formData.brand.toUpperCase();
+                const aliases = brandKoreanName.split(',').map(a => a.trim()).filter(a => a);
+                if (aliases.length > 0) {
+                    const updatedAliases = { ...brandAliases, [upperBrand]: aliases };
+                    await saveBrandAliasesAction(updatedAliases);
+                    setBrandAliases(updatedAliases);
+                }
+            }
+
             fetchProducts();
         } catch (error) {
             console.error("Error:", error);
@@ -459,6 +482,12 @@ export default function AdminProductsPage() {
             sizes: product.details?.sizes || [],
             features: product.details?.features || []
         });
+        // 한글명 불러오기
+        if (brandAliases[product.brand]) {
+            setBrandKoreanName(brandAliases[product.brand].join(', '));
+        } else {
+            setBrandKoreanName('');
+        }
         setShowModal(true);
     };
 
@@ -682,6 +711,7 @@ export default function AdminProductsPage() {
             sizes: [],
             features: []
         });
+        setBrandKoreanName('');
     };
 
     if (!isMounted) return null;
@@ -1232,8 +1262,15 @@ export default function AdminProductsPage() {
                                             required
                                             value={formData.brand || ""}
                                             onChange={(e) => {
-                                                setFormData(prev => ({ ...prev, brand: e.target.value }));
+                                                const upperBrand = e.target.value.toUpperCase();
+                                                setFormData(prev => ({ ...prev, brand: upperBrand }));
                                                 setShowBrandSuggestions(true);
+                                                // 기존 한글명 불러오기
+                                                if (brandAliases[upperBrand]) {
+                                                    setBrandKoreanName(brandAliases[upperBrand].join(', '));
+                                                } else {
+                                                    setBrandKoreanName('');
+                                                }
                                             }}
                                             onFocus={() => setShowBrandSuggestions(true)}
                                             onBlur={() => setTimeout(() => setShowBrandSuggestions(false), 200)}
@@ -1248,13 +1285,22 @@ export default function AdminProductsPage() {
                                                         <button
                                                             key={index}
                                                             type="button"
-                                                            className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm"
+                                                            className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm flex justify-between items-center"
                                                             onClick={() => {
                                                                 setFormData(prev => ({ ...prev, brand: brand }));
                                                                 setShowBrandSuggestions(false);
+                                                                // 한글명 자동 불러오기
+                                                                if (brandAliases[brand]) {
+                                                                    setBrandKoreanName(brandAliases[brand].join(', '));
+                                                                } else {
+                                                                    setBrandKoreanName('');
+                                                                }
                                                             }}
                                                         >
-                                                            {brand}
+                                                            <span>{brand}</span>
+                                                            {brandAliases[brand] && (
+                                                                <span className="text-gray-400 text-xs">{brandAliases[brand].join(', ')}</span>
+                                                            )}
                                                         </button>
                                                     ))
                                                 ) : (
@@ -1265,6 +1311,24 @@ export default function AdminProductsPage() {
                                             </div>
                                         )}
                                     </div>
+                                </div>
+
+                                {/* 브랜드 한글명 */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">
+                                        브랜드 한글명
+                                        <span className="text-gray-400 font-normal ml-1">(검색용, 쉼표로 구분)</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={brandKoreanName}
+                                        onChange={(e) => setBrandKoreanName(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        placeholder="셀린느, 셀린"
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        한글로 검색 시 이 브랜드로 매칭됩니다.
+                                    </p>
                                 </div>
 
                                 {/* 가격 */}

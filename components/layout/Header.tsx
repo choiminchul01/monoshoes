@@ -47,10 +47,14 @@ export function Header() {
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (searchTerm.trim()) {
-            window.location.href = `/shop?search=${encodeURIComponent(searchTerm)}`;
-            setIsSearchOpen(false);
+        const trimmed = searchTerm.trim();
+        if (trimmed.length < 2) {
+            // 2글자 미만 검색 차단 - URL에서 toast 사용 불가하므로 alert 사용
+            alert("2글자 이상 입력해주세요.");
+            return;
         }
+        window.location.href = `/shop?search=${encodeURIComponent(trimmed)}`;
+        setIsSearchOpen(false);
     };
 
     return (
