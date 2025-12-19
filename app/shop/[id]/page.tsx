@@ -512,18 +512,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 </span>
                                 {product.details?.features && product.details.features.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
-                                        {product.details.features.slice(0, 2).map((feature, index) => (
-                                            <span
-                                                key={index}
-                                                className="inline-flex items-center h-11 px-3 text-sm font-medium bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] rounded-lg max-w-full truncate"
-                                                title={feature}
-                                            >
-                                                <span className="truncate max-w-[100px] md:max-w-[120px]">{feature}</span>
-                                            </span>
-                                        ))}
-                                        {product.details.features.length > 2 && (
+                                        {product.details.features.slice(0, 3).map((feature, index) => {
+                                            // PC: 20자, 모바일: 15자 제한
+                                            const truncateText = (text: string, maxLength: number) => {
+                                                return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+                                            };
+                                            return (
+                                                <span
+                                                    key={index}
+                                                    className="inline-flex items-center h-11 px-3 text-sm font-medium bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] rounded-lg"
+                                                    title={feature}
+                                                >
+                                                    {/* 모바일: 15자, PC: 20자 */}
+                                                    <span className="md:hidden">{truncateText(feature, 15)}</span>
+                                                    <span className="hidden md:inline">{truncateText(feature, 20)}</span>
+                                                </span>
+                                            );
+                                        })}
+                                        {product.details.features.length > 3 && (
                                             <span className="inline-flex items-center h-11 px-3 text-sm text-gray-400 bg-white border border-gray-200 rounded-lg">
-                                                +{product.details.features.length - 2}
+                                                +{product.details.features.length - 3}
                                             </span>
                                         )}
                                     </div>
