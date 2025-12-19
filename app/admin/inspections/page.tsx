@@ -224,6 +224,7 @@ export default function AdminInspectionsPage() {
                                                 src={inspection.image_url}
                                                 alt="Inspection"
                                                 fill
+                                                unoptimized
                                                 className="object-cover"
                                             />
                                             {(inspection.image_urls?.length || 0) > 1 && (
@@ -309,6 +310,7 @@ export default function AdminInspectionsPage() {
                                                     src={url}
                                                     alt={`Image ${index + 1}`}
                                                     fill
+                                                    unoptimized
                                                     className="object-cover rounded-lg"
                                                 />
                                                 {index === 0 && (
@@ -337,6 +339,7 @@ export default function AdminInspectionsPage() {
                                                     src={url}
                                                     alt={`Preview ${index + 1}`}
                                                     fill
+                                                    unoptimized
                                                     className="object-cover rounded-lg border-2 border-[#00704A]"
                                                 />
                                                 {existingUrls.length === 0 && index === 0 && (
@@ -481,6 +484,7 @@ export default function AdminInspectionsPage() {
                             src={galleryImages[galleryIndex]}
                             alt="Gallery Image"
                             fill
+                            unoptimized
                             className="object-contain"
                         />
                     </div>
