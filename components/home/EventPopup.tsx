@@ -110,6 +110,7 @@ export default function EventPopup() {
                                         src={popupEvent.image_url}
                                         alt={popupEvent.title}
                                         fill
+                                        unoptimized
                                         className="object-cover"
                                     />
                                 ) : (
