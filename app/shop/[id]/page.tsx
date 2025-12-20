@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Heart, Minus, Plus, ChevronDown, ChevronUp, Star, Lock, MessageCircle, Share2, Link, Check } from "lucide-react";
+import { Heart, Minus, Plus, ChevronDown, ChevronUp, Star, Lock, MessageCircle, Share2, Link, Check, ShoppingBag, CreditCard } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { useCart } from "@/context/CartContext";
@@ -695,64 +695,64 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
             )}
 
-            {/* Mobile Bottom Fixed Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-3 min-[1600px]:hidden safe-area-pb">
-                <div className="flex gap-2">
-                    {/* 왼쪽: 장바구니 + 바로구매 (세로 스택) - 50% */}
-                    <div className="w-1/2 flex flex-col gap-2">
-                        <Button
-                            onClick={handleAddToCart}
-                            disabled={!product.is_available}
-                            isLoading={isAddingToCart}
-                            loadingText="..."
-                            className="h-12 bg-[#e9e4da] text-gray-900 text-sm font-bold tracking-widest hover:bg-[#ddd8ce] transition-colors uppercase rounded-xl"
-                        >
-                            {product.is_available ? "장바구니" : "품절"}
-                        </Button>
-                        <Button
-                            onClick={handleBuyNow}
-                            disabled={!product.is_available}
-                            isLoading={isBuyingNow}
-                            loadingText="..."
-                            className="h-12 bg-[#4a5544] text-white text-sm font-bold tracking-widest hover:bg-[#3d4739] transition-colors uppercase rounded-xl"
-                        >
-                            바로구매
-                        </Button>
-                    </div>
+            {/* Mobile Bottom Fixed Action Bar - 1열 가로 레이아웃 */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-2 min-[1600px]:hidden safe-area-pb">
+                <div className="flex gap-2 items-stretch">
+                    {/* 장바구니 - 가로형 */}
+                    <Button
+                        onClick={handleAddToCart}
+                        disabled={!product.is_available}
+                        isLoading={isAddingToCart}
+                        loadingText="..."
+                        className="flex-1 h-12 bg-[#e9e4da] text-gray-900 text-sm font-bold tracking-wider hover:bg-[#ddd8ce] transition-colors uppercase rounded-lg flex items-center justify-center gap-1.5"
+                    >
+                        <ShoppingBag className="w-4 h-4" />
+                        {product.is_available ? "장바구니" : "품절"}
+                    </Button>
 
-                    {/* 오른쪽: 찜하기 + 공유하기 - 50% */}
-                    <div className="w-1/2 flex gap-2">
-                        <button
-                            onClick={handleWishlistClick}
-                            className={`flex-1 h-full border-2 flex flex-col items-center justify-center transition-colors rounded-xl ${productId && isInWishlist(productId)
-                                ? "bg-white border-[#C41E3A]"
-                                : "bg-white border-[#C41E3A] hover:bg-gray-50"
+                    {/* 바로구매 - 가로형 */}
+                    <Button
+                        onClick={handleBuyNow}
+                        disabled={!product.is_available}
+                        isLoading={isBuyingNow}
+                        loadingText="..."
+                        className="flex-1 h-12 bg-[#4a5544] text-white text-sm font-bold tracking-wider hover:bg-[#3d4739] transition-colors uppercase rounded-lg flex items-center justify-center gap-1.5"
+                    >
+                        <CreditCard className="w-4 h-4" />
+                        바로구매
+                    </Button>
+
+                    {/* 찜하기 - 정사각형 */}
+                    <button
+                        onClick={handleWishlistClick}
+                        className={`w-12 h-12 border-2 flex items-center justify-center transition-colors rounded-lg flex-shrink-0 ${productId && isInWishlist(productId)
+                            ? "bg-white border-[#C41E3A]"
+                            : "bg-white border-[#C41E3A] hover:bg-gray-50"
+                            }`}
+                    >
+                        <Heart
+                            className={`w-6 h-6 transition-colors ${productId && isInWishlist(productId)
+                                ? "text-[#C41E3A] fill-[#C41E3A]"
+                                : "text-[#C41E3A]"
                                 }`}
-                        >
-                            <Heart
-                                className={`w-9 h-9 transition-colors ${productId && isInWishlist(productId)
-                                    ? "text-[#C41E3A] fill-[#C41E3A]"
-                                    : "text-[#C41E3A]"
-                                    }`}
-                                strokeWidth={1.5}
-                            />
-                            <span className="text-sm font-bold text-gray-600 mt-1">찜하기</span>
-                        </button>
-                        <button
-                            onClick={handleShare}
-                            className="flex-1 h-full bg-[#FEE500] border-2 border-[#FEE500] flex flex-col items-center justify-center transition-colors rounded-xl hover:bg-[#F5DC00]"
-                        >
-                            <div className="w-9 h-9 bg-[#3C1E1E] rounded-full flex items-center justify-center">
-                                <span className="text-base font-black text-[#FEE500]">카톡</span>
-                            </div>
-                            <span className="text-sm font-bold text-[#3C1E1E] mt-1">공유하기</span>
-                        </button>
-                    </div>
+                            strokeWidth={2}
+                        />
+                    </button>
+
+                    {/* 공유하기 - 정사각형 */}
+                    <button
+                        onClick={handleShare}
+                        className="w-12 h-12 bg-[#FEE500] border-2 border-[#FEE500] flex items-center justify-center transition-colors rounded-lg hover:bg-[#F5DC00] flex-shrink-0"
+                    >
+                        <div className="w-7 h-7 bg-[#3C1E1E] rounded-full flex items-center justify-center">
+                            <span className="text-xs font-black text-[#FEE500]">카</span>
+                        </div>
+                    </button>
                 </div>
             </div>
 
             {/* Bottom padding for fixed bar on mobile */}
-            <div className="h-32 min-[1600px]:hidden" />
+            <div className="h-20 min-[1600px]:hidden" />
         </div>
     );
 }
