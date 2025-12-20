@@ -237,7 +237,7 @@ export default function AdminEventsPage() {
         <div>
             {/* Header */}
             <div className="mb-4">
-                <h1 className="text-3xl font-bold">이벤트 관리</h1>
+                <h1 className="text-3xl font-bold">소식 관리</h1>
             </div>
 
             {/* Action Buttons Row */}
@@ -247,7 +247,7 @@ export default function AdminEventsPage() {
                     className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-[#00704A] text-white rounded-lg hover:bg-[#005A3C] transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    이벤트 등록
+                    소식 등록
                 </button>
             </div>
 
@@ -273,6 +273,7 @@ export default function AdminEventsPage() {
                                         src={event.image_url}
                                         alt={event.title}
                                         fill
+                                        unoptimized
                                         className="object-cover"
                                     />
                                 ) : (
@@ -362,7 +363,7 @@ export default function AdminEventsPage() {
                             {/* Modal Header */}
                             <div className="admin-modal-header">
                                 <h2>
-                                    {editingEvent ? "이벤트 수정" : "이벤트 등록"}
+                                    {editingEvent ? "소식 수정" : "소식 등록"}
                                 </h2>
                                 <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
                                     <X className="w-5 h-5" />
@@ -410,6 +411,7 @@ export default function AdminEventsPage() {
                                                 src={imagePreview}
                                                 alt="Preview"
                                                 fill
+                                                unoptimized
                                                 className="object-cover"
                                             />
                                             <button

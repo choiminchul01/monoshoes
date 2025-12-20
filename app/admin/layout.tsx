@@ -111,7 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             items: [
                 { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
                 { href: '/admin/coupons', label: '쿠폰 관리', icon: Ticket, badge: 0, permission: 'coupons' as const },
-                { href: '/admin/events', label: '이벤트 관리', icon: Megaphone, badge: 0, permission: 'board' as const },
+                { href: '/admin/events', label: '소식 관리', icon: Megaphone, badge: 0, permission: 'board' as const },
                 { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
                 { href: '/admin/inquiries', label: '문의 관리', icon: HelpCircle, badge: 0, permission: 'inquiries' as const },
             ]
