@@ -1131,7 +1131,7 @@ export default function AdminProductsPage() {
                                                             'border-gray-200 hover:border-gray-400'
                                                         }`}
                                                 >
-                                                    <Image src={url} alt={`Existing ${index}`} fill className="object-cover pointer-events-none" />
+                                                    <Image src={url} alt={`Existing ${index}`} fill unoptimized className="object-cover pointer-events-none" />
                                                     {/* 순서 번호 뱃지 */}
                                                     <div className={`absolute top-1 left-1 text-white text-xs px-2 py-0.5 rounded-full font-bold ${actualIndex === 0 ? 'bg-green-600' : 'bg-gray-600'
                                                         }`}>
@@ -1166,7 +1166,7 @@ export default function AdminProductsPage() {
                                                             'border-green-300 hover:border-green-400'
                                                         }`}
                                                 >
-                                                    <Image src={imagePreviewUrls[index]} alt={`New ${index}`} fill className="object-cover pointer-events-none" />
+                                                    <Image src={imagePreviewUrls[index]} alt={`New ${index}`} fill unoptimized className="object-cover pointer-events-none" />
                                                     {/* 순서 번호 뱃지 */}
                                                     <div className={`absolute top-1 left-1 text-white text-xs px-2 py-0.5 rounded-full font-bold ${actualIndex === 0 ? 'bg-green-600' : 'bg-blue-600'
                                                         }`}>
@@ -1213,7 +1213,7 @@ export default function AdminProductsPage() {
                                         {/* 기존 상세 이미지 표시 */}
                                         {formData.existingDetailImages?.map((url, index) => (
                                             <div key={`existing-detail-${index}`} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-blue-300 bg-white">
-                                                <Image src={url} alt={`Detail ${index}`} fill className="object-cover" />
+                                                <Image src={url} alt={`Detail ${index}`} fill unoptimized className="object-cover" />
                                                 <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
                                                     {index + 1}
                                                 </div>
@@ -1230,7 +1230,7 @@ export default function AdminProductsPage() {
                                         {/* 새 상세 이미지 표시 */}
                                         {formData.detailImages.map((file, index) => (
                                             <div key={`new-detail-${index}`} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-blue-300 bg-white">
-                                                <Image src={detailImagePreviewUrls[index]} alt={`New Detail ${index}`} fill className="object-cover" />
+                                                <Image src={detailImagePreviewUrls[index]} alt={`New Detail ${index}`} fill unoptimized className="object-cover" />
                                                 <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
                                                     NEW {(formData.existingDetailImages?.length || 0) + index + 1}
                                                 </div>
