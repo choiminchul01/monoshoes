@@ -279,38 +279,25 @@ export default function AdminProductsPage() {
 
     // 드래그 앤 드롭으로 이미지 순서 변경
     const moveImage = (fromIndex: number, toIndex: number, fromType: 'existing' | 'new', toType: 'existing' | 'new') => {
-        // 모든 이미지를 하나의 배열로 합치기
-        const existingImages = formData.existingImages || [];
-        const newImages = formData.images || [];
-
-        // 통합 배열 생성 (existing 먼저, 그 다음 new)
-        type ImageItem = { type: 'existing'; url: string } | { type: 'new'; file: File };
-        const allImages: ImageItem[] = [
-            ...existingImages.map(url => ({ type: 'existing' as const, url })),
-            ...newImages.map(file => ({ type: 'new' as const, file }))
-        ];
-
-        // 실제 인덱스 계산
-        const actualFromIndex = fromType === 'existing' ? fromIndex : existingImages.length + fromIndex;
-        const actualToIndex = toType === 'existing' ? toIndex : existingImages.length + toIndex;
-
-        // 순서 변경
-        const [movedItem] = allImages.splice(actualFromIndex, 1);
-        allImages.splice(actualToIndex, 0, movedItem);
-
-        // 분리하여 저장
-        const newExistingImages = allImages
-            .filter((item): item is { type: 'existing'; url: string } => item.type === 'existing')
-            .map(item => item.url);
-        const newNewImages = allImages
-            .filter((item): item is { type: 'new'; file: File } => item.type === 'new')
-            .map(item => item.file);
-
-        setFormData(prev => ({
-            ...prev,
-            existingImages: newExistingImages,
-            images: newNewImages
-        }));
+        // 같은 타입 내에서만 순서 변경 (existing끼리, new끼리)
+        if (fromType === 'existing' && toType === 'existing') {
+            const existingImages = [...(formData.existingImages || [])];
+            const [movedItem] = existingImages.splice(fromIndex, 1);
+            existingImages.splice(toIndex, 0, movedItem);
+            setFormData(prev => ({
+                ...prev,
+                existingImages
+            }));
+        } else if (fromType === 'new' && toType === 'new') {
+            const newImages = [...formData.images];
+            const [movedItem] = newImages.splice(fromIndex, 1);
+            newImages.splice(toIndex, 0, movedItem);
+            setFormData(prev => ({
+                ...prev,
+                images: newImages
+            }));
+        }
+        // 다른 타입 간 이동은 지원하지 않음 (복잡도 높음)
     };
 
     const handleImageDragStart = (e: React.DragEvent, index: number, type: 'existing' | 'new') => {
