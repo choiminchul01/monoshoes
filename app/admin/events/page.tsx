@@ -14,6 +14,7 @@ type Event = {
     image_url: string;
     is_popup: boolean;
     is_active: boolean;
+    event_date: string;
     created_at: string;
 };
 
@@ -27,6 +28,7 @@ export default function AdminEventsPage() {
         title: "",
         description: "",
         image_url: "",
+        event_date: new Date().toISOString().split('T')[0],
         is_popup: false,
         is_active: true,
     });
@@ -43,7 +45,7 @@ export default function AdminEventsPage() {
             const { data, error } = await supabase
                 .from("events")
                 .select("*")
-                .order("created_at", { ascending: false });
+                .order("event_date", { ascending: false });
 
             if (error) throw error;
             setEvents(data || []);
@@ -62,6 +64,7 @@ export default function AdminEventsPage() {
                 title: event.title,
                 description: event.description || "",
                 image_url: event.image_url || "",
+                event_date: event.event_date || new Date().toISOString().split('T')[0],
                 is_popup: event.is_popup,
                 is_active: event.is_active,
             });
@@ -72,6 +75,7 @@ export default function AdminEventsPage() {
                 title: "",
                 description: "",
                 image_url: "",
+                event_date: new Date().toISOString().split('T')[0],
                 is_popup: false,
                 is_active: true,
             });
@@ -142,6 +146,7 @@ export default function AdminEventsPage() {
                 title: formData.title,
                 description: formData.description,
                 image_url: imageUrl,
+                event_date: formData.event_date,
                 is_popup: formData.is_popup,
                 is_active: formData.is_active,
             };
@@ -398,6 +403,23 @@ export default function AdminEventsPage() {
                                         rows={4}
                                         placeholder="이벤트 설명"
                                     />
+                                </div>
+
+                                {/* Event Date */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        소식 날짜 <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={formData.event_date}
+                                        onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+                                        max="9999-12-31"
+                                        min="2000-01-01"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent outline-none"
+                                        required
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">선택한 날짜 기준으로 정렬됩니다</p>
                                 </div>
 
                                 {/* Image Upload */}

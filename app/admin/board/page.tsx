@@ -11,6 +11,7 @@ type Notice = {
     title: string;
     content: string;
     is_important: boolean;
+    notice_date: string;
     created_at: string;
     view_count: number;
     image_url?: string | null;
@@ -28,10 +29,11 @@ export default function AdminBoardPage() {
     const [editingItem, setEditingItem] = useState<any>(null);
 
     // Form States
-    const [noticeForm, setNoticeForm] = useState<{ title: string; content: string; is_important: boolean; file: File | null }>({
+    const [noticeForm, setNoticeForm] = useState<{ title: string; content: string; is_important: boolean; notice_date: string; file: File | null }>({
         title: "",
         content: "",
         is_important: false,
+        notice_date: new Date().toISOString().split('T')[0],
         file: null
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,7 +48,7 @@ export default function AdminBoardPage() {
             .from("notices")
             .select("*")
             .order("is_important", { ascending: false }) // Important first
-            .order("created_at", { ascending: false });
+            .order("notice_date", { ascending: false }); // Then by notice_date
 
         if (error) toast.error("공지사항을 불러오는데 실패했습니다.");
         else setNotices(data || []);
@@ -63,6 +65,7 @@ export default function AdminBoardPage() {
             formData.append("title", noticeForm.title);
             formData.append("content", noticeForm.content);
             formData.append("is_important", String(noticeForm.is_important));
+            formData.append("notice_date", noticeForm.notice_date);
             if (noticeForm.file) formData.append("file", noticeForm.file);
 
             const result = await saveNoticeAction(formData);
@@ -73,7 +76,7 @@ export default function AdminBoardPage() {
 
             setIsNoticeModalOpen(false);
             setEditingItem(null);
-            setNoticeForm({ title: "", content: "", is_important: false, file: null });
+            setNoticeForm({ title: "", content: "", is_important: false, notice_date: new Date().toISOString().split('T')[0], file: null });
             fetchNotices(); // Refresh client list
         } catch (error: any) {
             console.error(error);
@@ -101,10 +104,16 @@ export default function AdminBoardPage() {
     const openNoticeModal = (notice?: Notice) => {
         if (notice) {
             setEditingItem(notice);
-            setNoticeForm({ title: notice.title, content: notice.content, is_important: notice.is_important, file: null });
+            setNoticeForm({
+                title: notice.title,
+                content: notice.content,
+                is_important: notice.is_important,
+                notice_date: notice.notice_date || new Date().toISOString().split('T')[0],
+                file: null
+            });
         } else {
             setEditingItem(null);
-            setNoticeForm({ title: "", content: "", is_important: false, file: null });
+            setNoticeForm({ title: "", content: "", is_important: false, notice_date: new Date().toISOString().split('T')[0], file: null });
         }
         setIsNoticeModalOpen(true);
     };
@@ -208,7 +217,7 @@ export default function AdminBoardPage() {
                                                 {notice.is_important && <span className="text-red-500 font-bold text-xs border border-red-200 bg-red-50 px-2 py-1 rounded">필독</span>}
                                             </td>
                                             <td className="px-6 py-4 font-medium">{notice.title}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500">{new Date(notice.created_at).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{notice.notice_date || new Date(notice.created_at).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 text-right flex justify-end gap-2">
                                                 <button onClick={() => openNoticeModal(notice)} className="text-blue-500 hover:text-blue-700"><Edit2 className="w-4 h-4" /></button>
                                                 <button onClick={() => handleDeleteNotice(notice.id)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
@@ -252,6 +261,19 @@ export default function AdminBoardPage() {
                                         />
                                         <span className="text-sm font-medium text-red-600">중요 공지 (상단 고정)</span>
                                     </label>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">공지 날짜</label>
+                                    <input
+                                        type="date"
+                                        value={noticeForm.notice_date}
+                                        onChange={(e) => setNoticeForm({ ...noticeForm, notice_date: e.target.value })}
+                                        max="9999-12-31"
+                                        min="2000-01-01"
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
+                                        required
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">선택한 날짜 기준으로 정렬됩니다</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">이미지 첨부</label>

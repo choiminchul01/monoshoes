@@ -33,6 +33,7 @@ export async function saveNoticeAction(formData: FormData) {
         const title = formData.get("title") as string;
         const content = formData.get("content") as string;
         const is_important = formData.get("is_important") === "true";
+        const notice_date = formData.get("notice_date") as string;
         const file = formData.get("file") as File | null;
 
         let image_url = null;
@@ -66,7 +67,8 @@ export async function saveNoticeAction(formData: FormData) {
             const updateData: any = {
                 title,
                 content,
-                is_important
+                is_important,
+                notice_date
             };
             if (image_url) updateData.image_url = image_url;
 
@@ -83,6 +85,7 @@ export async function saveNoticeAction(formData: FormData) {
                     title,
                     content,
                     is_important,
+                    notice_date,
                     image_url // can be null
                 });
             if (error) throw error;
