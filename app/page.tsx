@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function EssentiaLandingPage() {
     const [isMounted, setIsMounted] = useState(false);
-    const [showButton, setShowButton] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -189,58 +188,7 @@ export default function EssentiaLandingPage() {
             requestAnimationFrame(fillTick);
         });
 
-        setShowButton(true);
-    }, []);
-
-    // 역방향 애니메이션
-    const runReverseAnimation = useCallback(async () => {
-        const s1 = stroke1Ref.current;
-        const s2 = stroke2Ref.current;
-        const fill = fillRef.current;
-        if (!s1 || !s2 || !fill) return;
-
-        const totalLength = textLengthRef.current || 1500;
-
-        setShowButton(false);
-
-        // 스트로크 다시 보이게
-        s1.style.opacity = '1';
-        s2.style.opacity = '1';
-        s1.style.strokeDashoffset = '0';
-        s2.style.strokeDashoffset = '0';
-
-        // 채우기 사라지기 (0.8초)
-        const fadeStart = performance.now();
-        await new Promise<void>((resolve) => {
-            const fadeTick = (now: number) => {
-                const progress = Math.min((now - fadeStart) / 800, 1);
-                fill.style.opacity = `${1 - progress}`;
-                if (progress < 1) requestAnimationFrame(fadeTick);
-                else resolve();
-            };
-            requestAnimationFrame(fadeTick);
-        });
-
-        // 양쪽으로 지우기 (3초)
-        const eraseStart = performance.now();
-        await new Promise<void>((resolve) => {
-            const eraseTick = (now: number) => {
-                const progress = Math.min((now - eraseStart) / 3000, 1);
-
-                // 지울때는 0에서 totalLength로
-                s1.style.strokeDashoffset = `${totalLength * progress}`;
-                s2.style.strokeDashoffset = `${-totalLength * progress}`;
-
-                if (progress < 1) {
-                    requestAnimationFrame(eraseTick);
-                } else {
-                    resolve();
-                }
-            };
-            requestAnimationFrame(eraseTick);
-        });
-
-        // 홈 화면으로 이동
+        // 바로 홈으로 이동
         window.location.href = '/home';
     }, []);
 
@@ -360,44 +308,61 @@ export default function EssentiaLandingPage() {
                                     ESSENTIA
                                 </text>
                             </svg>
-
-                            <motion.p
-                                className="mt-10 text-[#D4AF37]/60 text-xs tracking-[0.4em] uppercase"
-                                style={{ fontFamily: "'Inter', sans-serif", fontWeight: 300 }}
-                                initial={{ opacity: 0, y: 15 }}
-                                animate={{ opacity: showButton ? 1 : 0, y: showButton ? 0 : 15 }}
-                                transition={{ duration: 0.8 }}
-                            >
-                                Luxury Redefined
-                            </motion.p>
-
-                            <motion.button
-                                onClick={runReverseAnimation}
-                                className="mt-14 px-16 py-4 border border-[#D4AF37]/30 text-[#D4AF37]/90 rounded-full text-xs tracking-[0.3em] uppercase transition-all duration-500 hover:bg-[#D4AF37]/5 hover:border-[#D4AF37]/60"
-                                style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400 }}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: showButton ? 1 : 0, y: showButton ? 0 : 20 }}
-                                transition={{ duration: 0.8, delay: 0.2 }}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                            >
-                                입장하기
-                            </motion.button>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 <AnimatePresence>
                     {isTransitioning && (
-                        <motion.div
-                            className="absolute inset-0 bg-white z-30"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{
-                                duration: 2.5,
-                                ease: [0.4, 0, 0.2, 1]  // 천천히 시작해서 자연스럽게 끝남
-                            }}
-                        />
+                        <>
+                            {/* 배경이 점차 밝아지는 효과 */}
+                            <motion.div
+                                className="absolute inset-0 z-25"
+                                initial={{ backgroundColor: 'rgba(255,255,255,0)' }}
+                                animate={{ backgroundColor: 'rgba(255,255,255,0.4)' }}
+                                transition={{ duration: 1.5, ease: 'easeOut' }}
+                            />
+
+                            {/* 중앙에서 퍼지는 파문들 */}
+                            {[0, 1, 2, 3, 4].map((index) => (
+                                <motion.div
+                                    key={index}
+                                    className="absolute z-30 rounded-full"
+                                    style={{
+                                        left: '50%',
+                                        top: '50%',
+                                        transform: 'translate(-50%, -50%)',
+                                        border: '2px solid rgba(255,255,255,0.4)',
+                                        boxShadow: '0 0 30px rgba(255,255,255,0.3), inset 0 0 30px rgba(255,255,255,0.1)',
+                                    }}
+                                    initial={{ width: 0, height: 0, opacity: 0.8 }}
+                                    animate={{ width: '400vmax', height: '400vmax', opacity: 0 }}
+                                    transition={{
+                                        duration: 2.5,
+                                        delay: index * 0.25,
+                                        ease: [0.25, 0.1, 0.25, 1]
+                                    }}
+                                />
+                            ))}
+
+                            {/* 중앙에서 확장되는 화이트 원 */}
+                            <motion.div
+                                className="absolute z-35 rounded-full bg-white"
+                                style={{
+                                    left: '50%',
+                                    top: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    boxShadow: '0 0 100px rgba(255,255,255,0.8)',
+                                }}
+                                initial={{ width: 0, height: 0 }}
+                                animate={{ width: '400vmax', height: '400vmax' }}
+                                transition={{
+                                    duration: 2,
+                                    delay: 0.5,
+                                    ease: [0.3, 0, 0.2, 1]
+                                }}
+                            />
+                        </>
                     )}
                 </AnimatePresence>
             </div>
