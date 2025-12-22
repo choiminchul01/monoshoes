@@ -143,7 +143,7 @@ export function Footer() {
                         </div>
 
                         <div className="mt-2">
-                            <Link href="/" className="text-2xl md:text-3xl font-bold tracking-wider flex-shrink-0 flex gap-0.5 text-black opacity-80 hover:opacity-100" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                            <Link href="/home" className="text-2xl md:text-3xl font-bold tracking-wider flex-shrink-0 flex gap-0.5 text-black opacity-80 hover:opacity-100" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
                                 {"ESSENTIA".split("").map((letter, i) => (
                                     <span
                                         key={i}

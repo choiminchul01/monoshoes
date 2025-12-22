@@ -22,7 +22,8 @@ export default function ClientLayout({
     const isLandingPage = pathname === "/";
     const isPartnerPage = pathname === "/partner";
     const isAdminPage = pathname?.startsWith("/admin");
-    const hideNavigation = isLandingPage || isPartnerPage;
+    const isSamplePage = pathname?.startsWith("/sample");
+    const hideNavigation = isLandingPage || isPartnerPage || isSamplePage;
 
     return (
         <AuthProvider>
