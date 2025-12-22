@@ -41,13 +41,15 @@ function ShopContent() {
     const [bestSellersCount, setBestSellersCount] = useState(4);
     const [newArrivalsCount, setNewArrivalsCount] = useState(4);
     const [celebPickCount, setCelebPickCount] = useState(4);
-    const [searchTerm, setSearchTerm] = useState(urlSearchTerm || ""); // 초기값을 URL 검색어로 설정
+    const [inputValue, setInputValue] = useState(urlSearchTerm || ""); // 입력값 (실시간)
+    const [activeSearchTerm, setActiveSearchTerm] = useState(urlSearchTerm || ""); // 실제 검색어 (제출 시)
     const [isLoading, setIsLoading] = useState(true);
     const [brandAliases, setBrandAliases] = useState<BrandAliases>({});
 
     useEffect(() => {
         if (urlSearchTerm) {
-            setSearchTerm(urlSearchTerm);
+            setInputValue(urlSearchTerm);
+            setActiveSearchTerm(urlSearchTerm);
         }
 
         const fetchData = async () => {
@@ -84,7 +86,7 @@ function ShopContent() {
         setBestSellersCount(4);
         setNewArrivalsCount(4);
         setCelebPickCount(4);
-    }, [selectedCategory, selectedBrand, searchTerm]);
+    }, [selectedCategory, selectedBrand, activeSearchTerm]);
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -95,15 +97,14 @@ function ShopContent() {
             const matchCategory = selectedCategory ? product.category === selectedCategory : true;
             const matchBrand = selectedBrand ? product.brand.toUpperCase() === selectedBrand.toUpperCase() : true;
 
-            // 검색어 매칭 (별칭 지원)
             let matchSearch = true;
-            if (searchTerm) {
-                const loweredSearch = searchTerm.toLowerCase();
+            if (activeSearchTerm) {
+                const loweredSearch = activeSearchTerm.toLowerCase();
                 const nameMatch = product.name.toLowerCase().includes(loweredSearch);
                 const brandMatch = product.brand.toLowerCase().includes(loweredSearch);
 
                 // 별칭으로 매칭되는 브랜드 목록 가져오기
-                const matchedBrands = findMatchingBrands(searchTerm, brandAliases);
+                const matchedBrands = findMatchingBrands(activeSearchTerm, brandAliases);
                 const aliasMatch = matchedBrands.some(mb =>
                     product.brand.toUpperCase() === mb.toUpperCase()
                 );
@@ -141,7 +142,22 @@ function ShopContent() {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        // Search is already handled by state, but we can add analytics or other logic here
+        const trimmed = inputValue.trim();
+        if (trimmed.length === 0) {
+            // 빈 검색어면 검색 초기화
+            setActiveSearchTerm("");
+            return;
+        }
+        if (trimmed.length < 2) {
+            alert("2글자 이상 입력해주세요.");
+            return;
+        }
+        setActiveSearchTerm(trimmed);
+    };
+
+    const handleClearSearch = () => {
+        setInputValue("");
+        setActiveSearchTerm("");
     };
 
     return (
@@ -215,11 +231,20 @@ function ShopContent() {
                     <form onSubmit={handleSearch} className="mb-8 relative max-w-md">
                         <input
                             type="text"
-                            placeholder="Search products..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-4 pr-12 py-3 border-b border-gray-300 focus:border-black outline-none bg-transparent transition-colors placeholder:text-gray-400"
+                            placeholder="검색어 입력 후 Enter (2글자 이상)"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            className="w-full pl-4 pr-20 py-3 border-b border-gray-300 focus:border-black outline-none bg-transparent transition-colors placeholder:text-gray-400"
                         />
+                        {inputValue && (
+                            <button
+                                type="button"
+                                onClick={handleClearSearch}
+                                className="absolute right-10 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-black transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
                         <button
                             type="submit"
                             className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-black transition-colors"
@@ -228,12 +253,13 @@ function ShopContent() {
                         </button>
                     </form>
 
-                    {searchTerm ? (
+                    {activeSearchTerm ? (
                         // Search Results View
                         <>
                             <h1 className="mb-8 text-lg font-light tracking-tight flex items-center gap-2">
                                 SEARCH RESULTS
                                 <Search className="w-5 h-5 text-gray-400" />
+                                <span className="text-sm text-gray-400">(&quot;{activeSearchTerm}&quot;)</span>
                             </h1>
 
                             {allFilteredProducts.length > 0 ? (
@@ -256,7 +282,7 @@ function ShopContent() {
                                 </div>
                             ) : (
                                 <div className="text-center py-20 text-gray-500 font-light">
-                                    No products found matching "{searchTerm}".
+                                    No products found matching &quot;{activeSearchTerm}&quot;.
                                 </div>
                             )}
                         </>
