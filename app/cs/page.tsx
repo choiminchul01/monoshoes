@@ -77,7 +77,7 @@ export default function NoticePage() {
                                             <img
                                                 src={notice.image_url}
                                                 alt={notice.title}
-                                                className="w-full max-w-2xl rounded-lg border border-gray-200"
+                                                className="max-w-full max-h-[80vh] object-contain rounded-lg border border-gray-200"
                                             />
                                         </div>
                                     )}

@@ -235,7 +235,7 @@ export default function AdminBoardPage() {
             {
                 isNoticeModalOpen && (
                     <div className="admin-modal-overlay">
-                        <div className="admin-modal-card w-full max-w-lg">
+                        <div className="admin-modal-card w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                             <div className="admin-modal-header">
                                 <h2>{editingItem ? '공지사항 수정' : '공지사항 등록'}</h2>
                                 <button onClick={() => setIsNoticeModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
@@ -277,6 +277,7 @@ export default function AdminBoardPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">이미지 첨부</label>
+                                    <p className="text-xs text-gray-500 mb-2">권장 크기: 세로형 900 x 1200px (3:4 비율) 또는 16:9 비율</p>
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -284,9 +285,15 @@ export default function AdminBoardPage() {
                                         className="w-full px-4 py-2 border rounded-lg"
                                     />
                                     {editingItem?.image_url && !noticeForm.file && (
-                                        <div className="mt-2">
-                                            <p className="text-xs text-gray-500 mb-1">현재 이미지:</p>
-                                            <img src={editingItem.image_url} alt="Current" className="h-20 object-cover rounded border" />
+                                        <div className="mt-3 p-4 bg-gray-50 rounded-lg border">
+                                            <p className="text-xs text-gray-500 mb-3">현재 이미지 (원본 비율):</p>
+                                            <div className="flex justify-center">
+                                                <img
+                                                    src={editingItem.image_url}
+                                                    alt="Current"
+                                                    className="max-w-full max-h-[400px] object-contain rounded border bg-white"
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                 </div>

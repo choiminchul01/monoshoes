@@ -263,7 +263,7 @@ export default function AdminEventsPage() {
                     <p className="text-gray-500">등록된 이벤트가 없습니다.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {events.map((event) => (
                         <motion.div
                             key={event.id}
@@ -272,14 +272,14 @@ export default function AdminEventsPage() {
                             className={`bg-white rounded-xl border overflow-hidden ${!event.is_active ? "opacity-60" : ""}`}
                         >
                             {/* Image */}
-                            <div className="relative aspect-[16/9] bg-gray-100">
+                            <div className="relative aspect-[3/4] bg-gray-100">
                                 {event.image_url ? (
                                     <Image
                                         src={event.image_url}
                                         alt={event.title}
                                         fill
                                         unoptimized
-                                        className="object-cover"
+                                        className="object-contain"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center">
@@ -428,13 +428,13 @@ export default function AdminEventsPage() {
                                         이미지
                                     </label>
                                     {imagePreview ? (
-                                        <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden mb-2">
+                                        <div className="relative aspect-[3/4] max-h-[400px] bg-gray-100 rounded-lg overflow-hidden mb-2 flex items-center justify-center">
                                             <Image
                                                 src={imagePreview}
                                                 alt="Preview"
                                                 fill
                                                 unoptimized
-                                                className="object-cover"
+                                                className="object-contain"
                                             />
                                             <button
                                                 type="button"
@@ -449,7 +449,7 @@ export default function AdminEventsPage() {
                                             </button>
                                         </div>
                                     ) : (
-                                        <label className="flex flex-col items-center justify-center w-full aspect-[16/9] border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                        <label className="flex flex-col items-center justify-center w-full aspect-[3/4] max-h-[400px] border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                                             <Upload className="w-8 h-8 text-gray-400 mb-2" />
                                             <span className="text-sm text-gray-500">클릭하여 이미지 업로드</span>
                                             <input

@@ -94,14 +94,16 @@ export default function EventDetailPage() {
 
                 {/* Image */}
                 {event.image_url && (
-                    <div className="relative w-full aspect-[16/9] md:aspect-[2/1] bg-gray-100 rounded-2xl overflow-hidden mb-8">
-                        <Image
-                            src={event.image_url}
-                            alt={event.title}
-                            fill
-                            unoptimized
-                            className="object-cover"
-                        />
+                    <div className="flex justify-center mb-8">
+                        <div className="relative w-full max-w-md aspect-[3/4] bg-gray-100 rounded-2xl overflow-hidden">
+                            <Image
+                                src={event.image_url}
+                                alt={event.title}
+                                fill
+                                unoptimized
+                                className="object-contain"
+                            />
+                        </div>
                     </div>
                 )}
 
