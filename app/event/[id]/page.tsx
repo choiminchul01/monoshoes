@@ -95,15 +95,12 @@ export default function EventDetailPage() {
                 {/* Image */}
                 {event.image_url && (
                     <div className="flex justify-center mb-8">
-                        <div className="relative w-full max-w-md aspect-[3/4] bg-gray-100 rounded-2xl overflow-hidden">
-                            <Image
-                                src={event.image_url}
-                                alt={event.title}
-                                fill
-                                unoptimized
-                                className="object-contain"
-                            />
-                        </div>
+                        <img
+                            src={event.image_url}
+                            alt={event.title}
+                            className="max-w-full h-auto rounded-2xl border border-gray-100"
+                            style={{ maxHeight: '80vh' }}
+                        />
                     </div>
                 )}
 
