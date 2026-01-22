@@ -47,14 +47,14 @@ USING (
     )
 );
 
--- 관리자만 상품을 삭제할 수 있음
+-- 관리자만 상품을 삭제할 수 있음 (master와 manager 모두 가능)
 CREATE POLICY "Admins can delete products"
 ON products FOR DELETE
 USING (
     EXISTS (
         SELECT 1 FROM admin_roles
         WHERE user_id = auth.uid()
-        AND role = 'master'
+        AND role IN ('master', 'manager')
     )
 );
 

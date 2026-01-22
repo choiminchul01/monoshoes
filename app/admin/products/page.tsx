@@ -54,6 +54,8 @@ type BulkProductData = {
     sizes: string;
     features: string;
     description: string;
+    images: string[]; // 메인 이미지 URL (이미지1-2, 최대 2개)
+    detailImages: string[]; // 상세페이지 이미지 URL (이미지3-10, 최대 8개)
 };
 
 const CATEGORIES = ["BAG", "WALLET", "SHOES", "ACCESSORY"];
@@ -559,15 +561,24 @@ export default function AdminProductsPage() {
     const downloadTemplate = () => {
         const templateData = [
             {
-                "상품명": "샘플 상품명",
-                "브랜드": "BRAND NAME",
-                "가격": 1000000,
                 "카테고리": "BAG",
+                "브랜드": "BRAND NAME",
+                "상품명": "샘플 상품명",
+                "색상정보": "Black, White",
+                "사이즈정보": "S, M, L",
+                "가격": 1000000,
                 "재고": 10,
-                "색상옵션": "Black, White",
-                "사이즈옵션": "S, M, L",
-                "상세특징": "프리미엄 가죽, 수제 제작",
-                "상품설명": "상품에 대한 상세 설명을 입력하세요."
+                "상품설명": "상품에 대한 상세 설명을 입력하세요.",
+                "이미지1": "https://xxx.supabase.co/storage/v1/object/public/product-images/sample1.jpg",
+                "이미지2": "",
+                "이미지3": "",
+                "이미지4": "",
+                "이미지5": "",
+                "이미지6": "",
+                "이미지7": "",
+                "이미지8": "",
+                "이미지9": "",
+                "이미지10": ""
             }
         ];
 
@@ -577,19 +588,36 @@ export default function AdminProductsPage() {
 
         // 열 너비 설정
         ws['!cols'] = [
-            { wch: 20 }, // 상품명
-            { wch: 15 }, // 브랜드
-            { wch: 12 }, // 가격
             { wch: 12 }, // 카테고리
+            { wch: 15 }, // 브랜드
+            { wch: 20 }, // 상품명
+            { wch: 20 }, // 색상정보
+            { wch: 15 }, // 사이즈정보
+            { wch: 12 }, // 가격
             { wch: 8 },  // 재고
-            { wch: 20 }, // 색상옵션
-            { wch: 15 }, // 사이즈옵션
-            { wch: 25 }, // 상세특징
             { wch: 40 }, // 상품설명
+            { wch: 60 }, // 이미지1
+            { wch: 60 }, // 이미지2
+            { wch: 60 }, // 이미지3
+            { wch: 60 }, // 이미지4
+            { wch: 60 }, // 이미지5
+            { wch: 60 }, // 이미지6
+            { wch: 60 }, // 이미지7
+            { wch: 60 }, // 이미지8
+            { wch: 60 }, // 이미지9
+            { wch: 60 }, // 이미지10
         ];
 
         XLSX.writeFile(wb, "상품등록_양식.xlsx");
-        toast.success("템플릿이 다운로드되었습니다");
+        toast.success("템플릿이 다운로드되었습니다 (이미지 URL 칸럼 포함)");
+    };
+
+    // 이미지 URL 검증 함수
+    const isValidImageUrl = (url: string): boolean => {
+        if (!url || url.trim() === "") return false;
+        // URL 형식 기본 검증 (http/https로 시작, 이미지 확장자)
+        const urlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)$/i;
+        return urlPattern.test(url.trim());
     };
 
     // Excel 파일 업로드 처리
@@ -606,17 +634,43 @@ export default function AdminProductsPage() {
                 const sheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-                const parsedData: BulkProductData[] = jsonData.map((row: any) => ({
-                    name: row["상품명"] || "",
-                    brand: row["브랜드"] || "",
-                    price: Number(row["가격"]) || 0,
-                    category: row["카테고리"] || "BAG",
-                    stock: Number(row["재고"]) || 0,
-                    colors: row["색상옵션"] || "",
-                    sizes: row["사이즈옵션"] || "",
-                    features: row["상세특징"] || "",
-                    description: row["상품설명"] || "",
-                }));
+                const parsedData: BulkProductData[] = jsonData.map((row: any) => {
+                    // 메인 이미지 URL 추출 (이미지1-2)
+                    const mainImageUrls: string[] = [];
+                    for (let i = 1; i <= 2; i++) {
+                        const imgUrl = row[`이미지${i}`];
+                        if (imgUrl && typeof imgUrl === 'string' && imgUrl.trim() !== '') {
+                            if (isValidImageUrl(imgUrl)) {
+                                mainImageUrls.push(imgUrl.trim());
+                            }
+                        }
+                    }
+
+                    // 상세페이지 이미지 URL 추출 (이미지3-10)
+                    const detailImageUrls: string[] = [];
+                    for (let i = 3; i <= 10; i++) {
+                        const imgUrl = row[`이미지${i}`];
+                        if (imgUrl && typeof imgUrl === 'string' && imgUrl.trim() !== '') {
+                            if (isValidImageUrl(imgUrl)) {
+                                detailImageUrls.push(imgUrl.trim());
+                            }
+                        }
+                    }
+
+                    return {
+                        category: row["카테고리"] || "BAG",
+                        brand: row["브랜드"] || "",
+                        name: row["상품명"] || "",
+                        colors: row["색상정보"] || "",
+                        sizes: row["사이즈정보"] || "",
+                        price: Number(row["가격"]) || 0,
+                        stock: Number(row["재고"]) || 0,
+                        features: "",
+                        description: row["상품설명"] || "",
+                        images: mainImageUrls,
+                        detailImages: detailImageUrls,
+                    };
+                });
 
                 // 필수 항목 검증
                 const validData = parsedData.filter(item => item.name && item.brand && item.price > 0);
@@ -626,9 +680,15 @@ export default function AdminProductsPage() {
                     return;
                 }
 
+                // 이미지 포함 통계
+                const withMainImages = validData.filter(item => item.images.length > 0);
+                const withDetailImages = validData.filter(item => item.detailImages.length > 0);
+                const totalMainImages = validData.reduce((sum, item) => sum + item.images.length, 0);
+                const totalDetailImages = validData.reduce((sum, item) => sum + item.detailImages.length, 0);
+
                 setBulkUploadData(validData);
                 setShowBulkUploadModal(true);
-                toast.success(`${validData.length}개 상품 데이터를 불러왔습니다`);
+                toast.success(`${validData.length}개 상품 (메인 ${totalMainImages}장, 상세 ${totalDetailImages}장)`);
             } catch (error) {
                 console.error("Excel parse error:", error);
                 toast.error("Excel 파일 파싱 중 오류가 발생했습니다");
@@ -657,12 +717,12 @@ export default function AdminProductsPage() {
                 stock: item.stock,
                 is_available: item.stock > 0,
                 description: item.description,
-                images: [],
-                detail_images: [],
+                images: item.images || [], // 메인 이미지 (이미지1-2)
+                detail_images: item.detailImages || [], // 상세페이지 이미지 (이미지3-10)
                 details: {
                     colors: item.colors ? [{ name: item.colors, value: "#000000" }] : [],
                     sizes: item.sizes ? item.sizes.split(",").map(s => s.trim()) : [],
-                    features: item.features ? item.features.split(",").map(f => f.trim()) : [],
+                    features: [],
                 }
             }));
 
@@ -674,7 +734,15 @@ export default function AdminProductsPage() {
                 throw error;
             }
 
-            toast.success(`${bulkUploadData.length}개 상품이 등록되었습니다. 이미지는 개별 수정에서 추가해주세요.`);
+            // 이미지 포함 통계
+            const totalMainImages = bulkUploadData.reduce((sum, item) => sum + (item.images?.length || 0), 0);
+            const totalDetailImages = bulkUploadData.reduce((sum, item) => sum + (item.detailImages?.length || 0), 0);
+
+            if (totalMainImages > 0 || totalDetailImages > 0) {
+                toast.success(`${bulkUploadData.length}개 상품 등록 완료 (메인 ${totalMainImages}장, 상세 ${totalDetailImages}장)`);
+            } else {
+                toast.success(`${bulkUploadData.length}개 상품이 등록되었습니다`);
+            }
             setShowBulkUploadModal(false);
             setBulkUploadData([]);
             fetchProducts();

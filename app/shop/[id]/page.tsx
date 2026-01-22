@@ -453,8 +453,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             </div>
                         </div>
 
-                        {/* Options Section - Redesigned 2x2 Grid */}
-                        <div className="grid grid-cols-2 gap-4">
+                        {/* Options Section - 1x3 Grid */}
+                        <div className="grid grid-cols-3 gap-4">
                             {/* Color */}
                             <div className="bg-gray-50 rounded-xl p-4">
                                 <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
@@ -499,41 +499,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                 {size}
                                             </button>
                                         ))}
-                                    </div>
-                                ) : (
-                                    <span className="text-sm text-gray-400">-</span>
-                                )}
-                            </div>
-
-                            {/* Details/Features */}
-                            <div className="bg-gray-50 rounded-xl p-4 overflow-hidden">
-                                <span className="text-xs font-bold text-gray-500 tracking-widest uppercase block mb-3">
-                                    Details
-                                </span>
-                                {product.details?.features && product.details.features.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                        {product.details.features.slice(0, 3).map((feature, index) => {
-                                            // PC: 20자, 모바일: 15자 제한
-                                            const truncateText = (text: string, maxLength: number) => {
-                                                return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
-                                            };
-                                            return (
-                                                <span
-                                                    key={index}
-                                                    className="inline-flex items-center h-11 px-3 text-sm font-medium bg-[#faf7eb] text-gray-900 border-2 border-[#D4AF37] rounded-lg"
-                                                    title={feature}
-                                                >
-                                                    {/* 모바일: 15자, PC: 20자 */}
-                                                    <span className="md:hidden">{truncateText(feature, 15)}</span>
-                                                    <span className="hidden md:inline">{truncateText(feature, 20)}</span>
-                                                </span>
-                                            );
-                                        })}
-                                        {product.details.features.length > 3 && (
-                                            <span className="inline-flex items-center h-11 px-3 text-sm text-gray-400 bg-white border border-gray-200 rounded-lg">
-                                                +{product.details.features.length - 3}
-                                            </span>
-                                        )}
                                     </div>
                                 ) : (
                                     <span className="text-sm text-gray-400">-</span>
