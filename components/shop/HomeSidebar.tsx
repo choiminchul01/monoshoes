@@ -3,16 +3,16 @@
 import { motion } from "framer-motion";
 
 const SLOGANS = [
-    "ESSENTIA",
-    "LUXURY",
-    "COLLECTION",
-    "TIMELESS",
-    "ELEGANCE",
-    "ESSENTIA",
-    "LUXURY",
-    "COLLECTION",
-    "TIMELESS",
-    "ELEGANCE",
+    "MONO",
+    "SHOES",
+    "STYLE",
+    "STEP",
+    "PREMIUM",
+    "MONO",
+    "SHOES",
+    "STYLE",
+    "STEP",
+    "PREMIUM",
 ];
 
 export function HomeSidebar() {

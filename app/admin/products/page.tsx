@@ -56,6 +56,9 @@ type BulkProductData = {
     description: string;
     images: string[]; // 메인 이미지 URL (이미지1-2, 최대 2개)
     detailImages: string[]; // 상세페이지 이미지 URL (이미지3-10, 최대 8개)
+    // 중복 체크 관련
+    isDuplicate?: boolean;
+    existingProductId?: string;
 };
 
 const CATEGORIES = ["BAG", "WALLET", "SHOES", "ACCESSORY"];
@@ -105,6 +108,9 @@ export default function AdminProductsPage() {
     const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
     const [bulkUploadData, setBulkUploadData] = useState<BulkProductData[]>([]);
     const [bulkUploading, setBulkUploading] = useState(false);
+    // 중복 체크 관련 state
+    const [duplicateAction, setDuplicateAction] = useState<'ask' | 'skip' | 'update'>('ask');
+    const [duplicateCount, setDuplicateCount] = useState(0);
 
     // Drag and drop state for image reordering
     const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
@@ -680,15 +686,37 @@ export default function AdminProductsPage() {
                     return;
                 }
 
-                // 이미지 포함 통계
-                const withMainImages = validData.filter(item => item.images.length > 0);
-                const withDetailImages = validData.filter(item => item.detailImages.length > 0);
-                const totalMainImages = validData.reduce((sum, item) => sum + item.images.length, 0);
-                const totalDetailImages = validData.reduce((sum, item) => sum + item.detailImages.length, 0);
+                // 기존 상품과 중복 체크 (브랜드 + 상품명 기준)
+                const dataWithDuplicateCheck = validData.map(item => {
+                    const existingProduct = products.find(
+                        p => p.brand.toUpperCase() === item.brand.toUpperCase() &&
+                            p.name.toLowerCase() === item.name.toLowerCase()
+                    );
+                    return {
+                        ...item,
+                        isDuplicate: !!existingProduct,
+                        existingProductId: existingProduct?.id
+                    };
+                });
 
-                setBulkUploadData(validData);
+                const duplicates = dataWithDuplicateCheck.filter(item => item.isDuplicate);
+                setDuplicateCount(duplicates.length);
+                setDuplicateAction('ask'); // 매번 초기화
+
+                // 이미지 포함 통계
+                const withMainImages = dataWithDuplicateCheck.filter(item => item.images.length > 0);
+                const withDetailImages = dataWithDuplicateCheck.filter(item => item.detailImages.length > 0);
+                const totalMainImages = dataWithDuplicateCheck.reduce((sum, item) => sum + item.images.length, 0);
+                const totalDetailImages = dataWithDuplicateCheck.reduce((sum, item) => sum + item.detailImages.length, 0);
+
+                setBulkUploadData(dataWithDuplicateCheck);
                 setShowBulkUploadModal(true);
-                toast.success(`${validData.length}개 상품 (메인 ${totalMainImages}장, 상세 ${totalDetailImages}장)`);
+
+                if (duplicates.length > 0) {
+                    toast.warning(`${dataWithDuplicateCheck.length}개 상품 중 ${duplicates.length}개 중복 발견`);
+                } else {
+                    toast.success(`${dataWithDuplicateCheck.length}개 상품 (메인 ${totalMainImages}장, 상세 ${totalDetailImages}장)`);
+                }
             } catch (error) {
                 console.error("Excel parse error:", error);
                 toast.error("Excel 파일 파싱 중 오류가 발생했습니다");
@@ -707,44 +735,91 @@ export default function AdminProductsPage() {
         setBulkUploading(true);
 
         try {
-            const productsToInsert = bulkUploadData.map(item => ({
-                name: item.name,
-                brand: item.brand.toUpperCase(),
-                price: item.price,
-                category: CATEGORIES.includes(item.category.toUpperCase())
-                    ? item.category.toUpperCase()
-                    : "BAG",
-                stock: item.stock,
-                is_available: item.stock > 0,
-                description: item.description,
-                images: item.images || [], // 메인 이미지 (이미지1-2)
-                detail_images: item.detailImages || [], // 상세페이지 이미지 (이미지3-10)
-                details: {
-                    colors: item.colors ? [{ name: item.colors, value: "#000000" }] : [],
-                    sizes: item.sizes ? item.sizes.split(",").map(s => s.trim()) : [],
-                    features: [],
+            // 중복 처리에 따라 데이터 분류
+            const newProducts = bulkUploadData.filter(item => !item.isDuplicate);
+            const duplicateProducts = bulkUploadData.filter(item => item.isDuplicate);
+
+            let insertedCount = 0;
+            let updatedCount = 0;
+            let skippedCount = 0;
+
+            // 신규 상품 등록
+            if (newProducts.length > 0) {
+                const productsToInsert = newProducts.map(item => ({
+                    name: item.name,
+                    brand: item.brand.toUpperCase(),
+                    price: item.price,
+                    category: CATEGORIES.includes(item.category.toUpperCase())
+                        ? item.category.toUpperCase()
+                        : "BAG",
+                    stock: item.stock,
+                    is_available: item.stock > 0,
+                    description: item.description,
+                    images: item.images || [],
+                    detail_images: item.detailImages || [],
+                    details: {
+                        colors: item.colors ? [{ name: item.colors, value: "#000000" }] : [],
+                        sizes: item.sizes ? item.sizes.split(",").map(s => s.trim()) : [],
+                        features: [],
+                    }
+                }));
+
+                const { error: insertError } = await supabase
+                    .from("products")
+                    .insert(productsToInsert);
+
+                if (insertError) throw insertError;
+                insertedCount = newProducts.length;
+            }
+
+            // 중복 상품 처리
+            if (duplicateProducts.length > 0) {
+                if (duplicateAction === 'update') {
+                    // 중복 상품 업데이트
+                    for (const item of duplicateProducts) {
+                        if (item.existingProductId) {
+                            const { error: updateError } = await supabase
+                                .from("products")
+                                .update({
+                                    price: item.price,
+                                    stock: item.stock,
+                                    is_available: item.stock > 0,
+                                    description: item.description,
+                                    images: item.images || [],
+                                    detail_images: item.detailImages || [],
+                                    details: {
+                                        colors: item.colors ? [{ name: item.colors, value: "#000000" }] : [],
+                                        sizes: item.sizes ? item.sizes.split(",").map(s => s.trim()) : [],
+                                        features: [],
+                                    }
+                                })
+                                .eq('id', item.existingProductId);
+
+                            if (updateError) {
+                                console.error("Update error:", updateError);
+                            } else {
+                                updatedCount++;
+                            }
+                        }
+                    }
+                } else {
+                    // 중복 상품 스킵
+                    skippedCount = duplicateProducts.length;
                 }
-            }));
-
-            const { error } = await supabase
-                .from("products")
-                .insert(productsToInsert);
-
-            if (error) {
-                throw error;
             }
 
-            // 이미지 포함 통계
-            const totalMainImages = bulkUploadData.reduce((sum, item) => sum + (item.images?.length || 0), 0);
-            const totalDetailImages = bulkUploadData.reduce((sum, item) => sum + (item.detailImages?.length || 0), 0);
+            // 결과 메시지
+            const messages = [];
+            if (insertedCount > 0) messages.push(`${insertedCount}개 신규 등록`);
+            if (updatedCount > 0) messages.push(`${updatedCount}개 업데이트`);
+            if (skippedCount > 0) messages.push(`${skippedCount}개 스킵`);
 
-            if (totalMainImages > 0 || totalDetailImages > 0) {
-                toast.success(`${bulkUploadData.length}개 상품 등록 완료 (메인 ${totalMainImages}장, 상세 ${totalDetailImages}장)`);
-            } else {
-                toast.success(`${bulkUploadData.length}개 상품이 등록되었습니다`);
-            }
+            toast.success(messages.join(', ') || '처리 완료');
+
             setShowBulkUploadModal(false);
             setBulkUploadData([]);
+            setDuplicateCount(0);
+            setDuplicateAction('ask');
             fetchProducts();
         } catch (error: any) {
             console.error("Bulk upload error:", error);
@@ -1534,10 +1609,13 @@ export default function AdminProductsPage() {
                                                     e.preventDefault();
                                                     const input = e.currentTarget;
                                                     if (input.value) {
-                                                        setFormData({
-                                                            ...formData,
-                                                            colors: [...formData.colors, { name: input.value, value: input.value }]
-                                                        });
+                                                        // 중복 방지
+                                                        if (!formData.colors.some(c => c.name === input.value)) {
+                                                            setFormData({
+                                                                ...formData,
+                                                                colors: [...formData.colors, { name: input.value, value: input.value }]
+                                                            });
+                                                        }
                                                         input.value = '';
                                                     }
                                                 }
@@ -1548,10 +1626,12 @@ export default function AdminProductsPage() {
                                             onClick={() => {
                                                 const nameInput = document.getElementById('colorNameInput') as HTMLInputElement;
                                                 if (nameInput.value) {
-                                                    setFormData({
-                                                        ...formData,
-                                                        colors: [...formData.colors, { name: nameInput.value, value: nameInput.value }]
-                                                    });
+                                                    if (!formData.colors.some(c => c.name === nameInput.value)) {
+                                                        setFormData({
+                                                            ...formData,
+                                                            colors: [...formData.colors, { name: nameInput.value, value: nameInput.value }]
+                                                        });
+                                                    }
                                                     nameInput.value = '';
                                                 }
                                             }}
@@ -1559,6 +1639,26 @@ export default function AdminProductsPage() {
                                         >
                                             추가
                                         </button>
+                                    </div>
+                                    {/* 빠른 추가 버튼 (색상) */}
+                                    <div className="flex flex-wrap gap-1.5 mb-3">
+                                        {['블랙', '베이지', '아이보리', '네이비', '브라운', '화이트', '그레이'].map(preset => (
+                                            <button
+                                                key={preset}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!formData.colors.some(c => c.name === preset)) {
+                                                        setFormData({
+                                                            ...formData,
+                                                            colors: [...formData.colors, { name: preset, value: preset }]
+                                                        });
+                                                    }
+                                                }}
+                                                className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200 transition-colors"
+                                            >
+                                                +{preset}
+                                            </button>
+                                        ))}
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {formData.colors.map((color, index) => (
@@ -1594,10 +1694,12 @@ export default function AdminProductsPage() {
                                                     e.preventDefault();
                                                     const input = e.currentTarget;
                                                     if (input.value) {
-                                                        setFormData({
-                                                            ...formData,
-                                                            sizes: [...formData.sizes, input.value]
-                                                        });
+                                                        if (!formData.sizes.includes(input.value)) {
+                                                            setFormData({
+                                                                ...formData,
+                                                                sizes: [...formData.sizes, input.value]
+                                                            });
+                                                        }
                                                         input.value = '';
                                                     }
                                                 }
@@ -1608,10 +1710,12 @@ export default function AdminProductsPage() {
                                             onClick={() => {
                                                 const input = document.getElementById('sizeInput') as HTMLInputElement;
                                                 if (input.value) {
-                                                    setFormData({
-                                                        ...formData,
-                                                        sizes: [...formData.sizes, input.value]
-                                                    });
+                                                    if (!formData.sizes.includes(input.value)) {
+                                                        setFormData({
+                                                            ...formData,
+                                                            sizes: [...formData.sizes, input.value]
+                                                        });
+                                                    }
                                                     input.value = '';
                                                 }
                                             }}
@@ -1619,6 +1723,26 @@ export default function AdminProductsPage() {
                                         >
                                             추가
                                         </button>
+                                    </div>
+                                    {/* 빠른 추가 버튼 (사이즈) */}
+                                    <div className="flex flex-wrap gap-1.5 mb-3">
+                                        {['220', '225', '230', '235', '240', '245', '250', '255', '260'].map(preset => (
+                                            <button
+                                                key={preset}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!formData.sizes.includes(preset)) {
+                                                        setFormData({
+                                                            ...formData,
+                                                            sizes: [...formData.sizes, preset]
+                                                        });
+                                                    }
+                                                }}
+                                                className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200 transition-colors"
+                                            >
+                                                +{preset}
+                                            </button>
+                                        ))}
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {formData.sizes.map((size, index) => (
@@ -1801,16 +1925,61 @@ export default function AdminProductsPage() {
                                     onClick={() => {
                                         setShowBulkUploadModal(false);
                                         setBulkUploadData([]);
+                                        setDuplicateCount(0);
+                                        setDuplicateAction('ask');
                                     }}
                                     className="p-2 hover:bg-gray-100 rounded-full"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
-                            <p className="text-sm text-gray-500 mt-2">
-                                총 <span className="font-bold text-purple-600">{bulkUploadData.length}개</span> 상품이 등록됩니다.
-                                이미지는 등록 후 개별 수정에서 추가해주세요.
-                            </p>
+
+                            {/* 통계 정보 */}
+                            <div className="mt-4 flex flex-wrap gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-500">전체:</span>
+                                    <span className="font-bold text-purple-600">{bulkUploadData.length}개</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-500">신규:</span>
+                                    <span className="font-bold text-green-600">{bulkUploadData.filter(i => !i.isDuplicate).length}개</span>
+                                </div>
+                                {duplicateCount > 0 && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-500">중복:</span>
+                                        <span className="font-bold text-orange-600">{duplicateCount}개</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 중복 처리 옵션 */}
+                            {duplicateCount > 0 && (
+                                <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                                    <p className="text-sm text-orange-800 font-medium mb-3">
+                                        ⚠️ {duplicateCount}개 상품이 이미 등록되어 있습니다. 처리 방법을 선택하세요:
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => setDuplicateAction('skip')}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${duplicateAction === 'skip'
+                                                    ? 'bg-gray-800 text-white'
+                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            ✓ 모두 스킵 (신규만 등록)
+                                        </button>
+                                        <button
+                                            onClick={() => setDuplicateAction('update')}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${duplicateAction === 'update'
+                                                    ? 'bg-orange-600 text-white'
+                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            ↻ 모두 업데이트 (덮어쓰기)
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex-1 overflow-auto p-6">
@@ -1818,19 +1987,33 @@ export default function AdminProductsPage() {
                                 <thead className="bg-gray-100 sticky top-0">
                                     <tr>
                                         <th className="px-3 py-2 text-left font-medium">#</th>
+                                        <th className="px-3 py-2 text-left font-medium">상태</th>
                                         <th className="px-3 py-2 text-left font-medium">상품명</th>
                                         <th className="px-3 py-2 text-left font-medium">브랜드</th>
                                         <th className="px-3 py-2 text-right font-medium">가격</th>
                                         <th className="px-3 py-2 text-left font-medium">카테고리</th>
                                         <th className="px-3 py-2 text-right font-medium">재고</th>
-                                        <th className="px-3 py-2 text-left font-medium">색상</th>
-                                        <th className="px-3 py-2 text-left font-medium">사이즈</th>
+                                        <th className="px-3 py-2 text-center font-medium">이미지</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {bulkUploadData.map((item, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
+                                        <tr
+                                            key={index}
+                                            className={`hover:bg-gray-50 ${item.isDuplicate ? 'bg-orange-50' : ''}`}
+                                        >
                                             <td className="px-3 py-2 text-gray-500">{index + 1}</td>
+                                            <td className="px-3 py-2">
+                                                {item.isDuplicate ? (
+                                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+                                                        중복
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                                                        신규
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className="px-3 py-2 font-medium">{item.name}</td>
                                             <td className="px-3 py-2 text-gray-600">{item.brand}</td>
                                             <td className="px-3 py-2 text-right">₩{item.price.toLocaleString()}</td>
@@ -1840,41 +2023,60 @@ export default function AdminProductsPage() {
                                                 </span>
                                             </td>
                                             <td className="px-3 py-2 text-right">{item.stock}</td>
-                                            <td className="px-3 py-2 text-gray-600 max-w-[100px] truncate">{item.colors || "-"}</td>
-                                            <td className="px-3 py-2 text-gray-600 max-w-[100px] truncate">{item.sizes || "-"}</td>
+                                            <td className="px-3 py-2 text-center text-gray-500 text-xs">
+                                                {item.images.length > 0 || item.detailImages.length > 0
+                                                    ? `${item.images.length}+${item.detailImages.length}`
+                                                    : '-'
+                                                }
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
 
-                        <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowBulkUploadModal(false);
-                                    setBulkUploadData([]);
-                                }}
-                                className="px-6 py-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-                            >
-                                취소
-                            </button>
-                            <button
-                                onClick={executeBulkUpload}
-                                disabled={bulkUploading}
-                                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                            >
-                                {bulkUploading ? (
-                                    <>
-                                        <RefreshCw className="w-4 h-4 animate-spin" />
-                                        등록 중...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Upload className="w-4 h-4" />
-                                        {bulkUploadData.length}개 상품 등록
-                                    </>
+                        <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
+                            <div className="text-sm text-gray-500">
+                                {duplicateCount > 0 && duplicateAction === 'ask' && (
+                                    <span className="text-orange-600">⚠️ 중복 처리 방법을 선택해주세요</span>
                                 )}
-                            </button>
+                                {duplicateAction === 'skip' && (
+                                    <span>{bulkUploadData.filter(i => !i.isDuplicate).length}개 신규 등록 예정</span>
+                                )}
+                                {duplicateAction === 'update' && (
+                                    <span>{bulkUploadData.filter(i => !i.isDuplicate).length}개 신규 + {duplicateCount}개 업데이트 예정</span>
+                                )}
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowBulkUploadModal(false);
+                                        setBulkUploadData([]);
+                                        setDuplicateCount(0);
+                                        setDuplicateAction('ask');
+                                    }}
+                                    className="px-6 py-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    onClick={executeBulkUpload}
+                                    disabled={bulkUploading || (duplicateCount > 0 && duplicateAction === 'ask')}
+                                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                >
+                                    {bulkUploading ? (
+                                        <>
+                                            <RefreshCw className="w-4 h-4 animate-spin" />
+                                            등록 중...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-4 h-4" />
+                                            등록 실행
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

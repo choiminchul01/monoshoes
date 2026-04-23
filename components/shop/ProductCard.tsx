@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { ShoppingBag, Lock } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { formatPrice } from "@/lib/utils";
 
 interface ProductCardProps {
     id: string;
@@ -16,32 +16,45 @@ interface ProductCardProps {
     imageUrl: string;
     aspectRatio?: string;
     originalPrice?: number;
-    index?: number; // For stagger animation
+    index?: number;
     discount_percent?: number;
     is_best?: boolean;
     is_new?: boolean;
 }
 
-export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "aspect-[3/4]", originalPrice, index = 0, discount_percent = 0, is_best = false, is_new = false }: ProductCardProps) {
+export function ProductCard({
+    id, brand, name, price, imageUrl,
+    aspectRatio = "aspect-[3/4]",
+    originalPrice, index = 0,
+    discount_percent = 0, is_best = false, is_new = false
+}: ProductCardProps) {
     const { addToCart } = useCart();
-    const { user, loading } = useAuth();
+    const { user } = useAuth();
     const toast = useToast();
     const router = useRouter();
     const [isFlying, setIsFlying] = useState(false);
 
+    // 할인율 계산 (discount_percent 우선, 없으면 originalPrice로 계산)
+    const calcDiscount = discount_percent > 0
+        ? discount_percent
+        : (originalPrice && originalPrice > price)
+            ? Math.round((1 - price / originalPrice) * 100)
+            : 0;
+
+    const showOriginalPrice = (originalPrice && originalPrice > price) || calcDiscount > 0;
+    const displayOriginalPrice = originalPrice && originalPrice > price ? originalPrice : (calcDiscount > 0 ? Math.round(price / (1 - calcDiscount / 100)) : price);
+
     const handleAddToCart = async (e: React.MouseEvent) => {
-        e.preventDefault(); // Prevent navigation
+        e.preventDefault();
         e.stopPropagation();
 
         if (!user) {
-            toast.error("회원 전용 서비스입니다. 로그인 또는 회원가입이 필요합니다.");
+            toast.error("구매를 위해 로그인이 필요합니다.");
             router.push("/login");
             return;
         }
 
         setIsFlying(true);
-
-        // UX delay for animation start
         await new Promise(resolve => setTimeout(resolve, 100));
 
         addToCart({
@@ -52,8 +65,6 @@ export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "a
             brand,
             quantity: 1,
         });
-
-        // toast.success("장바구니에 담았습니다"); // Optional: reduce noise if animation is clear
     };
 
     return (
@@ -62,21 +73,12 @@ export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "a
                 {isFlying && imageUrl && (
                     <motion.div
                         initial={{ position: "fixed", top: "50%", left: "50%", x: "-50%", y: "-50%", scale: 1, opacity: 1, zIndex: 100 }}
-                        // Note: Initial position should ideally be dynamic based on click, but centered is a safe fallback or we can use layoutId
-                        // For better UX in list view, we might want to use the card's position, but that requires ref. 
-                        // Let's stick to a simple "pop" effect or use fixed positioning from the card if possible.
-                        // Actually, let's make it fly from center of screen for visibility, or just use the card's image.
-                        // Since getting exact coordinates without ref is hard, let's try a simpler approach:
-                        // Render it fixed at the mouse position? No.
-                        // Let's render it inside the card but with fixed position logic?
-                        // For now, let's use the center-screen pop for visibility as implemented in detail page.
-                        // To improve: we could use getBoundingClientRect if we had a ref.
                         animate={{ top: "40px", left: "calc(100% - 100px)", scale: 0.1, opacity: 0.5 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.8, ease: "easeInOut" }}
                         onAnimationComplete={() => setIsFlying(false)}
                         className="pointer-events-none fixed z-[100]"
-                        style={{ top: "50%", left: "50%" }} // Fallback start
+                        style={{ top: "50%", left: "50%" }}
                     >
                         <img
                             src={imageUrl}
@@ -91,11 +93,7 @@ export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "a
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -8, scale: 1.02, zIndex: 20 }}
-                transition={{
-                    duration: 0.5,
-                    delay: index * 0.1,
-                    ease: [0.22, 1, 0.36, 1]
-                }}
+                transition={{ duration: 0.5, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
                 className="group relative"
             >
                 <Link href={`/shop/${id}`} className="block">
@@ -117,40 +115,53 @@ export function ProductCard({ id, brand, name, price, imageUrl, aspectRatio = "a
                             </div>
                         )}
 
-                        {/* 투명 오버레이 - 이미지 직접 접근 차단 */}
+                        {/* 이미지 보호 오버레이 */}
                         <div className="absolute inset-0 z-[5]" />
 
-                        {/* Quick Add Button - Visible on Hover (Desktop) / Always (Mobile if needed, but usually hover) */}
+                        {/* 배지 영역 */}
+                        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                            {is_new && (
+                                <span className="bg-black text-white text-[9px] font-bold px-2 py-0.5 tracking-wider">
+                                    NEW
+                                </span>
+                            )}
+                            {is_best && (
+                                <span className="bg-[#D4AF37] text-black text-[9px] font-bold px-2 py-0.5 tracking-wider">
+                                    BEST
+                                </span>
+                            )}
+                            {calcDiscount > 0 && (
+                                <span className="bg-[#C41E3A] text-white text-[9px] font-bold px-2 py-0.5 tracking-wider">
+                                    -{calcDiscount}%
+                                </span>
+                            )}
+                        </div>
+
+                        {/* 빠른 담기 버튼 */}
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={handleAddToCart}
                             className="absolute bottom-3 right-3 p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-black hover:text-white z-10"
-                            aria-label="Add to cart"
+                            aria-label="장바구니에 담기"
                         >
                             <ShoppingBag className="w-5 h-5" />
                         </motion.button>
                     </div>
+
+                    {/* 상품 정보 */}
                     <div className="mt-4 space-y-1">
                         <p className="text-xs text-[#C41E3A] uppercase font-bold tracking-wider">{brand}</p>
-                        <h3 className="text-sm font-medium text-gray-900">{name}</h3>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            {loading ? (
-                                <div className="h-5 w-24 bg-gray-100 animate-pulse rounded" />
-                            ) : user ? (
-                                <>
-                                    {/* Always show only the current (sale) price */}
-                                    <p className="text-base font-normal text-gray-900">
-                                        ₩{price.toLocaleString()}
-                                    </p>
-                                </>
-                            ) : (
-                                <div className="flex items-center gap-1.5 text-gray-500">
-                                    <Lock className="w-3 h-3" />
-                                    <p className="text-xs font-medium tracking-wide">
-                                        회원 전용
-                                    </p>
-                                </div>
+                        <h3 className="text-sm font-medium text-gray-900 line-clamp-2">{name}</h3>
+                        {/* 가격 — 모든 사용자에게 오픈 */}
+                        <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                            <p className="text-base font-semibold text-gray-900">
+                                {formatPrice(price)}
+                            </p>
+                            {showOriginalPrice && displayOriginalPrice > price && (
+                                <p className="text-sm text-gray-400 line-through">
+                                    {formatPrice(displayOriginalPrice)}
+                                </p>
                             )}
                         </div>
                     </div>

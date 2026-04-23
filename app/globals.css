@@ -12,6 +12,13 @@
   --color-foreground: #171717;
 }
 
+@font-face {
+    font-family: 'DesignHouse';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_three@1.0/designhouseOTFLight00.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
 @layer base {
   body {
     background-color: var(--color-background);

@@ -10,18 +10,18 @@ interface BrandLogo {
     order: number;
 }
 
-// 기본 브랜드 목록 (DB 데이터 없을 때 폴백)
+// 기본 신발 브랜드 목록 (DB 데이터 없을 때 폴백)
 const defaultBrands = [
-    { name: 'PRADA', logoText: 'PRADA', imageUrl: null, order: 0 },
-    { name: 'CELINE', logoText: 'CELINE', imageUrl: null, order: 1 },
-    { name: 'BOTTEGA VENETA', logoText: 'BOTTEGA VENETA', imageUrl: null, order: 2 },
-    { name: 'HERMÈS', logoText: 'HERMÈS', imageUrl: null, order: 3 },
-    { name: 'GOYARD', logoText: 'GOYARD', imageUrl: null, order: 4 },
-    { name: 'GUCCI', logoText: 'GUCCI', imageUrl: null, order: 5 },
-    { name: 'LOUIS VUITTON', logoText: 'LOUIS VUITTON', imageUrl: null, order: 6 },
-    { name: 'CHANEL', logoText: 'CHANEL', imageUrl: null, order: 7 },
-    { name: 'DIOR', logoText: 'DIOR', imageUrl: null, order: 8 },
-    { name: 'BALENCIAGA', logoText: 'BALENCIAGA', imageUrl: null, order: 9 },
+    { name: 'NIKE', logoText: 'NIKE', imageUrl: null, order: 0 },
+    { name: 'ADIDAS', logoText: 'ADIDAS', imageUrl: null, order: 1 },
+    { name: 'NEW BALANCE', logoText: 'NEW BALANCE', imageUrl: null, order: 2 },
+    { name: 'CONVERSE', logoText: 'CONVERSE', imageUrl: null, order: 3 },
+    { name: 'VANS', logoText: 'VANS', imageUrl: null, order: 4 },
+    { name: 'DR.MARTENS', logoText: 'DR.MARTENS', imageUrl: null, order: 5 },
+    { name: 'UGG', logoText: 'UGG', imageUrl: null, order: 6 },
+    { name: 'SKECHERS', logoText: 'SKECHERS', imageUrl: null, order: 7 },
+    { name: 'CROCS', logoText: 'CROCS', imageUrl: null, order: 8 },
+    { name: 'TIMBERLAND', logoText: 'TIMBERLAND', imageUrl: null, order: 9 },
 ];
 
 export default function BrandSlider() {

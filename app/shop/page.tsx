@@ -34,7 +34,9 @@ function ShopContent() {
     const searchParams = useSearchParams();
     const selectedCategory = searchParams.get("category");
     const selectedBrand = searchParams.get("brand");
-    const urlSearchTerm = searchParams.get("search"); // URL에서 검색어 가져오기
+    const selectedGender = searchParams.get("gender");   // W / M
+    const selectedFilter = searchParams.get("filter");   // best / new / sale
+    const urlSearchTerm = searchParams.get("search");
 
     const [products, setProducts] = useState<Product[]>([]);
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -91,28 +93,34 @@ function ShopContent() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Filter products based on category, brand, and search term (with alias support)
+    // Filter products based on category, brand, gender, filter, and search term
     const filterProducts = (productList: Product[]) => {
         return productList.filter(product => {
             const matchCategory = selectedCategory ? product.category === selectedCategory : true;
             const matchBrand = selectedBrand ? product.brand.toUpperCase() === selectedBrand.toUpperCase() : true;
+
+            // 성별 필터 — category 코드 앞자리(W_/M_)로 판단
+            const matchGender = selectedGender
+                ? product.category?.startsWith(selectedGender + "_")
+                : true;
+
+            // 특수 필터
+            let matchFilter = true;
+            if (selectedFilter === "best") matchFilter = !!product.is_best;
+            if (selectedFilter === "new") matchFilter = !!product.is_new;
+            if (selectedFilter === "sale") matchFilter = (product.discount_percent ?? 0) > 0 || ((product.original_price ?? 0) > product.price);
 
             let matchSearch = true;
             if (activeSearchTerm) {
                 const loweredSearch = activeSearchTerm.toLowerCase();
                 const nameMatch = product.name.toLowerCase().includes(loweredSearch);
                 const brandMatch = product.brand.toLowerCase().includes(loweredSearch);
-
-                // 별칭으로 매칭되는 브랜드 목록 가져오기
                 const matchedBrands = findMatchingBrands(activeSearchTerm, brandAliases);
-                const aliasMatch = matchedBrands.some(mb =>
-                    product.brand.toUpperCase() === mb.toUpperCase()
-                );
-
+                const aliasMatch = matchedBrands.some(mb => product.brand.toUpperCase() === mb.toUpperCase());
                 matchSearch = nameMatch || brandMatch || aliasMatch;
             }
 
-            return matchCategory && matchBrand && matchSearch;
+            return matchCategory && matchBrand && matchGender && matchFilter && matchSearch;
         });
     };
 
@@ -163,38 +171,36 @@ function ShopContent() {
     return (
         <div className="container mx-auto px-4 py-12">
             <div className="flex flex-col md:flex-row gap-12">
+                {/* 데스크탑 사이드바 — 항상 표시 */}
+                <div className="hidden md:block">
+                    <Sidebar onFilterSelect={() => setIsMobileFilterOpen(false)} />
+                </div>
+
+                {/* 모바일 필터 오버레이 */}
                 <AnimatePresence>
-                    {(selectedCategory || isMobileFilterOpen) && (
+                    {isMobileFilterOpen && (
                         <>
-                            {/* Mobile Filter Overlay */}
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className={`fixed inset-0 bg-black/50 z-40 md:hidden ${isMobileFilterOpen ? 'block' : 'hidden'}`}
+                                className="fixed inset-0 bg-black/50 z-40 md:hidden"
                                 onClick={() => setIsMobileFilterOpen(false)}
                             />
-
-                            {/* Sidebar Container */}
                             <motion.div
-                                initial={{ width: 0, opacity: 0, x: -20 }}
-                                animate={{ width: "auto", opacity: 1, x: 0 }}
-                                exit={{ width: 0, opacity: 0, x: -20 }}
-                                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                                className={`
-                                        fixed inset-y-0 left-0 z-50 bg-white w-64 p-6 shadow-2xl md:shadow-none md:static md:bg-transparent md:p-0 md:block md:z-0 overflow-hidden
-                                        ${isMobileFilterOpen ? 'block' : 'hidden md:block'}
-                                    `}
+                                initial={{ x: "-100%" }}
+                                animate={{ x: 0 }}
+                                exit={{ x: "-100%" }}
+                                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                                className="fixed inset-y-0 left-0 z-50 bg-white w-72 p-6 shadow-2xl md:hidden overflow-y-auto"
                             >
-                                <div className="flex justify-between items-center mb-6 md:hidden">
-                                    <span className="font-bold text-lg">FILTERS</span>
+                                <div className="flex justify-between items-center mb-6">
+                                    <span className="font-bold text-lg tracking-widest">카테고리</span>
                                     <button onClick={() => setIsMobileFilterOpen(false)}>
                                         <X className="w-6 h-6" />
                                     </button>
                                 </div>
-                                <div className="w-full">
-                                    <Sidebar onFilterSelect={() => setIsMobileFilterOpen(false)} />
-                                </div>
+                                <Sidebar onFilterSelect={() => setIsMobileFilterOpen(false)} />
                             </motion.div>
                         </>
                     )}
@@ -227,31 +233,6 @@ function ShopContent() {
                         )}
                     </div>
 
-                    {/* Search Bar */}
-                    <form onSubmit={handleSearch} className="mb-8 relative max-w-md">
-                        <input
-                            type="text"
-                            placeholder="검색어 입력 후 Enter (2글자 이상)"
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            className="w-full pl-4 pr-20 py-3 border-b border-gray-300 focus:border-black outline-none bg-transparent transition-colors placeholder:text-gray-400"
-                        />
-                        {inputValue && (
-                            <button
-                                type="button"
-                                onClick={handleClearSearch}
-                                className="absolute right-10 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-black transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        )}
-                        <button
-                            type="submit"
-                            className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-black transition-colors"
-                        >
-                            <Search className="w-5 h-5" />
-                        </button>
-                    </form>
 
                     {activeSearchTerm ? (
                         // Search Results View
@@ -344,7 +325,12 @@ function ShopContent() {
                             {BEST_SELLERS.length > 0 && (
                                 <>
                                     <h1 className="mb-8 text-lg font-light tracking-tight flex items-center gap-2">
-                                        BEST SELLERS
+                                        {selectedFilter === 'best' ? '베스트 상품' :
+                                         selectedFilter === 'new' ? '신상품' :
+                                         selectedFilter === 'sale' ? '세일 상품' :
+                                         selectedGender === 'W' ? '여성 신발' :
+                                         selectedGender === 'M' ? '남성 신발' :
+                                         'ALL SHOES'}
                                         <Crown className="w-5 h-5 text-yellow-600" fill="currentColor" />
                                     </h1>
 

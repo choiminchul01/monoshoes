@@ -26,7 +26,7 @@ interface SiteSettings {
 
 export function Footer() {
     const [settings, setSettings] = useState<SiteSettings>({
-        company_name: 'ESSENTIA',
+        company_name: 'MONO SHOES',
         owner_name: '',
         business_license: '',
         mail_order_license: '',
@@ -57,7 +57,7 @@ export function Footer() {
 
             if (data && !error) {
                 setSettings({
-                    company_name: data.company_name || 'ESSENTIA',
+                    company_name: data.company_name || 'MONO SHOES',
                     owner_name: data.owner_name || '',
                     business_license: data.business_license || '',
                     mail_order_license: data.mail_order_license || '',
@@ -143,15 +143,8 @@ export function Footer() {
                         </div>
 
                         <div className="mt-2">
-                            <Link href="/home" className="text-2xl md:text-3xl font-bold tracking-wider flex-shrink-0 flex gap-0.5 text-black opacity-80 hover:opacity-100" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
-                                {"ESSENTIA".split("").map((letter, i) => (
-                                    <span
-                                        key={i}
-                                        className="transition-all duration-500 ease-out hover:text-[#D4AF37] hover:scale-110 inline-block"
-                                    >
-                                        {letter}
-                                    </span>
-                                ))}
+                            <Link href="/home" className="text-xl md:text-2xl font-black tracking-[0.2em] text-black opacity-80 hover:opacity-100 transition-opacity" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                                MONO SHOES
                             </Link>
                         </div>
                     </div>
@@ -159,7 +152,7 @@ export function Footer() {
 
                 {/* Copyright */}
                 <div className="mt-8 pt-8 border-t text-xs text-center md:text-left">
-                    © 2020~ ESSENTIA. All rights reserved.
+                    © 2025~ MONO SHOES. All rights reserved.
                 </div>
             </div>
         </footer>

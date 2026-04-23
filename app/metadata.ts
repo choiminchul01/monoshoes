@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
-    title: "ESSENTIA",
-    description: "하이엔드 퀄리티 제품을 쉽고 빠르게 만나보세요",
+    title: "MONO SHOES",
+    description: "프리미엄 신발 전문 쇼핑몰 — 여성화, 남성화, 스니커즈, 부츠까지 한 곳에서",
     manifest: "/manifest.json",
     appleWebApp: {
         capable: true,
         statusBarStyle: "default",
-        title: "에센시아",
+        title: "모노슈즈",
     },
 };
 

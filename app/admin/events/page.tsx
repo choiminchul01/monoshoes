@@ -222,7 +222,7 @@ export default function AdminEventsPage() {
                 .eq("id", event.id);
 
             if (error) throw error;
-            toast.success(event.is_active ? "이벤트가 비활성화되었습니다." : "이벤트가 활성화되었습니다.");
+            toast.success(event.is_active ? "이벤트가 종료 처리되었습니다." : "이벤트가 진행중으로 변경되었습니다.");
             fetchEvents();
         } catch (error: any) {
             console.error("Error toggling active:", error);
@@ -269,7 +269,7 @@ export default function AdminEventsPage() {
                             key={event.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className={`bg-white rounded-xl border overflow-hidden ${!event.is_active ? "opacity-60" : ""}`}
+                            className={`bg-white rounded-xl border overflow-hidden ${!event.is_active ? "opacity-60 grayscale" : ""}`}
                         >
                             {/* Image */}
                             <div className="relative aspect-[3/4] bg-gray-100">
@@ -322,7 +322,7 @@ export default function AdminEventsPage() {
                                             }`}
                                     >
                                         {event.is_active ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                                        {event.is_active ? "활성화" : "비활성화"}
+                                        {event.is_active ? "진행중" : "종료"}
                                     </button>
                                 </div>
 
@@ -486,8 +486,8 @@ export default function AdminEventsPage() {
                                         <div className="flex items-center gap-3">
                                             <Eye className="w-5 h-5 text-[#00704A]" />
                                             <div>
-                                                <p className="font-medium text-gray-900">이벤트 활성화</p>
-                                                <p className="text-xs text-gray-500">이벤트 페이지에 표시됩니다</p>
+                                                <p className="font-medium text-gray-900">이벤트 진행 상태</p>
+                                                <p className="text-xs text-gray-500">진행중 상태일 때만 클릭 가능합니다</p>
                                             </div>
                                         </div>
                                         <input

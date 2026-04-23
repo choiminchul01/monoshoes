@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { MainBanner } from "@/components/home/MainBanner";
-import BrandSlider from "@/components/home/BrandSlider";
+import EventSlider from "@/components/home/EventSlider";
 import { supabase } from "@/lib/supabase";
 import { ProductCardSkeleton } from "@/components/ui/Skeleton";
 import EventPopup from "@/components/home/EventPopup";
@@ -154,56 +154,15 @@ export default function Home() {
   return (
     <>
       <MainBanner />
-      <BrandSlider />
+      <EventSlider />
 
       <div className="container mx-auto px-4 py-12">
-        {/* CELEB'S PICK - 1순위 */}
-        {celebPickItems.length > 0 && (
-          <section className="mb-24">
-            <div className="mb-8 text-center">
-              <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Style Check</p>
-              <h1 className="text-2xl font-medium tracking-tight">CELEB'S PICK</h1>
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16">
-              {loading ? (
-                [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-[3/4]" />)
-              ) : (
-                currentCelebItems.map((product, idx) => {
-                  // 셀럽픽 이미지 인덱스가 지정되어 있으면 해당 이미지 사용, 아니면 첫번째 이미지
-                  const celebImageIndex = product.celeb_pick_image_index ?? 0;
-                  const celebImageUrl = product.images?.[celebImageIndex] || product.images?.[0];
-                  return (
-                    <ProductCard
-                      key={product.id}
-                      id={product.id}
-                      brand={product.brand}
-                      name={product.name}
-                      price={product.price}
-                      imageUrl={celebImageUrl}
-                      aspectRatio="aspect-[3/4]"
-                      index={idx}
-                      discount_percent={product.discount_percent}
-                      is_best={product.is_best}
-                      is_new={product.is_new}
-                      originalPrice={product.original_price}
-                    />
-                  );
-                })
-              )}
-            </div>
-            <SimplePagination
-              currentPage={celebPage}
-              totalPages={celebTotalPages}
-              onPageChange={setCelebPage}
-            />
-          </section>
-        )}
 
         {/* BEST SELLERS - 2순위 */}
         <section className="mb-24">
           <div className="mb-8 text-center">
-            <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Featured</p>
-            <h1 className="text-2xl font-medium tracking-tight">BEST SELLERS</h1>
+            <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Best Seller</p>
+            <h1 className="text-2xl font-medium tracking-tight">베스트</h1>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16">
             {loading ? (
@@ -237,8 +196,8 @@ export default function Home() {
         {/* NEW ARRIVALS - 3순위 */}
         <section className="mb-24">
           <div className="mb-8 text-center">
-            <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Featured</p>
-            <h1 className="text-2xl font-medium tracking-tight">NEW ARRIVALS</h1>
+            <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">New Arrival</p>
+            <h1 className="text-2xl font-medium tracking-tight">신상품</h1>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16">
             {loading ? (

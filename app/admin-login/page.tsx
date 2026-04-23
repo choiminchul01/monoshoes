@@ -61,7 +61,7 @@ export default function AdminLoginPage() {
             draw(context: CanvasRenderingContext2D) {
                 context.beginPath();
                 context.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                context.fillStyle = `rgba(212, 175, 55, ${this.alpha})`; // Essentia Gold (#D4AF37)
+                context.fillStyle = `rgba(255, 255, 255, ${this.alpha})`; // White
                 context.fill();
             }
         }
@@ -160,7 +160,7 @@ export default function AdminLoginPage() {
     };
 
     return (
-        <div className="min-h-screen relative bg-gradient-to-b from-[#001E10] to-[#000000]">
+        <div className="min-h-screen relative bg-gradient-to-b from-[#1a1a1a] to-[#000000]">
             <canvas
                 ref={canvasRef}
                 className="absolute inset-0 pointer-events-none"
@@ -170,10 +170,10 @@ export default function AdminLoginPage() {
             {/* Brand Watermark */}
             <div className="absolute inset-0 flex items-start pt-12 md:pt-0 md:items-center justify-center pointer-events-none z-0 overflow-hidden">
                 <h1
-                    className="text-[13vw] md:text-[13vw] font-bold text-[#D4AF37] opacity-30 select-none whitespace-nowrap tracking-widest"
-                    style={{ fontFamily: 'var(--font-cinzel), serif' }}
+                    className="text-[13vw] md:text-[10vw] font-bold text-[#ffffff] opacity-10 select-none whitespace-nowrap tracking-widest"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
                 >
-                    ESSENTIA
+                    MONO SHOES
                 </h1>
             </div>
 

@@ -2,34 +2,27 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
-const BRANDS = [
-    "ACNE STUDIOS",
-    "ALEXANDER MCQUEEN",
-    "BALENCIAGA",
-    "BOTTEGA VENETA",
-    "BURBERRY",
-    "CELINE",
-    "CHANEL",
-    "CHLOE",
-    "DELVAUX",
-    "DIOR",
-    "FENDI",
-    "GIVENCHY",
-    "GOYARD",
-    "GUCCI",
-    "HERMES",
-    "LOEWE",
-    "LORO PIANA",
-    "LOUIS VUITTON",
-    "MAISON MARGIELA",
-    "MIU MIU",
-    "MONCLER",
-    "PRADA",
-    "SAINT LAURENT",
-    "THOM BROWNE",
-    "TODS",
-    "VALENTINO",
+const WOMEN_CATEGORIES = [
+    { label: "슬링백/뮬", code: "W_SLINGBACK" },
+    { label: "플랫/로퍼", code: "W_FLAT" },
+    { label: "펌프스/힐", code: "W_HEELS" },
+    { label: "샌들/슬리퍼", code: "W_SANDAL" },
+    { label: "스니커즈", code: "W_SNEAKERS" },
+    { label: "부츠/워커", code: "W_BOOTS" },
+    { label: "레인부츠", code: "W_RAIN" },
+];
+
+const MEN_CATEGORIES = [
+    { label: "구두/옥스퍼드", code: "M_OXFORD" },
+    { label: "로퍼/슬립온", code: "M_LOAFER" },
+    { label: "스니커즈", code: "M_SNEAKERS" },
+    { label: "샌들/슬리퍼", code: "M_SANDAL" },
+    { label: "부츠/워커", code: "M_BOOTS" },
+    { label: "캐주얼화", code: "M_CASUAL" },
+    { label: "레인부츠", code: "M_RAIN" },
 ];
 
 interface SidebarProps {
@@ -38,46 +31,126 @@ interface SidebarProps {
 
 export function Sidebar({ onFilterSelect }: SidebarProps) {
     const searchParams = useSearchParams();
-    const selectedBrand = searchParams.get("brand")?.toUpperCase();
     const selectedCategory = searchParams.get("category");
+    const selectedGender = searchParams.get("gender");
 
-    // Ensure brands are sorted alphabetically
-    const sortedBrands = [...BRANDS].sort();
+    // 현재 성별에 따라 기본 탭 결정
+    const defaultGender = selectedGender === "M" ? "M" : "W";
+    const [activeGender, setActiveGender] = useState<"W" | "M">(defaultGender as "W" | "M");
+
+    const [womenOpen, setWomenOpen] = useState(selectedGender === "W" || !selectedGender);
+    const [menOpen, setMenOpen] = useState(selectedGender === "M");
 
     const handleClick = () => {
-        // Close mobile sidebar when filter is selected
-        if (onFilterSelect) {
-            onFilterSelect();
-        }
+        if (onFilterSelect) onFilterSelect();
     };
 
-    return (
-        <aside className="w-full md:w-64 flex-shrink-0">
-            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-4 scrollbar-hide bg-white">
-                <h2 className="mb-6 text-lg font-bold tracking-widest">BRAND</h2>
-                <ul className="space-y-3 text-sm">
-                    {sortedBrands.map((brand) => {
-                        const isSelected = selectedBrand === brand;
-                        const href = selectedCategory
-                            ? `/shop?category=${selectedCategory}&brand=${brand.toLowerCase()}`
-                            : `/shop?brand=${brand.toLowerCase()}`;
+    const currentCategories = activeGender === "W" ? WOMEN_CATEGORIES : MEN_CATEGORIES;
 
+    return (
+        <aside className="w-full md:w-56 flex-shrink-0">
+            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2 scrollbar-hide">
+
+                {/* 전체 보기 */}
+                <Link
+                    href="/shop"
+                    onClick={handleClick}
+                    className={`block text-xs font-bold tracking-widest mb-6 transition-all ${!selectedCategory && !selectedGender ? "text-black" : "text-gray-400 hover:text-black"}`}
+                >
+                    ALL SHOES
+                </Link>
+
+                {/* 성별 탭 스위치 */}
+                <div className="flex gap-1 mb-6 p-1 bg-gray-100 rounded-lg">
+                    <button
+                        onClick={() => setActiveGender("W")}
+                        className={`flex-1 py-2 text-[15px] font-bold tracking-widest rounded-md transition-all ${activeGender === "W" ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-black"}`}
+                    >
+                        WOMEN
+                    </button>
+                    <button
+                        onClick={() => setActiveGender("M")}
+                        className={`flex-1 py-2 text-[15px] font-bold tracking-widest rounded-md transition-all ${activeGender === "M" ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-black"}`}
+                    >
+                        MEN
+                    </button>
+                </div>
+
+                {/* 카테고리 목록 */}
+                <ul className="space-y-1">
+                    {/* 성별 전체 보기 */}
+                    <li>
+                        <Link
+                            href={`/shop?gender=${activeGender}`}
+                            onClick={handleClick}
+                            className={`block py-2 px-3 text-sm font-semibold tracking-wide rounded-lg transition-all ${
+                                selectedGender === activeGender && !selectedCategory
+                                    ? "bg-black text-white"
+                                    : "text-gray-500 hover:bg-gray-50 hover:text-black"
+                            }`}
+                        >
+                            {activeGender === "W" ? "여성 전체" : "남성 전체"}
+                        </Link>
+                    </li>
+                    <li className="pt-1 pb-2">
+                        <div className="h-px bg-gray-100" />
+                    </li>
+                    {currentCategories.map((cat) => {
+                        const isSelected = selectedCategory === cat.code;
                         return (
-                            <li key={brand}>
+                            <li key={cat.code}>
                                 <Link
-                                    href={href}
+                                    href={`/shop?gender=${activeGender}&category=${cat.code}`}
                                     onClick={handleClick}
-                                    className={`block font-serif tracking-wide transition-all ${isSelected
-                                        ? "text-black font-bold"
-                                        : "text-gray-500 hover:text-black hover:font-bold"
-                                        }`}
+                                    className={`block py-2 px-3 text-[14px] tracking-wide rounded-lg transition-all ${
+                                        isSelected
+                                            ? "bg-black text-white font-bold"
+                                            : "text-gray-600 font-medium hover:bg-gray-50 hover:text-black hover:font-bold"
+                                    }`}
                                 >
-                                    {brand}
+                                    {cat.label}
                                 </Link>
                             </li>
                         );
                     })}
                 </ul>
+
+                {/* 필터별 퀵링크 */}
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                    <p className="text-[10px] font-black tracking-[0.3em] text-gray-400 mb-3">FILTER</p>
+                    <ul className="space-y-2">
+                        <li>
+                            <Link
+                                href="/shop?filter=best"
+                                onClick={handleClick}
+                                className="flex items-center py-2 px-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-black rounded-lg transition-all"
+                            >
+                                <span className="bg-[#D4AF37] text-black text-[9px] font-bold px-2 py-0.5 tracking-wider mr-2">BEST</span>
+                                베스트
+                            </Link>
+                        </li>
+                        <li>
+                            <Link
+                                href="/shop?filter=new"
+                                onClick={handleClick}
+                                className="flex items-center py-2 px-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-black rounded-lg transition-all"
+                            >
+                                <span className="bg-black text-white text-[9px] font-bold px-2 py-0.5 tracking-wider mr-2">NEW</span>
+                                신상품
+                            </Link>
+                        </li>
+                        <li>
+                            <Link
+                                href="/shop?filter=sale"
+                                onClick={handleClick}
+                                className="flex items-center py-2 px-3 text-sm text-[#C41E3A] hover:bg-red-50 rounded-lg transition-all font-semibold"
+                            >
+                                <span className="bg-[#C41E3A] text-white text-[9px] font-bold px-2 py-0.5 tracking-wider mr-2">SALE</span>
+                                세일
+                            </Link>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </aside>
     );

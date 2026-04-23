@@ -110,6 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             icon: Users,
             items: [
                 { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
+                { href: '/admin/leads', label: '고객 DB (마케팅)', icon: Users, badge: 0, permission: 'customers' as const },
                 { href: '/admin/coupons', label: '쿠폰 관리', icon: Ticket, badge: 0, permission: 'coupons' as const },
                 { href: '/admin/events', label: '소식 관리', icon: Megaphone, badge: 0, permission: 'board' as const },
                 { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
@@ -144,7 +145,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex h-screen bg-gray-50 flex-col md:flex-row">
                 {/* Mobile Top Bar */}
                 <header className="md:hidden bg-white border-b border-gray-200 p-4 flex justify-between items-center sticky top-0 z-50">
-                    <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>ESSENTIA ADMIN</h1>
+                    <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>MONO SHOES ADMIN</h1>
                     <div className="flex items-center gap-2">
                         <button onClick={() => setShowShopConfirm(true)} className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors">
                             <Store className="w-4 h-4" />
@@ -187,7 +188,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Desktop Sidebar */}
                 <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col h-full">
                     <div className="p-6 border-b border-gray-200 flex-shrink-0">
-                        <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>ESSENTIA ADMIN</h1>
+                        <h1 className="text-xl font-black text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>MONO SHOES</h1>
                         <p className="text-sm text-gray-500 mt-1">관리자 패널</p>
                     </div>
 

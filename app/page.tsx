@@ -4,11 +4,11 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ===============================================
-// ESSENTIA 프리미엄 랜딩 페이지
+// MONO SHOES 프리미엄 랜딩 페이지
 // SVG 스트로크 라인 드로잉 - 양쪽 끝에서 만나서 멈춤
 // ===============================================
 
-export default function EssentiaLandingPage() {
+export default function MonoShoesLandingPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -51,7 +51,7 @@ export default function EssentiaLandingPage() {
             draw(context: CanvasRenderingContext2D) {
                 context.beginPath();
                 context.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                context.fillStyle = `rgba(212, 175, 55, ${this.alpha})`;
+                context.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
                 context.fill();
             }
         }
@@ -211,7 +211,7 @@ export default function EssentiaLandingPage() {
                 initial={{ opacity: 0 }}
                 animate={{
                     opacity: 1,
-                    background: isTransitioning ? '#ffffff' : 'linear-gradient(to bottom, #0a1a12, #000000)'
+                    background: isTransitioning ? '#ffffff' : 'linear-gradient(to bottom, #1a1a1a, #000000)'
                 }}
                 transition={{ duration: 1 }}
             />
@@ -266,7 +266,7 @@ export default function EssentiaLandingPage() {
                                         strokeWidth: 1.5,
                                     }}
                                 >
-                                    ESSENTIA
+                                    MONO SHOES
                                 </text>
 
                                 {/* 스트로크 2: 오른쪽에서 출발 */}
@@ -286,7 +286,7 @@ export default function EssentiaLandingPage() {
                                         strokeWidth: 1.5,
                                     }}
                                 >
-                                    ESSENTIA
+                                    MONO SHOES
                                 </text>
 
                                 {/* 채우기 */}
@@ -305,7 +305,7 @@ export default function EssentiaLandingPage() {
                                         opacity: 0,
                                     }}
                                 >
-                                    ESSENTIA
+                                    MONO SHOES
                                 </text>
                             </svg>
                         </motion.div>

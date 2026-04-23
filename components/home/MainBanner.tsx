@@ -9,26 +9,26 @@ import { fetchBannersAction, type MainBanner as MainBannerType } from "@/app/adm
 const FALLBACK_SLIDES = [
     {
         id: 'fallback-1',
-        imageUrl: "https://placehold.co/1920x800/png?text=ESSENTIA+COLLECTION+1",
+        imageUrl: "https://placehold.co/1920x800/111111/ffffff?text=MONO+SHOES",
         link: "",
-        title: "NEW SEASON ARRIVALS",
-        subtitle: "Discover the latest luxury trends.",
+        title: "",
+        subtitle: "",
         order: 0
     },
     {
         id: 'fallback-2',
-        imageUrl: "https://placehold.co/1920x800/png?text=ESSENTIA+COLLECTION+2",
+        imageUrl: "https://placehold.co/1920x800/222222/ffffff?text=PREMIUM+FOOTWEAR",
         link: "",
-        title: "TIMELESS ELEGANCE",
-        subtitle: "Classic pieces for your wardrobe.",
+        title: "",
+        subtitle: "",
         order: 1
     },
     {
         id: 'fallback-3',
-        imageUrl: "https://placehold.co/1920x800/png?text=ESSENTIA+COLLECTION+3",
+        imageUrl: "https://placehold.co/1920x800/333333/ffffff?text=NEW+ARRIVALS",
         link: "",
-        title: "EXCLUSIVE OFFERS",
-        subtitle: "Limited time special prices.",
+        title: "",
+        subtitle: "",
         order: 2
     },
 ];
