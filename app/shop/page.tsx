@@ -1,15 +1,49 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import Image from "next/image";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { ProductCardSkeleton } from "@/components/ui/Skeleton";
 import { Sidebar } from "@/components/shop/Sidebar";
-import { Crown, Sparkles, Star, Filter, X, Search } from "lucide-react";
+import { Filter, X, Search } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { fetchBrandAliasesAction, type BrandAliases } from "@/lib/brandAliases";
 import { findMatchingBrands } from "@/lib/brandAliasUtils";
+
+// 카테고리별 배너 설정
+const BANNER_CONFIG: Record<string, { img: string; subtitle: string; title: string; desc: string }> = {
+    best:  { img: "/banners/banner_best.png",  subtitle: "Best Seller",    title: "BEST",  desc: "고객이 가장 많이 선택한 인기 아이템" },
+    new:   { img: "/banners/banner_new.png",   subtitle: "New Arrival",    title: "NEW",   desc: "지금 막 도착한 최신 컬렉션" },
+    sale:  { img: "/banners/banner_sale.png",  subtitle: "Special Price",  title: "SALE",  desc: "한정 수량 특가 혜택을 누려보세요" },
+    shop:  { img: "/banners/banner_shop.png",  subtitle: "All Collection", title: "SHOP",  desc: "모든 컬렉션을 한 곳에서" },
+};
+
+function CategoryBanner({ filterKey }: { filterKey: string }) {
+    const cfg = BANNER_CONFIG[filterKey] ?? BANNER_CONFIG.shop;
+    return (
+        <div className="relative w-full mb-10 overflow-hidden rounded-lg" style={{ aspectRatio: '16/9' }}>
+            <Image
+                src={cfg.img}
+                alt={cfg.title}
+                fill
+                className="object-cover"
+                priority
+            />
+            {/* 오버레이 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+            <div className="absolute inset-0 flex flex-col justify-start items-start p-8 md:p-12 pt-10 md:pt-16">
+                <p className="text-[#ff6b6b] text-[10px] tracking-[0.4em] font-black uppercase mb-2">{cfg.subtitle}</p>
+                <h2 className="text-white text-4xl md:text-5xl font-black tracking-tight mb-4"
+                    style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                    {cfg.title}
+                </h2>
+                <p className="text-white/70 text-sm font-light tracking-wide max-w-[80%]">{cfg.desc}</p>
+            </div>
+        </div>
+    );
+}
 
 type Product = {
     id: string;
@@ -40,13 +74,18 @@ function ShopContent() {
 
     const [products, setProducts] = useState<Product[]>([]);
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-    const [bestSellersCount, setBestSellersCount] = useState(4);
-    const [newArrivalsCount, setNewArrivalsCount] = useState(4);
+    const [bestSellersCount, setBestSellersCount] = useState(8);
     const [celebPickCount, setCelebPickCount] = useState(4);
     const [inputValue, setInputValue] = useState(urlSearchTerm || ""); // 입력값 (실시간)
     const [activeSearchTerm, setActiveSearchTerm] = useState(urlSearchTerm || ""); // 실제 검색어 (제출 시)
     const [isLoading, setIsLoading] = useState(true);
     const [brandAliases, setBrandAliases] = useState<BrandAliases>({});
+    const [sortBy, setSortBy] = useState("newest"); // newest, price_asc, price_desc
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
         if (urlSearchTerm) {
@@ -85,8 +124,7 @@ function ShopContent() {
 
     // Reset counts when filters change
     useEffect(() => {
-        setBestSellersCount(4);
-        setNewArrivalsCount(4);
+        setBestSellersCount(8);
         setCelebPickCount(4);
     }, [selectedCategory, selectedBrand, activeSearchTerm]);
 
@@ -126,27 +164,19 @@ function ShopContent() {
 
     const allFilteredProducts = filterProducts(products);
 
-    // Split into New Arrivals and Best Sellers
-    // Logic updated to ensure both sections are populated regardless of product dates
-    const sortedByDate = [...allFilteredProducts].sort((a, b) =>
+    const finalFilteredProducts = [...allFilteredProducts].sort((a, b) => {
+        if (sortBy === "price_asc") return a.price - b.price;
+        if (sortBy === "price_desc") return b.price - a.price;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
+    // MD PICK: is_celeb_pick이 true인 상품
+    const MD_PICKS = allFilteredProducts.filter(p => p.is_celeb_pick);
+
+    // ALL SHOES: 전체 필터링된 상품
+    const ALL_PRODUCTS = [...allFilteredProducts].sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-
-    // New Arrivals: Top 4 newest products
-    let NEW_ARRIVALS = sortedByDate.slice(0, 4);
-
-    // Best Sellers: The rest, or if not enough products, just show all/random
-    // For this demo, we'll use the remaining products, or if empty, reuse some products to fill the UI
-    let BEST_SELLERS = sortedByDate.slice(4);
-
-    if (BEST_SELLERS.length === 0 && sortedByDate.length > 0) {
-        // If we have few products (<=4), show them in both or just split them differently
-        // Let's just duplicate them for visual fullness if the user wants to see both sections
-        BEST_SELLERS = sortedByDate;
-    }
-
-    // CELEB'S PICK: is_celeb_pick이 true인 상품
-    const CELEB_PICKS = allFilteredProducts.filter(p => p.is_celeb_pick);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -168,13 +198,34 @@ function ShopContent() {
         setActiveSearchTerm("");
     };
 
+    const isSpecialFilterView = ["best", "new", "sale"].includes(selectedFilter || "");
+
+    if (!isMounted) return null; // Hydration mismatch 방지
+
+    const sortUI = (
+        <div className="flex justify-between items-end mb-6">
+            <div className="text-sm text-gray-500 font-light">
+                총 <span className="font-bold text-black">{finalFilteredProducts.length}</span>개의 상품
+            </div>
+            <div className="flex items-center gap-3 text-[13px] text-gray-400">
+                <button onClick={() => setSortBy("newest")} className={`transition-colors hover:text-black ${sortBy === "newest" ? "text-black font-medium" : ""}`}>최신순</button>
+                <div className="w-[1px] h-3 bg-gray-200"></div>
+                <button onClick={() => setSortBy("price_asc")} className={`transition-colors hover:text-black ${sortBy === "price_asc" ? "text-black font-medium" : ""}`}>가격낮은순</button>
+                <div className="w-[1px] h-3 bg-gray-200"></div>
+                <button onClick={() => setSortBy("price_desc")} className={`transition-colors hover:text-black ${sortBy === "price_desc" ? "text-black font-medium" : ""}`}>가격높은순</button>
+            </div>
+        </div>
+    );
+
     return (
         <div className="container mx-auto px-4 py-12">
             <div className="flex flex-col md:flex-row gap-12">
-                {/* 데스크탑 사이드바 — 항상 표시 */}
-                <div className="hidden md:block">
-                    <Sidebar onFilterSelect={() => setIsMobileFilterOpen(false)} />
-                </div>
+                {/* 데스크탑 사이드바 — 특가/베스트/신상품 페이지에서는 숨김 */}
+                {!isSpecialFilterView && (
+                    <div className="hidden md:block">
+                        <Sidebar onFilterSelect={() => setIsMobileFilterOpen(false)} />
+                    </div>
+                )}
 
                 {/* 모바일 필터 오버레이 */}
                 <AnimatePresence>
@@ -209,13 +260,15 @@ function ShopContent() {
                 <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-4 mb-8">
                         {/* Mobile Filter Button */}
-                        <button
-                            onClick={() => setIsMobileFilterOpen(true)}
-                            className="md:hidden flex items-center gap-2 px-4 py-2 border border-black rounded-full text-sm font-medium hover:bg-black hover:text-white transition-colors"
-                        >
-                            <Filter className="w-4 h-4" />
-                            FILTERS
-                        </button>
+                        {!isSpecialFilterView && (
+                            <button
+                                onClick={() => setIsMobileFilterOpen(true)}
+                                className="md:hidden flex items-center gap-2 px-4 py-2 border border-black rounded-full text-sm font-medium hover:bg-black hover:text-white transition-colors"
+                            >
+                                <Filter className="w-4 h-4" />
+                                FILTERS
+                            </button>
+                        )}
 
                         {(selectedCategory || selectedBrand) && (
                             <div className="flex gap-2">
@@ -233,50 +286,125 @@ function ShopContent() {
                         )}
                     </div>
 
+                    {/* 카테고리 배너 (검색 중에는 숨김) */}
+                    {!activeSearchTerm && (
+                        <CategoryBanner filterKey={selectedFilter ?? (selectedGender || selectedCategory ? 'shop' : 'shop')} />
+                    )}
 
                     {activeSearchTerm ? (
                         // Search Results View
                         <>
-                            <h1 className="mb-8 text-lg font-light tracking-tight flex items-center gap-2">
-                                SEARCH RESULTS
-                                <Search className="w-5 h-5 text-gray-400" />
-                                <span className="text-sm text-gray-400">(&quot;{activeSearchTerm}&quot;)</span>
-                            </h1>
-
-                            {allFilteredProducts.length > 0 ? (
+                            <div className="mb-16 text-center">
+                                <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3 flex items-center justify-center gap-2">
+                                    Search Results
+                                    <Search className="w-3 h-3 text-[#C41E3A]" />
+                                </p>
+                                <div className="inline-block">
+                                    <h1 className="text-3xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                                        &quot;{activeSearchTerm}&quot;
+                                    </h1>
+                                </div>
+                            </div>
+                            {finalFilteredProducts.length > 0 ? (
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
-                                    {allFilteredProducts.map((product) => (
-                                        <ProductCard
-                                            key={product.id}
-                                            id={product.id}
-                                            brand={product.brand}
-                                            name={product.name}
-                                            price={product.price}
-                                            imageUrl={product.images?.[0]}
-                                            aspectRatio="aspect-[3/4]"
-                                            discount_percent={product.discount_percent}
-                                            is_best={product.is_best}
-                                            is_new={product.is_new}
-                                            originalPrice={product.original_price}
-                                        />
+                                    {finalFilteredProducts.map((product) => (
+                                        <ProductCard key={product.id} id={product.id} brand={product.brand} name={product.name} price={product.price} imageUrl={product.images?.[0]} aspectRatio="aspect-[3/4]" discount_percent={product.discount_percent} is_best={product.is_best} is_new={product.is_new} originalPrice={product.original_price} />
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-20 text-gray-500 font-light">
-                                    No products found matching &quot;{activeSearchTerm}&quot;.
+                                <div className="text-center py-20 text-gray-500 font-light">No products found matching &quot;{activeSearchTerm}&quot;.</div>
+                            )}
+                        </>
+                    ) : selectedFilter === 'best' ? (
+                        // BEST 전용 뷰
+                        <>
+                            <div className="mb-16 text-center">
+                                <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">Best Seller</p>
+                                <div className="inline-block">
+                                    <h2 className="text-3xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>BEST</h2>
+                                </div>
+                            </div>
+                            {sortUI}
+                            {finalFilteredProducts.length > 0 ? (
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
+                                    {isLoading ? [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-[3/4]" />) :
+                                        finalFilteredProducts.map((product, idx) => (
+                                            <ProductCard key={product.id} id={product.id} brand={product.brand} name={product.name} price={product.price} imageUrl={product.images?.[0]} aspectRatio="aspect-[3/4]" index={idx} discount_percent={product.discount_percent} is_best={product.is_best} is_new={product.is_new} originalPrice={product.original_price} />
+                                        ))
+                                    }
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 text-gray-400 font-light">
+                                    <p className="text-5xl mb-4">🏆</p>
+                                    <p>베스트 상품이 없습니다.</p>
+                                    <p className="text-sm mt-2">관리자 페이지에서 상품에 베스트 표시를 설정해주세요.</p>
+                                </div>
+                            )}
+                        </>
+                    ) : selectedFilter === 'new' ? (
+                        // NEW 전용 뷰
+                        <>
+                            <div className="mb-16 text-center">
+                                <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">New Arrival</p>
+                                <div className="inline-block">
+                                    <h2 className="text-3xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>NEW</h2>
+                                </div>
+                            </div>
+                            {sortUI}
+                            {finalFilteredProducts.length > 0 ? (
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
+                                    {isLoading ? [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-[3/4]" />) :
+                                        finalFilteredProducts.map((product, idx) => (
+                                            <ProductCard key={product.id} id={product.id} brand={product.brand} name={product.name} price={product.price} imageUrl={product.images?.[0]} aspectRatio="aspect-[3/4]" index={idx} discount_percent={product.discount_percent} is_best={product.is_best} is_new={product.is_new} originalPrice={product.original_price} />
+                                        ))
+                                    }
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 text-gray-400 font-light">
+                                    <p className="text-5xl mb-4">✨</p>
+                                    <p>신상품이 없습니다.</p>
+                                    <p className="text-sm mt-2">관리자 페이지에서 상품에 신상품 표시를 설정해주세요.</p>
+                                </div>
+                            )}
+                        </>
+                    ) : selectedFilter === 'sale' ? (
+                        // SALE 전용 뷰
+                        <>
+                            <div className="mb-16 text-center">
+                                <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">Special Price</p>
+                                <div className="inline-block">
+                                    <h2 className="text-3xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>SALE</h2>
+                                </div>
+                            </div>
+                            {sortUI}
+                            {finalFilteredProducts.length > 0 ? (
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
+                                    {isLoading ? [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-[3/4]" />) :
+                                        finalFilteredProducts.map((product, idx) => (
+                                            <ProductCard key={product.id} id={product.id} brand={product.brand} name={product.name} price={product.price} imageUrl={product.images?.[0]} aspectRatio="aspect-[3/4]" index={idx} discount_percent={product.discount_percent} is_best={product.is_best} is_new={product.is_new} originalPrice={product.original_price} />
+                                        ))
+                                    }
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 text-gray-400 font-light">
+                                    <p className="text-5xl mb-4">🏷️</p>
+                                    <p>특가 상품이 없습니다.</p>
+                                    <p className="text-sm mt-2">관리자 페이지에서 상품에 할인율을 설정해주세요.</p>
                                 </div>
                             )}
                         </>
                     ) : (
                         // Default View (Best Sellers & New Arrivals)
                         <>
-                            {/* CELEB'S PICK - 1순위 */}
-                            {CELEB_PICKS.length > 0 && (
+                            {/* MD PICK - 1순위 */}
+                            {MD_PICKS.length > 0 && (
                                 <>
-                                    <h2 className="mb-8 text-lg font-light tracking-tight flex items-center gap-2">
-                                        CELEB'S PICK
-                                        <Star className="w-5 h-5 text-purple-600" fill="currentColor" />
-                                    </h2>
+                                    <div className="mb-16 text-center mt-12">
+                                        <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">MD's Selection</p>
+                                        <div className="inline-block">
+                                            <h2 className="text-3xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>MD&apos;S PICK</h2>
+                                        </div>
+                                    </div>
 
                                     <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
                                         {isLoading ? (
@@ -286,7 +414,7 @@ function ShopContent() {
                                             ))
                                         ) : (
                                             // 실제 상품 표시
-                                            CELEB_PICKS.slice(0, celebPickCount).map((product, idx) => {
+                                            MD_PICKS.slice(0, celebPickCount).map((product, idx) => {
                                                 const celebImageIndex = product.celeb_pick_image_index ?? 0;
                                                 const celebImageUrl = product.images?.[celebImageIndex] || product.images?.[0];
                                                 return (
@@ -309,10 +437,10 @@ function ShopContent() {
                                         )}
                                     </div>
 
-                                    {celebPickCount < CELEB_PICKS.length && (
+                                    {celebPickCount < MD_PICKS.length && (
                                         <div className="flex justify-center mb-16">
                                             <button
-                                                onClick={() => setCelebPickCount((prev) => Math.min(prev + 4, CELEB_PICKS.length))}
+                                                onClick={() => setCelebPickCount((prev) => Math.min(prev + 4, MD_PICKS.length))}
                                                 className="px-5 py-1.5 bg-transparent border border-black text-black text-xs font-medium hover:bg-black hover:text-white transition-colors rounded-full tracking-widest uppercase"
                                             >
                                                 Load More
@@ -322,17 +450,22 @@ function ShopContent() {
                                 </>
                             )}
 
-                            {BEST_SELLERS.length > 0 && (
+                            {ALL_PRODUCTS.length > 0 && (
                                 <>
-                                    <h1 className="mb-8 text-lg font-light tracking-tight flex items-center gap-2">
-                                        {selectedFilter === 'best' ? '베스트 상품' :
-                                         selectedFilter === 'new' ? '신상품' :
-                                         selectedFilter === 'sale' ? '세일 상품' :
-                                         selectedGender === 'W' ? '여성 신발' :
-                                         selectedGender === 'M' ? '남성 신발' :
-                                         'ALL SHOES'}
-                                        <Crown className="w-5 h-5 text-yellow-600" fill="currentColor" />
-                                    </h1>
+                                    <div className="mb-16 text-center mt-20">
+                                        <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">
+                                            {selectedGender === 'W' ? 'Women Selection' : 
+                                             selectedGender === 'M' ? 'Men Selection' : 
+                                             'All Collection'}
+                                        </p>
+                                        <div className="inline-block">
+                                            <h2 className="text-3xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                                                {selectedGender === 'W' ? 'WOMEN SHOES' :
+                                                 selectedGender === 'M' ? 'MEN SHOES' :
+                                                 'ALL SHOES'}
+                                            </h2>
+                                        </div>
+                                    </div>
 
                                     <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
                                         {isLoading ? (
@@ -342,7 +475,7 @@ function ShopContent() {
                                             ))
                                         ) : (
                                             // 실제 상품 표시
-                                            BEST_SELLERS.slice(0, bestSellersCount).map((product, idx) => (
+                                            ALL_PRODUCTS.slice(0, bestSellersCount).map((product, idx) => (
                                                 <ProductCard
                                                     key={product.id}
                                                     id={product.id}
@@ -361,10 +494,10 @@ function ShopContent() {
                                         )}
                                     </div>
 
-                                    {bestSellersCount < BEST_SELLERS.length && (
+                                    {bestSellersCount < ALL_PRODUCTS.length && (
                                         <div className="flex justify-center mb-16">
                                             <button
-                                                onClick={() => setBestSellersCount((prev) => Math.min(prev + 4, BEST_SELLERS.length))}
+                                                onClick={() => setBestSellersCount((prev) => Math.min(prev + 8, ALL_PRODUCTS.length))}
                                                 className="px-5 py-1.5 bg-transparent border border-black text-black text-xs font-medium hover:bg-black hover:text-white transition-colors rounded-full tracking-widest uppercase"
                                             >
                                                 Load More
@@ -374,54 +507,7 @@ function ShopContent() {
                                 </>
                             )}
 
-                            {NEW_ARRIVALS.length > 0 && (
-                                <>
-                                    <h2 className="mb-8 text-lg font-light tracking-tight flex items-center gap-2">
-                                        NEW ARRIVALS
-                                        <Sparkles className="w-5 h-5 text-yellow-600" fill="currentColor" />
-                                    </h2>
-
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-16 mb-12">
-                                        {isLoading ? (
-                                            // 로딩 중 스켈레톤 표시
-                                            [...Array(4)].map((_, index) => (
-                                                <ProductCardSkeleton key={index} aspectRatio="aspect-[3/4]" />
-                                            ))
-                                        ) : (
-                                            // 실제 상품 표시
-                                            NEW_ARRIVALS.slice(0, newArrivalsCount).map((product, idx) => (
-                                                <ProductCard
-                                                    key={product.id}
-                                                    id={product.id}
-                                                    brand={product.brand}
-                                                    name={product.name}
-                                                    price={product.price}
-                                                    imageUrl={product.images?.[0]}
-                                                    aspectRatio="aspect-[3/4]"
-                                                    index={idx}
-                                                    discount_percent={product.discount_percent}
-                                                    is_best={product.is_best}
-                                                    is_new={product.is_new}
-                                                    originalPrice={product.original_price}
-                                                />
-                                            ))
-                                        )}
-                                    </div>
-
-                                    {newArrivalsCount < NEW_ARRIVALS.length && (
-                                        <div className="flex justify-center">
-                                            <button
-                                                onClick={() => setNewArrivalsCount((prev) => Math.min(prev + 4, NEW_ARRIVALS.length))}
-                                                className="px-5 py-1.5 bg-transparent border border-black text-black text-xs font-medium hover:bg-black hover:text-white transition-colors rounded-full tracking-widest uppercase"
-                                            >
-                                                Load More
-                                            </button>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
-                            {BEST_SELLERS.length === 0 && NEW_ARRIVALS.length === 0 && CELEB_PICKS.length === 0 && (
+                            {ALL_PRODUCTS.length === 0 && MD_PICKS.length === 0 && (
                                 <div className="text-center py-20 text-gray-500 font-light">
                                     No products found.
                                 </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Edit, X, Upload, Check, Calendar, Eye, EyeOff, Megaphone } from "lucide-react";
+import { Plus, Trash2, Edit, X, Upload, Check, Calendar, Eye, EyeOff, Megaphone, ExternalLink } from "lucide-react";
 import { supabaseAdmin, supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { useToast } from "@/context/ToastContext";
@@ -14,7 +14,7 @@ type Event = {
     image_url: string;
     is_popup: boolean;
     is_active: boolean;
-    event_date: string;
+    start_date: string;
     created_at: string;
 };
 
@@ -28,7 +28,7 @@ export default function AdminEventsPage() {
         title: "",
         description: "",
         image_url: "",
-        event_date: new Date().toISOString().split('T')[0],
+        start_date: new Date().toISOString().split('T')[0],
         is_popup: false,
         is_active: true,
     });
@@ -45,7 +45,7 @@ export default function AdminEventsPage() {
             const { data, error } = await supabase
                 .from("events")
                 .select("*")
-                .order("event_date", { ascending: false });
+                .order("start_date", { ascending: false });
 
             if (error) throw error;
             setEvents(data || []);
@@ -64,7 +64,7 @@ export default function AdminEventsPage() {
                 title: event.title,
                 description: event.description || "",
                 image_url: event.image_url || "",
-                event_date: event.event_date || new Date().toISOString().split('T')[0],
+                start_date: event.start_date || new Date().toISOString().split('T')[0],
                 is_popup: event.is_popup,
                 is_active: event.is_active,
             });
@@ -75,7 +75,7 @@ export default function AdminEventsPage() {
                 title: "",
                 description: "",
                 image_url: "",
-                event_date: new Date().toISOString().split('T')[0],
+                start_date: new Date().toISOString().split('T')[0],
                 is_popup: false,
                 is_active: true,
             });
@@ -146,7 +146,7 @@ export default function AdminEventsPage() {
                 title: formData.title,
                 description: formData.description,
                 image_url: imageUrl,
-                event_date: formData.event_date,
+                start_date: formData.start_date,
                 is_popup: formData.is_popup,
                 is_active: formData.is_active,
             };
@@ -242,7 +242,22 @@ export default function AdminEventsPage() {
         <div>
             {/* Header */}
             <div className="mb-4">
-                <h1 className="text-3xl font-bold">소식 관리</h1>
+                <h1 className="text-3xl font-bold">이벤트/팝업 관리</h1>
+                <div className="mt-3 flex flex-wrap gap-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-500 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg">
+                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                        홈페이지 이벤트 슬라이더와 실시간 연동
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 bg-red-50 border border-red-100 px-3 py-2 rounded-lg">
+                        <Megaphone className="w-3 h-3 text-red-400" />
+                        팝업 ON 설정 시 홈페이지 방문자에게 팝업 노출
+                    </div>
+                    <a href="/event" target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-sm text-gray-500 bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <ExternalLink className="w-3 h-3" />
+                        이벤트 페이지 미리보기
+                    </a>
+                </div>
             </div>
 
             {/* Action Buttons Row */}
@@ -252,7 +267,7 @@ export default function AdminEventsPage() {
                     className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-[#00704A] text-white rounded-lg hover:bg-[#005A3C] transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    소식 등록
+                    이벤트 등록
                 </button>
             </div>
 
@@ -328,6 +343,15 @@ export default function AdminEventsPage() {
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-2">
+                                    <a
+                                        href="/event"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-xs font-medium"
+                                        title="이벤트 페이지에서 확인"
+                                    >
+                                        <ExternalLink className="w-3 h-3" />
+                                    </a>
                                     <button
                                         onClick={() => openModal(event)}
                                         className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-xs font-medium"
@@ -368,7 +392,7 @@ export default function AdminEventsPage() {
                             {/* Modal Header */}
                             <div className="admin-modal-header">
                                 <h2>
-                                    {editingEvent ? "소식 수정" : "소식 등록"}
+                                    {editingEvent ? "이벤트 수정" : "이벤트 등록"}
                                 </h2>
                                 <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
                                     <X className="w-5 h-5" />
@@ -409,12 +433,12 @@ export default function AdminEventsPage() {
                                 {/* Event Date */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        소식 날짜 <span className="text-red-500">*</span>
+                                        이벤트 날짜 <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="date"
-                                        value={formData.event_date}
-                                        onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+                                        value={formData.start_date}
+                                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                                         max="9999-12-31"
                                         min="2000-01-01"
                                         className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent outline-none"

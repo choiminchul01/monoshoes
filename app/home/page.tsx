@@ -83,8 +83,8 @@ export default function Home() {
 
   // 페이지네이션 상태 (각 섹션별)
   const [bestPage, setBestPage] = useState(1);
-  const [celebPage, setCelebPage] = useState(1);
   const [newPage, setNewPage] = useState(1);
+  const [salePage, setSalePage] = useState(1);
 
   // 페이지당 아이템 수 (PC: 8개, 모바일: 4개)
   const [itemsPerPage, setItemsPerPage] = useState(8);
@@ -133,23 +133,21 @@ export default function Home() {
     ? products.filter(p => p.is_best)
     : products.slice(0, 10);
 
-  // CELEB'S PICK: is_celeb_pick이 true인 상품
-  const celebPickItems = products.filter(p => p.is_celeb_pick);
-
   // NEW ARRIVALS: 최근 90일 이내 등록된 상품 (created_at 기준)
-  const recommendedItems = products.filter(p =>
-    new Date(p.created_at) >= ninetyDaysAgo
-  );
+  const recommendedItems = products.filter(p => new Date(p.created_at) >= ninetyDaysAgo);
+
+  // SPECIAL PRICE: discount_percent > 0 인 상품
+  const saleItems = products.filter(p => p.discount_percent && p.discount_percent > 0);
 
   // 페이지네이션 계산
   const bestTotalPages = Math.ceil(weeklyBestItems.length / itemsPerPage);
-  const celebTotalPages = Math.ceil(celebPickItems.length / itemsPerPage);
   const newTotalPages = Math.ceil(recommendedItems.length / itemsPerPage);
+  const saleTotalPages = Math.ceil(saleItems.length / itemsPerPage);
 
   // 현재 페이지 아이템
   const currentBestItems = weeklyBestItems.slice((bestPage - 1) * itemsPerPage, bestPage * itemsPerPage);
-  const currentCelebItems = celebPickItems.slice((celebPage - 1) * itemsPerPage, celebPage * itemsPerPage);
   const currentNewItems = recommendedItems.slice((newPage - 1) * itemsPerPage, newPage * itemsPerPage);
+  const currentSaleItems = saleItems.slice((salePage - 1) * itemsPerPage, salePage * itemsPerPage);
 
   return (
     <>
@@ -163,10 +161,9 @@ export default function Home() {
           <div className="mb-16 text-center">
             <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">Best Seller</p>
             <div className="inline-block">
-              <h2 className="text-3xl font-black tracking-tight text-gray-900 mb-2" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+              <h2 className="text-3xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
                 BEST
               </h2>
-              <div className="w-full h-[2px] bg-black mx-auto"></div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16">
@@ -203,10 +200,9 @@ export default function Home() {
           <div className="mb-16 text-center">
             <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">New Arrival</p>
             <div className="inline-block">
-              <h2 className="text-3xl font-black tracking-tight text-gray-900 mb-2" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+              <h2 className="text-3xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
                 NEW
               </h2>
-              <div className="w-full h-[2px] bg-black mx-auto"></div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16">
@@ -237,6 +233,47 @@ export default function Home() {
             onPageChange={setNewPage}
           />
         </section>
+
+        {/* SPECIAL PRICE - 4순위 */}
+        {saleItems.length > 0 && (
+          <section className="mb-32">
+            <div className="mb-16 text-center">
+              <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">Special Price</p>
+              <div className="inline-block">
+                <h2 className="text-3xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                  SALE
+                </h2>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16">
+              {loading ? (
+                [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} aspectRatio="aspect-[3/4]" />)
+              ) : (
+                currentSaleItems.map((product, idx) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    brand={product.brand}
+                    name={product.name}
+                    price={product.price}
+                    imageUrl={product.images?.[0]}
+                    aspectRatio="aspect-[3/4]"
+                    index={idx}
+                    discount_percent={product.discount_percent}
+                    is_best={product.is_best}
+                    is_new={product.is_new}
+                    originalPrice={product.original_price}
+                  />
+                ))
+              )}
+            </div>
+            <SimplePagination
+              currentPage={salePage}
+              totalPages={saleTotalPages}
+              onPageChange={setSalePage}
+            />
+          </section>
+        )}
       </div>
       <EventPopup />
     </>

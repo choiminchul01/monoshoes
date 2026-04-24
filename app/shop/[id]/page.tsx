@@ -39,6 +39,31 @@ type Product = {
     created_at: string;
 };
 
+const expandSizes = (sizes: string[]) => {
+    const expanded = new Set<string>();
+    sizes.forEach(size => {
+        const strSize = String(size).trim();
+        if (strSize.includes('~') || strSize.includes('-')) {
+            const parts = strSize.split(/[-~]/).map(s => parseInt(s.replace(/[^0-9]/g, ''), 10));
+            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                let [start, end] = parts;
+                if (start > end) {
+                    const temp = start;
+                    start = end;
+                    end = temp;
+                }
+                for (let i = start; i <= end; i += 5) {
+                    expanded.add(i.toString());
+                }
+            } else {
+                expanded.add(strSize);
+            }
+        } else {
+            expanded.add(strSize);
+        }
+    });
+    return Array.from(expanded);
+};
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const [product, setProduct] = useState<Product | null>(null);
@@ -109,6 +134,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 }
 
                 const foundProduct = productData as Product;
+
+                // 사이즈 배열 자동 확장 (예: "225~255" -> ["225", "230", "235", ...])
+                if (foundProduct.details?.sizes && foundProduct.details.sizes.length > 0) {
+                    foundProduct.details.sizes = expandSizes(foundProduct.details.sizes);
+                }
+
                 setProduct(foundProduct);
                 setProductId(foundProduct.id);
 

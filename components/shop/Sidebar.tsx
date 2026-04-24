@@ -114,43 +114,6 @@ export function Sidebar({ onFilterSelect }: SidebarProps) {
                         );
                     })}
                 </ul>
-
-                {/* 필터별 퀵링크 */}
-                <div className="mt-8 pt-6 border-t border-gray-100">
-                    <p className="text-[10px] font-black tracking-[0.3em] text-gray-400 mb-3">FILTER</p>
-                    <ul className="space-y-2">
-                        <li>
-                            <Link
-                                href="/shop?filter=best"
-                                onClick={handleClick}
-                                className="flex items-center py-2 px-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-black rounded-lg transition-all"
-                            >
-                                <span className="bg-[#D4AF37] text-black text-[9px] font-bold px-2 py-0.5 tracking-wider mr-2">BEST</span>
-                                베스트
-                            </Link>
-                        </li>
-                        <li>
-                            <Link
-                                href="/shop?filter=new"
-                                onClick={handleClick}
-                                className="flex items-center py-2 px-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-black rounded-lg transition-all"
-                            >
-                                <span className="bg-black text-white text-[9px] font-bold px-2 py-0.5 tracking-wider mr-2">NEW</span>
-                                신상품
-                            </Link>
-                        </li>
-                        <li>
-                            <Link
-                                href="/shop?filter=sale"
-                                onClick={handleClick}
-                                className="flex items-center py-2 px-3 text-sm text-[#C41E3A] hover:bg-red-50 rounded-lg transition-all font-semibold"
-                            >
-                                <span className="bg-[#C41E3A] text-white text-[9px] font-bold px-2 py-0.5 tracking-wider mr-2">SALE</span>
-                                세일
-                            </Link>
-                        </li>
-                    </ul>
-                </div>
             </div>
         </aside>
     );

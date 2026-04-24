@@ -8,6 +8,8 @@ import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
 import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import { fetchBrandAliasesAction, saveBrandAliasesAction, type BrandAliases } from "@/lib/brandAliases";
 
 type Product = {
@@ -54,9 +56,12 @@ type BulkProductData = {
     sizes: string;
     features: string;
     description: string;
-    images: string[]; // 메인 이미지 URL (이미지1-2, 최대 2개)
-    detailImages: string[]; // 상세페이지 이미지 URL (이미지3-10, 최대 8개)
-    // 중복 체크 관련
+    images: string[];
+    detailImages: string[];
+    is_best?: boolean;
+    is_new?: boolean;
+    is_celeb_pick?: boolean;
+    discount_percent?: number;
     isDuplicate?: boolean;
     existingProductId?: string;
 };
@@ -583,59 +588,105 @@ export default function AdminProductsPage() {
         setShowBulkDeleteConfirm(false);
     };
 
-    // Excel 템플릿 다운로드
-    const downloadTemplate = () => {
-        const templateData = [
-            {
-                "카테고리": "W_FLAT",
-                "브랜드": "BRAND NAME",
-                "상품명": "샘플 상품명",
-                "색상정보": "Black, White",
-                "사이즈정보": "S, M, L",
-                "가격": 1000000,
-                "재고": 10,
-                "상품설명": "상품에 대한 상세 설명을 입력하세요.",
-                "이미지1": "https://xxx.supabase.co/storage/v1/object/public/product-images/sample1.jpg",
-                "이미지2": "",
-                "이미지3": "",
-                "이미지4": "",
-                "이미지5": "",
-                "이미지6": "",
-                "이미지7": "",
-                "이미지8": "",
-                "이미지9": "",
-                "이미지10": ""
-            }
+    // Excel 템플릿 다운로드 (exceljs 적용 - 드롭다운 포함)
+    const downloadTemplate = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet("상품목록");
+
+        // 컬럼 정의
+        sheet.columns = [
+            { header: "카테고리", key: "category", width: 25 },
+            { header: "브랜드", key: "brand", width: 15 },
+            { header: "상품명", key: "name", width: 30 },
+            { header: "색상정보", key: "colors", width: 20 },
+            { header: "사이즈정보", key: "sizes", width: 20 },
+            { header: "특징옵션", key: "features", width: 20 },
+            { header: "가격", key: "price", width: 12 },
+            { header: "재고", key: "stock", width: 8 },
+            { header: "베스트여부", key: "is_best", width: 10 },
+            { header: "신상품여부", key: "is_new", width: 10 },
+            { header: "SHOP추천여부", key: "is_celeb", width: 15 },
+            { header: "특가할인율", key: "discount", width: 10 },
+            { header: "상품설명", key: "description", width: 40 },
+            { header: "이미지1", key: "img1", width: 60 },
+            { header: "이미지2", key: "img2", width: 60 },
+            { header: "이미지3", key: "img3", width: 60 },
+            { header: "이미지4", key: "img4", width: 60 },
+            { header: "이미지5", key: "img5", width: 60 },
+            { header: "이미지6", key: "img6", width: 60 },
+            { header: "이미지7", key: "img7", width: 60 },
+            { header: "이미지8", key: "img8", width: 60 },
+            { header: "이미지9", key: "img9", width: 60 },
+            { header: "이미지10", key: "img10", width: 60 }
         ];
 
-        const ws = XLSX.utils.json_to_sheet(templateData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "상품목록");
+        // 샘플 데이터 추가
+        sheet.addRow({
+            category: "여성 - 플랫/로퍼",
+            brand: "BRAND NAME",
+            name: "샘플 상품명",
+            colors: "블랙, 베이지",
+            sizes: "230, 235, 240",
+            features: "굽 3cm, 논슬립",
+            price: 1000000,
+            stock: 10,
+            is_best: "N",
+            is_new: "N",
+            is_celeb: "N",
+            discount: 0,
+            description: "상품에 대한 상세 설명을 입력하세요.",
+            img1: "https://...",
+            img2: "",
+            img3: "",
+            img4: "",
+            img5: "",
+            img6: "",
+            img7: "",
+            img8: "",
+            img9: "",
+            img10: ""
+        });
 
-        // 열 너비 설정
-        ws['!cols'] = [
-            { wch: 12 }, // 카테고리
-            { wch: 15 }, // 브랜드
-            { wch: 20 }, // 상품명
-            { wch: 20 }, // 색상정보
-            { wch: 15 }, // 사이즈정보
-            { wch: 12 }, // 가격
-            { wch: 8 },  // 재고
-            { wch: 40 }, // 상품설명
-            { wch: 60 }, // 이미지1
-            { wch: 60 }, // 이미지2
-            { wch: 60 }, // 이미지3
-            { wch: 60 }, // 이미지4
-            { wch: 60 }, // 이미지5
-            { wch: 60 }, // 이미지6
-            { wch: 60 }, // 이미지7
-            { wch: 60 }, // 이미지8
-            { wch: 60 }, // 이미지9
-            { wch: 60 }, // 이미지10
-        ];
+        // 1행(헤더) 스타일 지정
+        sheet.getRow(1).font = { bold: true };
+        sheet.getRow(1).alignment = { horizontal: 'center' };
+        sheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
 
-        XLSX.writeFile(wb, "상품등록_양식.xlsx");
-        toast.success("템플릿이 다운로드되었습니다 (이미지 URL 칸럼 포함)");
+        // 데이터 유효성 검사 (드롭다운) 설정 (A2 ~ A1000)
+        // CATEGORY_LABELS의 값들을 배열로 추출
+        const categoryList = Object.values(CATEGORY_LABELS);
+        // 쌍따옴표로 감싸서 드롭다운 목록 문자열 생성
+        const categoryFormula = '"' + categoryList.join(',') + '"';
+
+        const yNFormula = '"Y,N"';
+
+        for (let i = 2; i <= 1000; i++) {
+            // 카테고리 (A열) 드롭다운
+            sheet.getCell(`A${i}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: [categoryFormula],
+                showErrorMessage: true,
+                errorTitle: '잘못된 입력',
+                error: '목록에서 카테고리를 선택해주세요.'
+            };
+
+            // Y/N 여부 드롭다운 (베스트, 신상, SHOP추천 - I, J, K열)
+            sheet.getCell(`I${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [yNFormula] };
+            sheet.getCell(`J${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [yNFormula] };
+            sheet.getCell(`K${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [yNFormula] };
+        }
+
+        // 파일 생성 및 다운로드
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(blob, "상품등록_양식_드롭다운적용.xlsx");
+        
+        toast.success("드롭다운이 적용된 템플릿이 다운로드되었습니다.");
     };
 
     // 이미지 URL 검증 함수
@@ -683,15 +734,38 @@ export default function AdminProductsPage() {
                         }
                     }
 
+                    // Reverse category mapping (한글 레이블 → 코드 변환)
+                    let catVal = String(row["카테고리"] || "").trim();
+                    const reverseCategoryMap: Record<string, string> = Object.entries(CATEGORY_LABELS).reduce((acc, [key, value]) => {
+                        acc[value as string] = key;
+                        return acc;
+                    }, {} as Record<string, string>);
+                    
+                    if (reverseCategoryMap[catVal]) {
+                        // 한글 레이블로 선택한 경우 → 코드로 변환 (예: "남성 - 스니커즈" → "M_SNEAKERS")
+                        catVal = reverseCategoryMap[catVal];
+                    } else if (CATEGORIES.includes(catVal.toUpperCase())) {
+                        // 이미 코드로 직접 입력한 경우 (예: "M_SNEAKERS")
+                        catVal = catVal.toUpperCase();
+                    } else {
+                        // 매핑 실패 시 빈 문자열로 두고 insert 단계에서 W_FLAT 처리
+                        console.warn(`알 수 없는 카테고리 값: "${catVal}" → W_FLAT 으로 대체됩니다.`);
+                        catVal = "W_FLAT";
+                    }
+
                     return {
-                        category: row["카테고리"] || "W_FLAT",
+                        category: catVal,
                         brand: row["브랜드"] || "",
                         name: row["상품명"] || "",
                         colors: row["색상정보"] || "",
                         sizes: row["사이즈정보"] || "",
+                        features: row["특징옵션"] || "",
                         price: Number(row["가격"]) || 0,
                         stock: Number(row["재고"]) || 0,
-                        features: "",
+                        is_best: String(row["베스트여부"]).toUpperCase() === "Y",
+                        is_new: String(row["신상품여부"]).toUpperCase() === "Y",
+                        is_celeb_pick: String(row["SHOP추천여부"]).toUpperCase() === "Y",
+                        discount_percent: Number(row["특가할인율"]) || 0,
                         description: row["상품설명"] || "",
                         images: mainImageUrls,
                         detailImages: detailImageUrls,
@@ -763,67 +837,71 @@ export default function AdminProductsPage() {
             let updatedCount = 0;
             let skippedCount = 0;
 
-            // 신규 상품 등록
-            if (newProducts.length > 0) {
-                const productsToInsert = newProducts.map(item => ({
-                    name: item.name,
-                    brand: item.brand.toUpperCase(),
-                    price: item.price,
-                    category: CATEGORIES.includes(item.category.toUpperCase()) ? item.category.toUpperCase() : "W_FLAT",
-                    stock: item.stock,
-                    is_available: item.stock > 0,
-                    description: item.description,
+            // API를 통한 백엔드(서버 권한) 우회 처리 (RLS 정책 충돌 방지)
+            const productsToInsert = newProducts.map(item => ({
+                name: String(item.name || ''),
+                brand: String(item.brand || '').toUpperCase(),
+                price: Math.round(Number(item.price) || 0),
+                category: CATEGORIES.includes(String(item.category || '').toUpperCase()) ? String(item.category || '').toUpperCase() : "W_FLAT",
+                stock: Math.round(Number(item.stock) || 0),
+                is_available: (Number(item.stock) || 0) > 0,
+                description: String(item.description || ''),
+                is_best: Boolean(item.is_best),
+                is_new: Boolean(item.is_new),
+                is_celeb_pick: Boolean(item.is_celeb_pick),
+                discount_percent: Math.round((Number(item.discount_percent) > 0 && Number(item.discount_percent) <= 1) ? Number(item.discount_percent) * 100 : Number(item.discount_percent) || 0),
+                images: item.images || [],
+                detail_images: item.detailImages || [],
+                details: {
+                    colors: item.colors ? String(item.colors).split(",").map(c => ({ name: c.trim(), value: c.trim() })) : [],
+                    sizes: item.sizes ? String(item.sizes).split(",").map(s => s.trim()) : [],
+                    features: item.features ? String(item.features).split(",").map(f => f.trim()) : [],
+                }
+            }));
+
+            const duplicatePayload = duplicateProducts.map(item => ({
+                existingProductId: item.existingProductId,
+                updateData: {
+                    price: Math.round(Number(item.price) || 0),
+                    stock: Math.round(Number(item.stock) || 0),
+                    is_available: (Number(item.stock) || 0) > 0,
+                    description: String(item.description || ''),
+                    is_best: Boolean(item.is_best),
+                    is_new: Boolean(item.is_new),
+                    is_celeb_pick: Boolean(item.is_celeb_pick),
+                    discount_percent: Math.round((Number(item.discount_percent) > 0 && Number(item.discount_percent) <= 1) ? Number(item.discount_percent) * 100 : Number(item.discount_percent) || 0),
                     images: item.images || [],
                     detail_images: item.detailImages || [],
                     details: {
-                        colors: item.colors ? [{ name: item.colors, value: "#000000" }] : [],
-                        sizes: item.sizes ? item.sizes.split(",").map(s => s.trim()) : [],
-                        features: [],
+                        colors: item.colors ? String(item.colors).split(",").map(c => ({ name: c.trim(), value: c.trim() })) : [],
+                        sizes: item.sizes ? String(item.sizes).split(",").map(s => s.trim()) : [],
+                        features: item.features ? String(item.features).split(",").map(f => f.trim()) : [],
                     }
-                }));
+                }
+            }));
 
-                const { error: insertError } = await supabase
-                    .from("products")
-                    .insert(productsToInsert);
+            const response = await fetch('/api/admin/products/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productsToInsert,
+                    duplicateProducts: duplicatePayload,
+                    duplicateAction
+                })
+            });
 
-                if (insertError) throw insertError;
-                insertedCount = newProducts.length;
+            const result = await response.json();
+            
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || "API 서버 응답 오류");
             }
 
-            // 중복 상품 처리
-            if (duplicateProducts.length > 0) {
-                if (duplicateAction === 'update') {
-                    // 중복 상품 업데이트
-                    for (const item of duplicateProducts) {
-                        if (item.existingProductId) {
-                            const { error: updateError } = await supabase
-                                .from("products")
-                                .update({
-                                    price: item.price,
-                                    stock: item.stock,
-                                    is_available: item.stock > 0,
-                                    description: item.description,
-                                    images: item.images || [],
-                                    detail_images: item.detailImages || [],
-                                    details: {
-                                        colors: item.colors ? [{ name: item.colors, value: "#000000" }] : [],
-                                        sizes: item.sizes ? item.sizes.split(",").map(s => s.trim()) : [],
-                                        features: [],
-                                    }
-                                })
-                                .eq('id', item.existingProductId);
-
-                            if (updateError) {
-                                console.error("Update error:", updateError);
-                            } else {
-                                updatedCount++;
-                            }
-                        }
-                    }
-                } else {
-                    // 중복 상품 스킵
-                    skippedCount = duplicateProducts.length;
-                }
+            insertedCount = result.insertedCount || 0;
+            updatedCount = result.updatedCount || 0;
+            skippedCount = result.skippedCount || 0;
+            
+            if (duplicateProducts.length > 0 && duplicateAction !== 'update') {
+                skippedCount = duplicateProducts.length;
             }
 
             // 결과 메시지
@@ -840,8 +918,9 @@ export default function AdminProductsPage() {
             setDuplicateAction('ask');
             fetchProducts();
         } catch (error: any) {
-            console.error("Bulk upload error:", error);
-            toast.error(`일괄 등록 실패: ${error.message}`);
+            console.error("Bulk upload error object:", error);
+            const errorMessage = error?.message || error?.details || JSON.stringify(error) || "알 수 없는 에러";
+            toast.error(`일괄 등록 실패: ${errorMessage}`);
         } finally {
             setBulkUploading(false);
         }
@@ -1251,7 +1330,7 @@ export default function AdminProductsPage() {
                                                         : 'bg-white border-gray-200 text-gray-400 hover:border-violet-400 hover:text-violet-600'
                                                 }`}
                                             >
-                                                {formData.is_celeb_pick ? '✓ ' : ''}SHOP 추천
+                                                {formData.is_celeb_pick ? '✓ ' : ''}MD'S PICK
                                             </button>
                                             <div
                                                 className={`px-4 py-2 rounded-full border-2 text-sm font-bold tracking-wide select-none flex items-center gap-1 cursor-default ${
@@ -1269,7 +1348,7 @@ export default function AdminProductsPage() {
 
                                     {formData.is_celeb_pick && (formData.existingImages?.length || 0) + formData.images.length > 1 && (
                                         <div className="mb-4">
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">SHOP 추천 대표 이미지</label>
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">MD'S PICK 대표 이미지</label>
                                             <select
                                                 value={formData.celeb_pick_image_index || 0}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, celeb_pick_image_index: parseInt(e.target.value) }))}
