@@ -79,17 +79,17 @@ export function Header() {
     return (
         <>
             <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md">
-                <div className="w-full bg-black overflow-hidden py-2 border-b border-white/10">
+                <div className="w-full bg-[#003d2b] overflow-hidden py-2 border-b border-white/10">
                     <motion.div 
-                        className="flex whitespace-nowrap"
+                        className="flex whitespace-nowrap will-change-transform"
                         animate={{ x: ["0%", "-50%"] }}
                         transition={{ 
-                            duration: 30, 
+                            duration: 35, 
                             repeat: Infinity, 
                             ease: "linear" 
                         }}
                     >
-                        {[...Array(10)].map((_, i) => (
+                        {[...Array(40)].map((_, i) => (
                             <span key={i} className="text-white text-[13px] font-medium px-12 tracking-wider">
                                 신규 회원가입시 5000원 쿠폰혜택!
                             </span>

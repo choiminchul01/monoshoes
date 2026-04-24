@@ -159,10 +159,15 @@ export default function Home() {
       <div className="container mx-auto px-4 py-12">
 
         {/* BEST SELLERS - 2순위 */}
-        <section className="mb-24">
-          <div className="mb-8 text-center">
-            <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">Best Seller</p>
-            <h1 className="text-2xl font-medium tracking-tight">베스트</h1>
+        <section className="mb-32">
+          <div className="mb-16 text-center">
+            <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">Best Seller</p>
+            <div className="inline-block">
+              <h2 className="text-3xl font-black tracking-tight text-gray-900 mb-2" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                BEST
+              </h2>
+              <div className="w-full h-[2px] bg-black mx-auto"></div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16">
             {loading ? (
@@ -194,10 +199,15 @@ export default function Home() {
         </section>
 
         {/* NEW ARRIVALS - 3순위 */}
-        <section className="mb-24">
-          <div className="mb-8 text-center">
-            <p className="text-xs text-[#C41E3A] mb-2 tracking-widest uppercase">New Arrival</p>
-            <h1 className="text-2xl font-medium tracking-tight">신상품</h1>
+        <section className="mb-32">
+          <div className="mb-16 text-center">
+            <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">New Arrival</p>
+            <div className="inline-block">
+              <h2 className="text-3xl font-black tracking-tight text-gray-900 mb-2" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                NEW
+              </h2>
+              <div className="w-full h-[2px] bg-black mx-auto"></div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 lg:grid-cols-4 md:gap-x-16">
             {loading ? (

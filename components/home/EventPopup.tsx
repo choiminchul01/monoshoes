@@ -10,6 +10,7 @@ import Link from "next/link";
 type PopupEvent = {
     id: string;
     title: string;
+    description: string;
     image_url: string;
 };
 
@@ -34,7 +35,7 @@ export default function EventPopup() {
             try {
                 const { data, error } = await supabase
                     .from("events")
-                    .select("id, title, image_url")
+                    .select("id, title, description, image_url")
                     .eq("is_popup", true)
                     .eq("is_active", true)
                     .order("created_at", { ascending: false })
@@ -83,55 +84,72 @@ export default function EventPopup() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
+                    className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm"
                     onClick={closePopup}
                 >
                     <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        transition={{ type: "spring", duration: 0.5 }}
-                        className="relative bg-white rounded-2xl overflow-hidden max-w-md w-full shadow-2xl"
+                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                        transition={{ type: "spring", duration: 0.6, bounce: 0.3 }}
+                        className="relative bg-white rounded-3xl overflow-hidden max-w-[400px] w-full shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Close Button */}
                         <button
                             onClick={closePopup}
-                            className="absolute top-3 right-3 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
+                            className="absolute top-4 right-4 z-20 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full transition-all backdrop-blur-md"
                         >
                             <X className="w-5 h-5" />
                         </button>
 
-                        {/* Image */}
-                        <Link href={`/event/${popupEvent.id}`} onClick={closePopup}>
-                            <div className="relative aspect-[3/4] bg-gray-100">
+                        {/* Image & Text Overlay */}
+                        <Link href={`/event/${popupEvent.id}`} onClick={closePopup} className="block group">
+                            <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden">
                                 {popupEvent.image_url ? (
-                                    <Image
-                                        src={popupEvent.image_url}
-                                        alt={popupEvent.title}
-                                        fill
-                                        unoptimized
-                                        className="object-cover"
-                                    />
+                                    <>
+                                        <Image
+                                            src={popupEvent.image_url}
+                                            alt={popupEvent.title}
+                                            fill
+                                            unoptimized
+                                            className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                                        />
+                                        {/* Premium Overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-8">
+                                            <p className="text-white/70 text-[10px] tracking-[0.3em] mb-2 uppercase font-black">SPECIAL EVENT</p>
+                                            <h3 className="text-white text-3xl font-black tracking-tight mb-3 leading-tight">
+                                                {popupEvent.title}
+                                            </h3>
+                                            {popupEvent.description && (
+                                                <>
+                                                    <div className="h-[2px] w-8 bg-white/60 mb-4" />
+                                                    <p className="text-white/90 text-base font-bold tracking-wide">
+                                                        {popupEvent.description}
+                                                    </p>
+                                                </>
+                                            )}
+                                        </div>
+                                    </>
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <p className="text-gray-400 text-sm">{popupEvent.title}</p>
+                                    <div className="w-full h-full flex flex-center">
+                                        <p className="text-gray-400">{popupEvent.title}</p>
                                     </div>
                                 )}
                             </div>
                         </Link>
 
                         {/* Footer */}
-                        <div className="p-4 bg-gray-50 flex items-center justify-between">
+                        <div className="px-6 py-4 bg-white flex items-center justify-between border-t border-gray-100">
                             <button
                                 onClick={hideForToday}
-                                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                                className="text-xs font-bold text-gray-400 hover:text-black transition-colors tracking-tighter"
                             >
                                 오늘 하루 보지 않기
                             </button>
                             <button
                                 onClick={closePopup}
-                                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                                className="text-sm font-black text-gray-900 hover:underline transition-all"
                             >
                                 닫기
                             </button>

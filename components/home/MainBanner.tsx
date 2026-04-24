@@ -9,35 +9,51 @@ import { fetchBannersAction, type MainBanner as MainBannerType } from "@/app/adm
 const FALLBACK_SLIDES = [
     {
         id: 'fallback-1',
-        imageUrl: "https://placehold.co/1920x800/111111/ffffff?text=MONO+SHOES",
-        link: "",
-        title: "",
-        subtitle: "",
+        imageUrl: "/images/banner/main_banner_women_1.png",
+        link: "/shop",
+        title: "WOMEN COLLECTION",
+        subtitle: "모노슈즈가 제안하는 프리미엄 여성 컬렉션",
         order: 0
     },
     {
         id: 'fallback-2',
-        imageUrl: "https://placehold.co/1920x800/222222/ffffff?text=PREMIUM+FOOTWEAR",
-        link: "",
-        title: "",
-        subtitle: "",
+        imageUrl: "/images/event/event_bg_2.png",
+        link: "/shop?filter=new",
+        title: "SPRING BREEZE",
+        subtitle: "화사한 봄날의 설렘을 담은 아이코닉 룩",
         order: 1
     },
     {
         id: 'fallback-3',
-        imageUrl: "https://placehold.co/1920x800/333333/ffffff?text=NEW+ARRIVALS",
-        link: "",
-        title: "",
-        subtitle: "",
+        imageUrl: "/images/event/event_bg_3.png",
+        link: "/shop",
+        title: "SUMMER SPLASH",
+        subtitle: "시원한 여름, 가장 빛나는 당신의 발걸음",
         order: 2
+    },
+    {
+        id: 'fallback-4',
+        imageUrl: "/images/event/event_bg_4.png",
+        link: "/shop",
+        title: "AUTUMN MOOD",
+        subtitle: "깊어가는 가을, 클래식한 감성의 완성",
+        order: 3
+    },
+    {
+        id: 'fallback-5',
+        imageUrl: "/images/event/event_bg_5.png",
+        link: "/event",
+        title: "WINTER CHIC",
+        subtitle: "차가운 계절에도 놓칠 수 없는 우아함",
+        order: 4
     },
 ];
 
 export function MainBanner() {
     const router = useRouter();
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [slides, setSlides] = useState<any[]>([]); // Using any for flexibility with titles/subtitles if we add them later to DB
-    const [loading, setLoading] = useState(true);
+    const [slides, setSlides] = useState<any[]>(FALLBACK_SLIDES); // Set local slides as initial state
+    const [loading, setLoading] = useState(false); // Set loading to false immediately
     const [direction, setDirection] = useState(1); // 1: next, -1: prev
     const [isDragging, setIsDragging] = useState(false);
 
@@ -57,32 +73,28 @@ export function MainBanner() {
     };
 
     useEffect(() => {
+        // Temporarily disabled Supabase fetch to show new local high-quality images
+        // You can re-enable this after migrating images to Supabase tomorrow
+        /*
         const fetchBanners = async () => {
             try {
                 const result = await fetchBannersAction();
-
                 if (result.success && result.banners && result.banners.length > 0) {
-                    // Map DB banners to slides
-                    // Note: DB doesn't have title/subtitle yet, so we can use defaults or empty
                     const mappedSlides = result.banners.map((b: MainBannerType) => ({
                         ...b,
-                        title: "", // Optional: Add default titles if needed
-                        subtitle: ""
+                        title: b.title || "", 
+                        subtitle: b.subtitle || ""
                     }));
                     setSlides(mappedSlides);
-                } else {
-                    // If fetch fails or no banners, use fallbacks
-                    setSlides(FALLBACK_SLIDES);
                 }
             } catch (error) {
                 console.error('Error fetching banners:', error);
-                setSlides(FALLBACK_SLIDES);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchBanners();
+        */
     }, []);
 
     useEffect(() => {
@@ -123,7 +135,7 @@ export function MainBanner() {
 
     if (loading) {
         return (
-            <div className="relative w-full h-[60vh] md:h-auto md:aspect-[2.4/1] bg-gray-200 animate-pulse">
+            <div className="relative w-full h-[60vh] md:h-screen bg-gray-200 animate-pulse">
                 <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-gray-400">Loading banners...</div>
                 </div>
@@ -150,7 +162,7 @@ export function MainBanner() {
     };
 
     return (
-        <div className="relative w-full aspect-[7/5] md:aspect-[2.4/1] overflow-hidden bg-gray-100 group">
+        <div className="relative w-full aspect-[7/5] md:h-screen overflow-hidden bg-gray-100 group">
             <AnimatePresence mode="popLayout" initial={false} custom={direction}>
                 <motion.div
                     key={currentSlide}
@@ -171,30 +183,54 @@ export function MainBanner() {
                     }}
                     onClick={handleBannerClick}
                 >
+                    {/* Background Extension for Wide Screens */}
+                    <div className="absolute inset-0 bg-[#b8b8b8] hidden md:block">
+                        <Image
+                            src={slides[currentSlide].imageUrl}
+                            alt=""
+                            fill
+                            className="object-cover blur-3xl opacity-40 scale-110 pointer-events-none"
+                            unoptimized
+                        />
+                    </div>
+                    
                     <Image
                         src={slides[currentSlide].imageUrl}
                         alt={slides[currentSlide].title || "Banner"}
                         fill
-                        className="object-cover object-center pointer-events-none"
+                        className="object-cover md:object-contain object-center pointer-events-none relative z-0"
                         priority={currentSlide === 0}
                         quality={100}
                         sizes="100vw"
                         unoptimized
                         draggable={false}
                     />
-                    {/* Optional Text Overlay */}
+                    {/* Premium Text Overlay */}
                     {(slides[currentSlide].title || slides[currentSlide].subtitle) && (
                         <div className="absolute inset-0 flex flex-col justify-center items-center text-white bg-black/20 pointer-events-none">
-                            {slides[currentSlide].title && (
-                                <h2 className="text-4xl md:text-6xl font-serif mb-4 text-center px-4 drop-shadow-lg">
-                                    {slides[currentSlide].title}
-                                </h2>
-                            )}
-                            {slides[currentSlide].subtitle && (
-                                <p className="text-lg md:text-2xl font-light tracking-wide text-center px-4 drop-shadow-md">
-                                    {slides[currentSlide].subtitle}
-                                </p>
-                            )}
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={currentSlide}
+                                    initial={{ opacity: 0, y: 30 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }}
+                                    className="flex flex-col items-center"
+                                >
+                                    {slides[currentSlide].title && (
+                                        <h2 
+                                            className="text-5xl md:text-8xl font-black tracking-[0.1em] mb-6 text-center px-4 drop-shadow-2xl uppercase" 
+                                            style={{ fontFamily: 'var(--font-cinzel), serif' }}
+                                        >
+                                            {slides[currentSlide].title}
+                                        </h2>
+                                    )}
+                                    {slides[currentSlide].subtitle && (
+                                        <p className="text-lg md:text-2xl font-bold tracking-[0.2em] text-center px-4 drop-shadow-xl opacity-90">
+                                            {slides[currentSlide].subtitle}
+                                        </p>
+                                    )}
+                                </motion.div>
+                            </AnimatePresence>
                         </div>
                     )}
                 </motion.div>

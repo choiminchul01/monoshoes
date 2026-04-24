@@ -394,15 +394,16 @@ export default function AdminEventsPage() {
                                 {/* Description */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        설명
+                                        이미지 위 텍스트 (슬로건)
                                     </label>
                                     <textarea
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent outline-none resize-none"
                                         rows={4}
-                                        placeholder="이벤트 설명"
+                                        placeholder="예: UP TO 10%, SEASON OFF 등 이미지 위에 표시될 문구를 입력하세요."
                                     />
+                                    <p className="text-xs text-gray-500 mt-2">이미지에 직접 글자를 넣지 말고, <b>글자 없는 깨끗한 고화질 사진</b>을 업로드하는 것을 권장합니다.</p>
                                 </div>
 
                                 {/* Event Date */}
