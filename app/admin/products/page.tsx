@@ -61,7 +61,27 @@ type BulkProductData = {
     existingProductId?: string;
 };
 
-const CATEGORIES = ["BAG", "WALLET", "SHOES", "ACCESSORY"];
+const CATEGORIES = [
+    "W_SLINGBACK", "W_FLAT", "W_HEELS", "W_SANDAL", "W_SNEAKERS", "W_BOOTS", "W_RAIN",
+    "M_OXFORD", "M_LOAFER", "M_SNEAKERS", "M_SANDAL", "M_BOOTS", "M_CASUAL", "M_RAIN"
+];
+
+const CATEGORY_LABELS: Record<string, string> = {
+    "W_SLINGBACK": "여성 - 슬링백/뮬",
+    "W_FLAT": "여성 - 플랫/로퍼",
+    "W_HEELS": "여성 - 펌프스/힐",
+    "W_SANDAL": "여성 - 샌들/슬리퍼",
+    "W_SNEAKERS": "여성 - 스니커즈",
+    "W_BOOTS": "여성 - 부츠/워커",
+    "W_RAIN": "여성 - 레인부츠",
+    "M_OXFORD": "남성 - 구두/옥스퍼드",
+    "M_LOAFER": "남성 - 로퍼/슬립온",
+    "M_SNEAKERS": "남성 - 스니커즈",
+    "M_SANDAL": "남성 - 샌들/슬리퍼",
+    "M_BOOTS": "남성 - 부츠/워커",
+    "M_CASUAL": "남성 - 캐주얼화",
+    "M_RAIN": "남성 - 레인부츠"
+};
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -72,7 +92,7 @@ export default function AdminProductsPage() {
         name: "",
         brand: "",
         price: 0,
-        category: "BAG",
+        category: "W_FLAT",
         images: [],
         detailImages: [],
         description: "",
@@ -567,7 +587,7 @@ export default function AdminProductsPage() {
     const downloadTemplate = () => {
         const templateData = [
             {
-                "카테고리": "BAG",
+                "카테고리": "W_FLAT",
                 "브랜드": "BRAND NAME",
                 "상품명": "샘플 상품명",
                 "색상정보": "Black, White",
@@ -664,7 +684,7 @@ export default function AdminProductsPage() {
                     }
 
                     return {
-                        category: row["카테고리"] || "BAG",
+                        category: row["카테고리"] || "W_FLAT",
                         brand: row["브랜드"] || "",
                         name: row["상품명"] || "",
                         colors: row["색상정보"] || "",
@@ -749,9 +769,7 @@ export default function AdminProductsPage() {
                     name: item.name,
                     brand: item.brand.toUpperCase(),
                     price: item.price,
-                    category: CATEGORIES.includes(item.category.toUpperCase())
-                        ? item.category.toUpperCase()
-                        : "BAG",
+                    category: CATEGORIES.includes(item.category.toUpperCase()) ? item.category.toUpperCase() : "W_FLAT",
                     stock: item.stock,
                     is_available: item.stock > 0,
                     description: item.description,
@@ -835,7 +853,7 @@ export default function AdminProductsPage() {
             name: "",
             brand: "",
             price: 0,
-            category: "BAG",
+            category: "W_FLAT",
             images: [],
             existingImages: [],
             detailImages: [],
@@ -958,7 +976,7 @@ export default function AdminProductsPage() {
                 </div>
             )}
 
-            <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+            <div className="bg-white rounded-lg shadow overflow-hidden mb-8"><div className="overflow-x-auto">
                 {/* Desktop Table View */}
                 <table className="w-full hidden md:table">
                     <thead className="bg-gray-50">
@@ -994,7 +1012,7 @@ export default function AdminProductsPage() {
                             currentProducts.map((product) => (
                                 <tr
                                     key={product.id}
-                                    className={`hover:bg-gray-50 transition-colors ${selectedIds.includes(product.id) ? 'bg-indigo-50' : ''}`}
+                                    onClick={() => handleEdit(product)} className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.includes(product.id) ? 'bg-indigo-50' : ''}`}
                                 >
                                     <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                                         <input
@@ -1022,7 +1040,7 @@ export default function AdminProductsPage() {
                                     <td className="px-6 py-4 whitespace-nowrap font-medium">{product.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-gray-500">{product.brand}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">₩{product.price.toLocaleString()}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">{product.category}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">{CATEGORY_LABELS[product.category] || product.category}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{product.stock}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -1051,7 +1069,7 @@ export default function AdminProductsPage() {
                     </tbody>
                 </table>
 
-                {/* Mobile Card View */}
+                </div>{/* Mobile Card View */}
                 <div className="md:hidden">
                     {/* Mobile Select All Header */}
                     {!loading && currentProducts.length > 0 && (
@@ -1109,7 +1127,7 @@ export default function AdminProductsPage() {
                                                     {product.is_available ? '판매중' : '품절'}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-500 mt-0.5">{product.brand} | {product.category}</p>
+                                            <p className="text-sm text-gray-500 mt-0.5">{product.brand} | {CATEGORY_LABELS[product.category] || product.category}</p>
                                         </div>
 
                                         <div className="flex justify-between items-end mt-2">
@@ -1157,7 +1175,7 @@ export default function AdminProductsPage() {
                             className="text-[15vw] font-bold text-[#D4AF37] opacity-10 select-none whitespace-nowrap tracking-widest"
                             style={{ fontFamily: 'var(--font-cinzel), serif' }}
                         >
-                            ESSENTIA
+                            MONO SHOES
                         </h1>
                     </div>
 
@@ -1177,69 +1195,92 @@ export default function AdminProductsPage() {
                                     <label className="block text-sm font-medium mb-2">상품 이미지</label>
                                     <p className="text-xs text-gray-500 mb-2">※ 첫 번째 이미지가 대표 이미지(썸네일)로 사용됩니다. 드래그하여 순서를 변경할 수 있습니다.</p>
 
-                                    {/* 업로드 버튼 + 베스트/신상 체크박스 */}
-                                    <div className="flex items-center justify-between gap-4 mb-4">
-                                        <div className="flex items-center gap-4">
-                                            <label className="cursor-pointer flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                                <Upload className="w-4 h-4" />
-                                                <span>이미지 선택</span>
-                                                <input
-                                                    type="file"
-                                                    multiple
-                                                    accept="image/*"
-                                                    onChange={handleImageChange}
-                                                    className="hidden"
-                                                />
-                                            </label>
-                                            <span className="text-sm text-gray-500">
-                                                {formData.images.length + (formData.existingImages?.length || 0)}개 이미지
-                                            </span>
-                                        </div>
-                                        {/* 베스트/신상/셀럽픽 체크박스 */}
-                                        <div className="flex items-center gap-4">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.is_best || false}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, is_best: e.target.checked }))}
-                                                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                                                />
-                                                <span className="text-sm font-medium text-orange-600">베스트</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.is_new || false}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, is_new: e.target.checked }))}
-                                                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                                                />
-                                                <span className="text-sm font-medium text-green-600">신상</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.is_celeb_pick || false}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, is_celeb_pick: e.target.checked }))}
-                                                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                                                />
-                                                <span className="text-sm font-medium text-purple-600">셀럽PICK</span>
-                                            </label>
-                                            {/* 셀럽PICK 이미지 선택 드롭다운 */}
-                                            {formData.is_celeb_pick && (formData.existingImages?.length || 0) + formData.images.length > 1 && (
-                                                <select
-                                                    value={formData.celeb_pick_image_index || 0}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, celeb_pick_image_index: parseInt(e.target.value) }))}
-                                                    className="px-2 py-1 text-sm border border-purple-300 rounded-lg bg-purple-50 text-purple-700 focus:ring-purple-500 focus:border-purple-500"
-                                                >
-                                                    {[...(formData.existingImages || []), ...formData.images.map((f, i) => `새이미지${i + 1}`)].map((_, idx) => (
-                                                        <option key={idx} value={idx}>
-                                                            {idx + 1}번 이미지
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            )}
-                                        </div>
+                                    {/* 업로드 버튼 */}
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <label className="cursor-pointer flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                            <Upload className="w-4 h-4" />
+                                            <span>이미지 선택</span>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept="image/*"
+                                                onChange={handleImageChange}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        <span className="text-sm text-gray-500">
+                                            {formData.images.length + (formData.existingImages?.length || 0)}개 이미지
+                                        </span>
                                     </div>
+
+                                    {/* 노출 카테고리 배지 토글 */}
+                                    <div className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                        <label className="block text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">
+                                            노출 카테고리 배지
+                                            <span className="ml-2 text-gray-400 font-normal normal-case tracking-normal text-[11px]">복수 선택 가능 · 클릭하여 토글</span>
+                                        </label>
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, is_best: !prev.is_best }))}
+                                                className={`px-4 py-2 rounded-full border-2 text-sm font-bold tracking-wide transition-all duration-150 select-none ${
+                                                    formData.is_best
+                                                        ? 'bg-amber-500 border-amber-500 text-white shadow-sm scale-105'
+                                                        : 'bg-white border-gray-200 text-gray-400 hover:border-amber-400 hover:text-amber-600'
+                                                }`}
+                                            >
+                                                {formData.is_best ? '✓ ' : ''}베스트
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, is_new: !prev.is_new }))}
+                                                className={`px-4 py-2 rounded-full border-2 text-sm font-bold tracking-wide transition-all duration-150 select-none ${
+                                                    formData.is_new
+                                                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm scale-105'
+                                                        : 'bg-white border-gray-200 text-gray-400 hover:border-emerald-400 hover:text-emerald-600'
+                                                }`}
+                                            >
+                                                {formData.is_new ? '✓ ' : ''}신상품
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, is_celeb_pick: !prev.is_celeb_pick }))}
+                                                className={`px-4 py-2 rounded-full border-2 text-sm font-bold tracking-wide transition-all duration-150 select-none ${
+                                                    formData.is_celeb_pick
+                                                        ? 'bg-violet-500 border-violet-500 text-white shadow-sm scale-105'
+                                                        : 'bg-white border-gray-200 text-gray-400 hover:border-violet-400 hover:text-violet-600'
+                                                }`}
+                                            >
+                                                {formData.is_celeb_pick ? '✓ ' : ''}SHOP 추천
+                                            </button>
+                                            <div
+                                                className={`px-4 py-2 rounded-full border-2 text-sm font-bold tracking-wide select-none flex items-center gap-1 cursor-default ${
+                                                    (formData.discount_percent ?? 0) > 0
+                                                        ? 'bg-red-500 border-red-500 text-white shadow-sm scale-105'
+                                                        : 'bg-white border-gray-200 text-gray-300'
+                                                }`}
+                                                title="아래 할인율 입력 시 자동 활성화"
+                                            >
+                                                {(formData.discount_percent ?? 0) > 0 ? `✓ 특가 -${formData.discount_percent}%` : '특가 (자동)'}
+                                            </div>
+                                        </div>
+                                        <p className="text-[11px] text-gray-400 mt-2">※ 특가 배지는 아래 할인율 입력 시 자동으로 표시됩니다.</p>
+                                    </div>
+
+                                    {formData.is_celeb_pick && (formData.existingImages?.length || 0) + formData.images.length > 1 && (
+                                        <div className="mb-4">
+                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">SHOP 추천 대표 이미지</label>
+                                            <select
+                                                value={formData.celeb_pick_image_index || 0}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, celeb_pick_image_index: parseInt(e.target.value) }))}
+                                                className="px-3 py-1.5 text-sm border border-violet-300 rounded-lg bg-violet-50 text-violet-700"
+                                            >
+                                                {[...(formData.existingImages || []), ...formData.images.map((f, i) => `새이미지${i + 1}`)].map((_, idx) => (
+                                                    <option key={idx} value={idx}>{idx + 1}번 이미지</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
 
                                     {/* 이미지 미리보기 그리드 */}
                                     <div className="grid grid-cols-5 gap-4">
@@ -1550,7 +1591,7 @@ export default function AdminProductsPage() {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                                     >
                                         {CATEGORIES.map(cat => (
-                                            <option key={cat} value={cat}>{cat}</option>
+                                            <option key={cat} value={cat}>{CATEGORY_LABELS[cat] || cat}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -2019,7 +2060,7 @@ export default function AdminProductsPage() {
                                             <td className="px-3 py-2 text-right">₩{item.price.toLocaleString()}</td>
                                             <td className="px-3 py-2">
                                                 <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
-                                                    {item.category}
+                                                    {CATEGORY_LABELS[item.category] || item.category}
                                                 </span>
                                             </td>
                                             <td className="px-3 py-2 text-right">{item.stock}</td>

@@ -129,7 +129,7 @@ function LoginContent() {
                     className="text-[15vw] font-bold text-[#D4AF37] opacity-20 select-none whitespace-nowrap tracking-widest"
                     style={{ fontFamily: 'var(--font-cinzel), serif' }}
                 >
-                    ESSENTIA
+                    MONO SHOES
                 </h1>
             </div>
 

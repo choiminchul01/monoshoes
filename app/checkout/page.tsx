@@ -300,12 +300,12 @@ function CheckoutContent() {
                 <div className="w-full max-w-[600px] px-4 py-8 lg:px-8 lg:py-16">
                     {/* Logo (Mobile only) */}
                     <div className="lg:hidden mb-6 text-center">
-                        <Link href="/" className="text-2xl font-bold tracking-widest" style={{ fontFamily: 'var(--font-cinzel), serif' }}>ESSENTIA</Link>
+                        <Link href="/" className="text-2xl font-bold tracking-widest" style={{ fontFamily: 'var(--font-cinzel), serif' }}>MONO SHOES</Link>
                     </div>
 
                     {/* Logo (Desktop) with Back Link */}
                     <div className="hidden lg:flex items-center justify-between mb-8">
-                        <Link href="/" className="text-3xl font-bold tracking-widest" style={{ fontFamily: 'var(--font-cinzel), serif' }}>ESSENTIA</Link>
+                        <Link href="/" className="text-3xl font-bold tracking-widest" style={{ fontFamily: 'var(--font-cinzel), serif' }}>MONO SHOES</Link>
                         <Link href="/cart" className="flex items-center gap-2 text-sm text-gray-500 hover:text-black transition-colors">
                             <ChevronLeft className="w-4 h-4" />
                             장바구니로 돌아가기
@@ -397,7 +397,7 @@ function CheckoutContent() {
                                 name="customerEmail"
                                 value={formData.customerEmail}
                                 onChange={handleInputChange}
-                                placeholder="이메일 (예: essentia@example.com)"
+                                placeholder="이메일 (예: monoshoes@example.com)"
                                 className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all placeholder-gray-400 text-sm"
                             />
                             <input
@@ -635,7 +635,7 @@ function CheckoutContent() {
                                     <div className="space-y-1 text-gray-600">
                                         <p>은행: <span className="font-medium text-gray-900">국민은행</span></p>
                                         <p>계좌번호: <span className="font-medium text-gray-900">123-456-789012</span></p>
-                                        <p>예금주: <span className="font-medium text-gray-900">에센시아</span></p>
+                                        <p>예금주: <span className="font-medium text-gray-900">모노슈즈</span></p>
                                     </div>
                                     <p className="mt-3 text-xs text-gray-500">
                                         * 주문 후 24시간 이내 미입금 시 자동 취소됩니다.

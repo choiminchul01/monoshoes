@@ -185,7 +185,7 @@ export default function AdminInspectionsPage() {
                     className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    검수 등록
+                    출고 등록
                 </button>
             </div>
 
@@ -195,7 +195,7 @@ export default function AdminInspectionsPage() {
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이미지</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">검수일</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">출고일</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">고객명 (원본)</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">표시명</th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">관리</th>
@@ -206,7 +206,7 @@ export default function AdminInspectionsPage() {
                             <tr><td colSpan={5} className="p-8 text-center">로딩 중...</td></tr>
                         ) : inspections.length === 0 ? (
                             <tr><td colSpan={5} className="p-8 text-center text-gray-500">
-                                등록된 출고검수가 없습니다.
+                                등록된 출고출고가 없습니다.
                             </td></tr>
                         ) : (
                             inspections.map((inspection) => (
@@ -278,7 +278,7 @@ export default function AdminInspectionsPage() {
                             className="text-[15vw] font-bold text-[#D4AF37] opacity-10 select-none whitespace-nowrap tracking-widest"
                             style={{ fontFamily: 'var(--font-cinzel), serif' }}
                         >
-                            ESSENTIA
+                            MONO SHOES
                         </h1>
                     </div>
 
@@ -286,7 +286,7 @@ export default function AdminInspectionsPage() {
                     <div className="relative z-10 bg-[#FDFCF5] rounded-lg w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto border border-[#D4AF37]/30 shadow-xl">
                         <div className="sticky top-0 bg-[#FDFCF5] border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-lg">
                             <h2 className="text-xl font-bold text-gray-900">
-                                {editingId ? "출고검수 수정" : "출고검수 등록"}
+                                {editingId ? "출고출고 수정" : "출고출고 등록"}
                             </h2>
                             <button onClick={resetForm} className="text-gray-400 hover:text-gray-600 transition-colors">
                                 <X className="w-5 h-5" />
@@ -298,7 +298,7 @@ export default function AdminInspectionsPage() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     <ImageIcon className="w-4 h-4 inline mr-1" />
-                                    검수 이미지 (여러 장 가능, 첫 번째 = 대표)
+                                    출고 이미지 (여러 장 가능, 첫 번째 = 대표)
                                 </label>
 
                                 {/* Existing Images */}
@@ -379,7 +379,7 @@ export default function AdminInspectionsPage() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     <Calendar className="w-4 h-4 inline mr-1" />
-                                    검수 날짜
+                                    출고 날짜
                                 </label>
                                 <input
                                     type="date"

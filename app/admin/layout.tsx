@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { Package, ShoppingCart, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, ClipboardCheck, Megaphone, Handshake, ChevronDown, LayoutDashboard } from 'lucide-react';
+import { Package, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, Megaphone, Handshake, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/context/ToastContext';
 import { useAdminPermissions } from '@/lib/useAdminPermissions';
@@ -18,7 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const { hasPermission, isMaster, loading: permLoading } = useAdminPermissions();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showShopConfirm, setShowShopConfirm] = useState(false);
-    const [counts, setCounts] = useState({ orders: 0, products: 0 });
+    const [counts, setCounts] = useState({ products: 0 });
 
     // State for collapsible sidebar groups (initially all open)
     const [expandedGroups, setExpandedGroups] = useState<string[]>(['대시보드', '쇼핑몰 관리', '고객 및 마케팅', '시스템']);
@@ -46,12 +46,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const fetchNotificationCounts = async () => {
         try {
-            // Pending Orders
-            const { count: pendingOrders } = await supabase
-                .from('orders')
-                .select('*', { count: 'exact', head: true })
-                .eq('payment_status', 'pending');
-
             // Low Stock Products
             const { count: lowStock } = await supabase
                 .from('products')
@@ -59,7 +53,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 .lt('stock', 5);
 
             setCounts({
-                orders: pendingOrders || 0,
                 products: lowStock || 0
             });
         } catch (error) {
@@ -100,8 +93,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             icon: Store,
             items: [
                 { href: '/admin/products', label: '상품 관리', icon: Package, badge: counts.products, permission: 'products' as const },
-                { href: '/admin/orders', label: '주문 관리', icon: ShoppingCart, badge: counts.orders, permission: 'orders' as const },
-                { href: '/admin/inspections', label: '출고 관리', icon: ClipboardCheck, badge: 0, permission: 'products' as const },
+                { href: '/admin/events', label: '이벤트/팝업 관리', icon: Megaphone, badge: 0, permission: 'board' as const },
                 { href: '/admin/reviews', label: '리뷰 관리', icon: MessageSquare, badge: 0, permission: 'reviews' as const },
             ]
         },
@@ -112,7 +104,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
                 { href: '/admin/leads', label: '고객 DB (마케팅)', icon: Users, badge: 0, permission: 'customers' as const },
                 { href: '/admin/coupons', label: '쿠폰 관리', icon: Ticket, badge: 0, permission: 'coupons' as const },
-                { href: '/admin/events', label: '소식 관리', icon: Megaphone, badge: 0, permission: 'board' as const },
                 { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
                 { href: '/admin/inquiries', label: '문의 관리', icon: HelpCircle, badge: 0, permission: 'inquiries' as const },
             ]
@@ -125,7 +116,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 // Master only items
                 ...(isMaster ? [
                     { href: '/admin/admins', label: '관리자 계정', icon: Shield, badge: 0, permission: null },
-                    { href: '/admin/partnership', label: '에센시아 파트너십', icon: Handshake, badge: 0, permission: null }
+                    { href: '/admin/partnership', label: '모노슈즈 파트너십', icon: Handshake, badge: 0, permission: null }
                 ] : [])
             ]
         }

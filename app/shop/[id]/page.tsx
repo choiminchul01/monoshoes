@@ -454,16 +454,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </div>
 
                         {/* 옵션 선택 영역 — 신발 전용 */}
-                        <div className="space-y-5">
+                        <div className="space-y-6">
 
                             {/* 색상 선택 */}
                             <div>
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="text-xs font-black tracking-[0.2em] text-gray-500 uppercase">
-                                        색상
+                                    <span className="text-[11px] font-black tracking-[0.25em] text-gray-400 uppercase">
+                                        COLOR
                                         {selectedColor && (
-                                            <span className="ml-2 text-black normal-case font-semibold tracking-normal">
-                                                — {selectedColor.name}
+                                            <span className="ml-2 text-black normal-case font-semibold tracking-normal text-sm">
+                                                {selectedColor.name}
                                             </span>
                                         )}
                                     </span>
@@ -474,28 +474,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             <button
                                                 key={color.name}
                                                 onClick={() => setSelectedColor(color)}
-                                                className={`px-4 py-2 text-sm font-medium transition-all rounded-lg border-2 ${
-                                                    selectedColor?.name === color.name
-                                                        ? "border-black bg-black text-white"
-                                                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
-                                                }`}
+                                                className={`relative px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 border
+                                                    ${selectedColor?.name === color.name
+                                                        ? 'bg-[#4a5544] border-[#4a5544] text-white'
+                                                        : 'bg-white border-gray-300 text-gray-700 hover:border-[#4a5544] hover:text-[#4a5544]'
+                                                    }`}
                                             >
                                                 {color.name.split('#')[0].trim()}
                                             </button>
                                         ))}
                                     </div>
                                 ) : (
-                                    // 기본 색상 표시 (fallback)
                                     <div className="flex flex-wrap gap-2">
                                         {['블랙', '베이지', '아이보리', '네이비'].map((colorName) => (
                                             <button
                                                 key={colorName}
                                                 onClick={() => setSelectedColor({ name: colorName, value: colorName })}
-                                                className={`px-4 py-2 text-sm font-medium transition-all rounded-lg border-2 ${
-                                                    selectedColor?.name === colorName
-                                                        ? "border-black bg-black text-white"
-                                                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
-                                                }`}
+                                                className={`px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 border
+                                                    ${selectedColor?.name === colorName
+                                                        ? 'bg-[#4a5544] border-[#4a5544] text-white'
+                                                        : 'bg-white border-gray-300 text-gray-700 hover:border-[#4a5544] hover:text-[#4a5544]'
+                                                    }`}
                                             >
                                                 {colorName}
                                             </button>
@@ -507,11 +506,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             {/* 사이즈 선택 — 신발 전용 */}
                             <div>
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="text-xs font-black tracking-[0.2em] text-gray-500 uppercase">
-                                        사이즈 (mm)
+                                    <span className="text-[11px] font-black tracking-[0.25em] text-gray-400 uppercase">
+                                        SIZE
                                         {selectedSize && (
-                                            <span className="ml-2 text-black normal-case font-semibold tracking-normal">
-                                                — {selectedSize}mm
+                                            <span className="ml-2 text-black normal-case font-semibold tracking-normal text-sm">
+                                                {selectedSize}mm
                                             </span>
                                         )}
                                     </span>
@@ -520,9 +519,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             const el = document.getElementById('size-guide-tab');
                                             if (el) el.scrollIntoView({ behavior: 'smooth' });
                                         }}
-                                        className="text-xs text-gray-400 underline hover:text-black transition-colors"
+                                        className="text-[11px] text-gray-400 underline underline-offset-2 hover:text-[#4a5544] transition-colors tracking-wide"
                                     >
-                                        사이즈 가이드
+                                        SIZE GUIDE
                                     </button>
                                 </div>
 
@@ -532,28 +531,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             <button
                                                 key={size}
                                                 onClick={() => setSelectedSize(size)}
-                                                className={`w-16 h-12 text-sm font-semibold transition-all rounded-xl border-2 ${
-                                                    selectedSize === size
-                                                        ? "border-black bg-black text-white shadow-md"
-                                                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-400 hover:shadow-sm"
-                                                }`}
+                                                className={`w-[72px] h-11 text-[13px] font-semibold tracking-wide transition-all duration-200 border
+                                                    ${selectedSize === size
+                                                        ? 'bg-[#4a5544] border-[#4a5544] text-white'
+                                                        : 'bg-white border-gray-300 text-gray-600 hover:border-[#4a5544] hover:text-[#4a5544]'
+                                                    }`}
                                             >
                                                 {size}
                                             </button>
                                         ))}
                                     </div>
                                 ) : (
-                                    // 사이즈 정보 없을 때 — 기본 신발 사이즈 표시 (220~260 5단위)
                                     <div className="flex flex-wrap gap-2">
                                         {['220', '225', '230', '235', '240', '245', '250', '255', '260'].map((size) => (
                                             <button
                                                 key={size}
                                                 onClick={() => setSelectedSize(size)}
-                                                className={`w-16 h-12 text-sm font-semibold transition-all rounded-xl border-2 ${
-                                                    selectedSize === size
-                                                        ? "border-black bg-black text-white shadow-md"
-                                                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-400 hover:shadow-sm"
-                                                }`}
+                                                className={`w-[72px] h-11 text-[13px] font-semibold tracking-wide transition-all duration-200 border
+                                                    ${selectedSize === size
+                                                        ? 'bg-[#4a5544] border-[#4a5544] text-white'
+                                                        : 'bg-white border-gray-300 text-gray-600 hover:border-[#4a5544] hover:text-[#4a5544]'
+                                                    }`}
                                             >
                                                 {size}
                                             </button>
@@ -561,10 +559,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     </div>
                                 )}
 
-                                {/* 사이즈 미선택 경고 */}
                                 {!selectedSize && (
-                                    <p className="mt-2 text-xs text-amber-600 font-medium">
-                                        ※ 사이즈를 선택해주세요 (구매 전 필수)
+                                    <p className="mt-2 text-[11px] text-amber-600 font-medium tracking-wide">
+                                        ※ 사이즈를 선택해주세요
                                     </p>
                                 )}
                             </div>

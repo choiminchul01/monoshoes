@@ -38,7 +38,7 @@ export default function PrivacyPolicyPage() {
                     {/* 서문 */}
                     <section>
                         <p>
-                            에센시아(이하 "회사"는) 고객님의 개인정보를 중요시하며, "정보통신망 이용촉진 및 정보보호"에 관한 법률을 준수하고 있습니다.
+                            모노슈즈(이하 "회사"는) 고객님의 개인정보를 중요시하며, "정보통신망 이용촉진 및 정보보호"에 관한 법률을 준수하고 있습니다.
                         </p>
                         <p className="mt-3">
                             회사는 개인정보처리방침을 통하여 고객님께서 제공하시는 개인정보가 어떠한 용도와 방식으로 이용되고 있으며, 개인정보보호를 위해 어떠한 조치가 취해지고 있는지 알려드립니다.
@@ -269,8 +269,8 @@ export default function PrivacyPolicyPage() {
                             <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-6">
                                 <h3 className="font-bold text-gray-900 mb-3">개인정보보호책임자</h3>
                                 <div className="space-y-2 text-gray-600">
-                                    <p><span className="font-medium text-gray-700">상호:</span> 에센시아</p>
-                                    <p><span className="font-medium text-gray-700">이메일:</span> master@essentia.com</p>
+                                    <p><span className="font-medium text-gray-700">상호:</span> 모노슈즈</p>
+                                    <p><span className="font-medium text-gray-700">이메일:</span> master@monoshoes.com</p>
                                 </div>
                             </div>
                         </div>

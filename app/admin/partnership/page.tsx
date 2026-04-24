@@ -118,7 +118,7 @@ export default function PartnershipPage() {
         <div>
             {/* Title */}
             <div className="mb-6">
-                <h1 className="text-3xl font-bold">에센시아 파트너십</h1>
+                <h1 className="text-3xl font-bold">모노슈즈 파트너십</h1>
                 <p className="text-gray-500 mt-1">제휴 문의 관리</p>
             </div>
 

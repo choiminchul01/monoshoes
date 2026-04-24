@@ -85,7 +85,7 @@ function OrderCompleteContent() {
     const bankInfo = {
         bank: "국민은행",
         account: "123-456-789012",
-        holder: "에센시아",
+        holder: "모노슈즈",
         amount: orderData?.final_amount || 0
     };
 

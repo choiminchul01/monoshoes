@@ -18,7 +18,7 @@ export default function GuidePage() {
                         App Installation Guide
                     </h1>
                     <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                        에센시아를 앱으로 설치하여 더 빠르고 편리하게 이용하세요.<br />
+                        모노슈즈를 앱으로 설치하여 더 빠르고 편리하게 이용하세요.<br />
                         사용하시는 기기에 맞는 설치 방법을 안내해 드립니다.
                     </p>
                 </div>
@@ -73,7 +73,7 @@ export default function GuidePage() {
             <div className="bg-gray-50 py-16 border-t border-gray-100">
                 <div className="container mx-auto px-4 text-center">
                     <h2 className="text-2xl font-bold mb-4">지금 바로 시작해보세요</h2>
-                    <p className="text-gray-500 mb-8">설치가 완료되면 홈 화면에서 에센시아 아이콘을 찾아 실행해주세요.</p>
+                    <p className="text-gray-500 mb-8">설치가 완료되면 홈 화면에서 모노슈즈 아이콘을 찾아 실행해주세요.</p>
 
                     {isInstallable ? (
                         <div className="flex justify-center">
@@ -135,7 +135,7 @@ function PCGuide() {
                             <div className="w-3 h-3 rounded-full bg-green-400"></div>
                         </div>
                         <div className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm text-gray-600 flex justify-between items-center">
-                            <span>https://essentia.store</span>
+                            <span>https://monoshoes.store</span>
                             <div className="flex gap-2 items-center relative">
                                 <div className="absolute -inset-3 bg-blue-500/20 rounded-full animate-ping"></div>
                                 <div className="p-1 hover:bg-gray-200 rounded cursor-pointer relative z-10">
@@ -173,7 +173,7 @@ function PCGuide() {
                     {/* Simulated Address Bar for Edge */}
                     <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl border border-gray-200 p-2 flex items-center gap-4 relative overflow-visible">
                         <div className="flex-1 bg-white border border-gray-300 rounded-md px-4 py-2 text-sm text-gray-600 flex justify-between items-center">
-                            <span>https://essentia.store</span>
+                            <span>https://monoshoes.store</span>
                             <div className="flex gap-2 items-center relative">
                                 <div className="absolute -inset-3 bg-blue-500/20 rounded-full animate-ping"></div>
                                 <div className="p-1 hover:bg-gray-100 rounded cursor-pointer relative z-10">
@@ -417,7 +417,7 @@ function IOSGuide() {
                         </div>
                         <div className="p-6 flex items-center gap-4">
                             <div className="w-16 h-16 bg-[#00704A] rounded-xl flex items-center justify-center text-white">E</div>
-                            <div className="flex-1 border-b pb-2 text-gray-900 font-semibold">에센시아</div>
+                            <div className="flex-1 border-b pb-2 text-gray-900 font-semibold">모노슈즈</div>
                         </div>
                     </div>
                 </div>
