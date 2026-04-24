@@ -260,11 +260,10 @@ export default function AdminEventsPage() {
                 </div>
             </div>
 
-            {/* Action Buttons Row */}
             <div className="flex justify-end mb-6">
                 <button
                     onClick={() => openModal()}
-                    className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-[#00704A] text-white rounded-lg hover:bg-[#005A3C] transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-gray-900 text-white rounded-lg hover:bg-black transition-colors"
                 >
                     <Plus className="w-4 h-4" />
                     이벤트 등록
@@ -502,14 +501,14 @@ export default function AdminEventsPage() {
                                             type="checkbox"
                                             checked={formData.is_popup}
                                             onChange={(e) => setFormData({ ...formData, is_popup: e.target.checked })}
-                                            className="w-5 h-5 rounded border-gray-300 text-[#00704A] focus:ring-[#00704A]"
+                                            className="w-5 h-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
                                         />
                                     </label>
 
                                     {/* Active Toggle */}
                                     <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer">
                                         <div className="flex items-center gap-3">
-                                            <Eye className="w-5 h-5 text-[#00704A]" />
+                                            <Eye className="w-5 h-5 text-gray-900" />
                                             <div>
                                                 <p className="font-medium text-gray-900">이벤트 진행 상태</p>
                                                 <p className="text-xs text-gray-500">진행중 상태일 때만 클릭 가능합니다</p>
@@ -519,7 +518,7 @@ export default function AdminEventsPage() {
                                             type="checkbox"
                                             checked={formData.is_active}
                                             onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                                            className="w-5 h-5 rounded border-gray-300 text-[#00704A] focus:ring-[#00704A]"
+                                            className="w-5 h-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
                                         />
                                     </label>
                                 </div>

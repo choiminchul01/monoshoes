@@ -14,6 +14,7 @@ import { useRouter, notFound } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
 import { Button } from "@/components/ui/button";
 import ProductFloatingBar from "@/components/shop/ProductFloatingBar";
+import ReviewSlider from "@/components/shop/ReviewSlider";
 import { formatPrice } from "@/lib/utils";
 
 type ProductDetails = {
@@ -704,6 +705,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                 </div>
             </div>
+
+            {/* 리뷰 슬라이더 */}
+            <ReviewSlider />
 
             {/* 탭 네비게이션 */}
             <ProductDetailTabs

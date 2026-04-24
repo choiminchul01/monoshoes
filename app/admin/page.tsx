@@ -149,13 +149,13 @@ export default function AdminDashboard() {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-medium text-gray-500">총 매출</h3>
-                        <div className="p-2 bg-green-50 rounded-lg">
-                            <DollarSign className="w-5 h-5 text-green-600" />
+                        <div className="p-2 bg-gray-900 rounded-lg">
+                            <DollarSign className="w-5 h-5 text-white" />
                         </div>
                     </div>
                     <p className="text-2xl font-bold text-gray-900">{stats.totalRevenue.toLocaleString()}원</p>
                     <div className="flex items-center gap-2 mt-2 text-sm">
-                        <span className="text-green-600 font-medium flex items-center">
+                        <span className="text-gray-700 font-medium flex items-center">
                             <TrendingUp className="w-3 h-3 mr-1" />
                             +{stats.todayRevenue.toLocaleString()}원
                         </span>
@@ -166,13 +166,13 @@ export default function AdminDashboard() {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-medium text-gray-500">총 주문수</h3>
-                        <div className="p-2 bg-blue-50 rounded-lg">
-                            <ShoppingBag className="w-5 h-5 text-blue-600" />
+                        <div className="p-2 bg-gray-100 rounded-lg">
+                            <ShoppingBag className="w-5 h-5 text-gray-700" />
                         </div>
                     </div>
                     <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}건</p>
                     <div className="flex items-center gap-2 mt-2 text-sm">
-                        <span className="text-blue-600 font-medium flex items-center">
+                        <span className="text-gray-700 font-medium flex items-center">
                             <TrendingUp className="w-3 h-3 mr-1" />
                             +{stats.todayOrders}건
                         </span>
@@ -203,11 +203,11 @@ export default function AdminDashboard() {
                             <div key={index} className="flex flex-col items-center flex-1 group">
                                 <div className="relative w-full flex justify-center items-end h-48 bg-gray-50 rounded-t-lg overflow-hidden group-hover:bg-gray-100 transition-colors">
                                     <div
-                                        className="w-full mx-1 md:mx-3 bg-green-600 rounded-t opacity-80 group-hover:opacity-100 transition-all relative"
+                                        className="w-full mx-1 md:mx-3 bg-gray-800 rounded-t opacity-70 group-hover:opacity-100 transition-all relative"
                                         style={{ height: `${(day.amount / maxRevenue) * 100}%` }}
                                     >
                                         {/* Tooltip */}
-                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-green-700 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                                             {day.amount.toLocaleString()}원
                                         </div>
                                     </div>
@@ -244,10 +244,11 @@ export default function AdminDashboard() {
                                     </div>
                                     <div className="text-right">
                                         <p className="text-sm font-bold">{order.final_amount.toLocaleString()}원</p>
-                                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${order.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
+                                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                                            order.payment_status === 'paid' ? 'bg-gray-900 text-white' :
                                             order.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                order.payment_status === 'shipped' ? 'bg-purple-100 text-purple-700' :
-                                                    'bg-gray-100 text-gray-600'
+                                            order.payment_status === 'shipped' ? 'bg-gray-200 text-gray-700' :
+                                            'bg-gray-100 text-gray-600'
                                             }`}>
                                             {order.payment_status === 'pending' && '입금대기'}
                                             {order.payment_status === 'paid' && '입금완료'}

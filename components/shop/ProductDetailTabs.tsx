@@ -50,7 +50,6 @@ const TABS = [
     { id: "detail", label: "상품 상세" },
     { id: "size-guide", label: "사이즈 가이드" },
     { id: "delivery", label: "배송·교환·반품" },
-    { id: "review", label: "리뷰" },
     { id: "qna", label: "Q&A" },
 ];
 
@@ -62,7 +61,7 @@ export default function ProductDetailTabs({ product }: ProductDetailTabsProps) {
             {/* 탭 헤더 */}
             <div className="sticky top-20 z-30 bg-white border-b border-gray-200">
                 <div className="container mx-auto px-4">
-                    <div className="flex overflow-x-auto scrollbar-hide">
+                    <div className="flex justify-center md:gap-8 lg:gap-16 overflow-x-auto scrollbar-hide">
                         {TABS.map((tab) => (
                             <button
                                 key={tab.id}
@@ -228,11 +227,6 @@ export default function ProductDetailTabs({ product }: ProductDetailTabsProps) {
                                 </div>
                             ))}
                         </div>
-                    )}
-
-                    {/* ④ 리뷰 */}
-                    {activeTab === "review" && (
-                        <ReviewTabContent productId={product.id} />
                     )}
 
                     {/* ⑤ Q&A */}

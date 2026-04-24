@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Search, Trash2, Star, Plus, X, Image as ImageIcon, RefreshCw } from "lucide-react";
+import { Search, Trash2, Star, Plus, X, Image as ImageIcon, RefreshCw, Edit } from "lucide-react";
 import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
@@ -36,8 +36,10 @@ export default function AdminReviewsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // Create Modal State
+    // Modal State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
     const [newReview, setNewReview] = useState({
         productId: "",
         authorName: "",
@@ -70,13 +72,19 @@ export default function AdminReviewsPage() {
             const productIds = [...new Set(reviewsData?.map(r => r.product_id).filter(Boolean))];
 
             // Fetch products separately
-            const { data: productsData } = await supabase
+            const { data: productsData, error: productsError } = await supabase
                 .from("products")
-                .select("id, name, image_url")
+                .select("id, name, images")
                 .in("id", productIds);
 
+            if (productsError) console.error("Error fetching products:", productsError);
+
             // Create product map
-            const productMap = new Map(productsData?.map(p => [p.id, p]) || []);
+            const productMap = new Map(productsData?.map(p => [p.id, {
+                id: p.id,
+                name: p.name,
+                image_url: p.images && p.images.length > 0 ? p.images[0] : null
+            }]) || []);
 
             // Combine reviews with products
             const reviewsWithProducts = reviewsData?.map(review => ({
@@ -178,6 +186,76 @@ export default function AdminReviewsPage() {
         }
     };
 
+    const openEditModal = (review: Review) => {
+        if (!review.product) return;
+        setEditingReviewId(review.id);
+        setSelectedProduct(review.product);
+        setNewReview({
+            productId: review.product.id,
+            authorName: review.author_name,
+            rating: review.rating,
+            content: review.content,
+            image: null
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdateReview = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingReviewId || !selectedProduct || !newReview.authorName || !newReview.content) {
+            toast.error("모든 필수 항목을 입력해주세요.");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            let imageUrl = undefined;
+
+            if (newReview.image) {
+                const fileExt = newReview.image.name.split('.').pop();
+                const fileName = `${Date.now()}.${fileExt}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('review-images')
+                    .upload(fileName, newReview.image);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('review-images')
+                    .getPublicUrl(fileName);
+
+                imageUrl = publicUrl;
+            }
+
+            const updateData: any = {
+                product_id: selectedProduct.id,
+                author_name: newReview.authorName,
+                rating: newReview.rating,
+                content: newReview.content,
+            };
+            
+            if (imageUrl !== undefined) {
+                updateData.image_url = imageUrl;
+            }
+
+            const { error } = await supabase.from("reviews").update(updateData).eq("id", editingReviewId);
+
+            if (error) throw error;
+
+            toast.success("리뷰가 수정되었습니다.");
+            setIsEditModalOpen(false);
+            setEditingReviewId(null);
+            setNewReview({ productId: "", authorName: "", rating: 5, content: "", image: null });
+            setSelectedProduct(null);
+            fetchReviews();
+        } catch (error) {
+            console.error("Error updating review:", error);
+            toast.error("리뷰 수정 중 오류가 발생했습니다.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     // Search and filter reviews
     const getFilteredReviews = () => {
         let result = reviews;
@@ -239,7 +317,7 @@ export default function AdminReviewsPage() {
                 </div>
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-gray-900 text-white rounded-lg hover:bg-black transition-colors"
                 >
                     <Plus className="w-4 h-4" />
                     리뷰 생성
@@ -265,6 +343,7 @@ export default function AdminReviewsPage() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상품</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">작성자</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">평점</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사진</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">내용</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">작성일</th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">관리</th>
@@ -304,12 +383,28 @@ export default function AdminReviewsPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
+                                        {review.image_url ? (
+                                            <div className="relative w-12 h-12 rounded bg-gray-100 overflow-hidden border border-gray-200">
+                                                <Image src={review.image_url} alt="리뷰 사진" fill className="object-cover" />
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-gray-400">없음</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4">
                                         <p className="text-sm text-gray-600 truncate max-w-xs">{review.content}</p>
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-500">
                                         {new Date(review.created_at).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4 text-right">
+                                        <button
+                                            onClick={() => openEditModal(review)}
+                                            className="text-blue-500 hover:text-blue-700 p-2 mr-1"
+                                            title="수정"
+                                        >
+                                            <Edit className="w-4 h-4" />
+                                        </button>
                                         <button
                                             onClick={() => handleDelete(review.id)}
                                             className="text-red-500 hover:text-red-700 p-2"
@@ -472,6 +567,124 @@ export default function AdminReviewsPage() {
                                     className="admin-btn-primary px-6 py-2 disabled:bg-gray-400"
                                 >
                                     {isSubmitting ? "생성 중..." : "리뷰 생성"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* Edit Review Modal */}
+            {isEditModalOpen && (
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal-card w-full max-w-md">
+                        <div className="admin-modal-header">
+                            <h2>리뷰 수정</h2>
+                            <button onClick={() => {
+                                setIsEditModalOpen(false);
+                                setEditingReviewId(null);
+                                setNewReview({ productId: "", authorName: "", rating: 5, content: "", image: null });
+                                setSelectedProduct(null);
+                            }} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleUpdateReview} className="admin-modal-body space-y-4">
+                            {/* Product Search (Disabled in Edit Mode) */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">상품</label>
+                                {selectedProduct && (
+                                    <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50 opacity-75">
+                                        <div className="relative w-12 h-12 rounded overflow-hidden bg-gray-200">
+                                            <Image src={selectedProduct.image_url} alt={selectedProduct.name} fill className="object-cover" />
+                                        </div>
+                                        <span className="font-medium text-sm flex-1">{selectedProduct.name}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">작성자명 (표시용)</label>
+                                <input
+                                    type="text"
+                                    value={newReview.authorName}
+                                    onChange={(e) => setNewReview({ ...newReview, authorName: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">평점</label>
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            onClick={() => setNewReview({ ...newReview, rating: star })}
+                                            className="focus:outline-none"
+                                        >
+                                            <Star
+                                                className={`w-8 h-8 ${star <= newReview.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">리뷰 내용</label>
+                                <textarea
+                                    value={newReview.content}
+                                    onChange={(e) => setNewReview({ ...newReview, content: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent h-32 resize-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">사진 변경 (선택)</label>
+                                <div className="flex items-center gap-4">
+                                    <label className="cursor-pointer flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                        <ImageIcon className="w-5 h-5 text-gray-500" />
+                                        <span className="text-sm text-gray-600">새 이미지 선택</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                if (e.target.files?.[0]) {
+                                                    setNewReview({ ...newReview, image: e.target.files[0] });
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                    {newReview.image && (
+                                        <span className="text-sm text-gray-600 truncate max-w-[200px]">
+                                            {newReview.image.name}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">※ 이미지를 선택하지 않으면 기존 이미지가 유지됩니다.</p>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsEditModalOpen(false);
+                                        setEditingReviewId(null);
+                                        setNewReview({ productId: "", authorName: "", rating: 5, content: "", image: null });
+                                        setSelectedProduct(null);
+                                    }}
+                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="admin-btn-primary px-6 py-2 disabled:bg-gray-400"
+                                >
+                                    {isSubmitting ? "수정 중..." : "리뷰 수정"}
                                 </button>
                             </div>
                         </form>

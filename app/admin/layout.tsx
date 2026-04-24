@@ -9,6 +9,47 @@ import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/context/ToastContext';
 import { useAdminPermissions } from '@/lib/useAdminPermissions';
 
+// ─── Shoe Drawing Loader ───────────────────────────────────────────────
+function AdminShoeLoader() {
+    const [progress, setProgress] = useState(0);
+
+    useEffect(() => {
+        const start = Date.now();
+        const duration = 1800;
+        const tick = () => {
+            const elapsed = Date.now() - start;
+            const pct = Math.min(Math.round((elapsed / duration) * 100), 100);
+            setProgress(pct);
+            if (pct < 100) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }, []);
+
+    return (
+        <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] gap-6">
+            {/* Brand */}
+            <p className="text-[11px] tracking-[0.45em] font-black text-gray-300 uppercase"
+                style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                MONO SHOES
+            </p>
+
+            {/* Progress bar */}
+            <div className="w-40 h-[2px] bg-gray-100 rounded-full overflow-hidden">
+                <div
+                    className="h-full bg-gray-900 rounded-full transition-all duration-75"
+                    style={{ width: `${progress}%` }}
+                />
+            </div>
+
+            {/* Percentage */}
+            <p className="text-[11px] tracking-widest text-gray-400 font-light tabular-nums">
+                {progress}%
+            </p>
+        </div>
+    );
+}
+// ──────────────────────────────────────────────────────────────────────
+
 // Admin validation now uses admin_roles table via useAdminPermissions hook
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -71,8 +112,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/shop');
     };
 
-    if (loading) {
-        return <div className="flex items-center justify-center min-h-screen">로딩 중...</div>;
+    if (loading || permLoading) {
+        return <AdminShoeLoader />;
     }
 
     if (!user || permLoading || !hasPermission('dashboard')) {
@@ -158,15 +199,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-w-[60px] ${isActive
-                                        ? 'bg-green-100 text-green-900 border border-green-300'
+                                    className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors min-w-[60px] relative ${isActive
+                                        ? 'bg-gray-900 text-white shadow-sm'
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
-                                    <Icon className={`w-6 h-6 ${isActive ? 'text-green-800' : ''}`} />
+                                    <Icon className={`w-6 h-6 ${isActive ? 'text-white' : ''}`} />
                                     <span>{item.label}</span>
                                     {item.badge > 0 && (
-                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-700 text-white text-[10px] flex items-center justify-center rounded-full">
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full shadow-sm">
                                             {item.badge > 9 ? '9+' : item.badge}
                                         </span>
                                     )}
@@ -197,8 +238,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                             className="w-full flex items-center justify-between px-3 py-3 text-base font-bold text-gray-800 hover:bg-gray-50 rounded-lg transition-colors mb-1 group"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <GroupIcon className="w-5 h-5 text-gray-600" />
-                                                <span className={hasActiveChild ? 'text-green-700' : ''}>{group.title}</span>
+                                                <GroupIcon className="w-5 h-5 text-gray-500" />
+                                                <span className={hasActiveChild ? 'text-gray-900 font-bold' : ''}>{group.title}</span>
                                             </div>
                                             <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'transform rotate-180' : ''}`} />
                                         </button>
@@ -224,12 +265,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                                         key={item.href}
                                                         href={item.href}
                                                         className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-200 group relative ${isActive
-                                                            ? 'bg-green-50 text-green-900 font-semibold shadow-sm'
-                                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                                            ? 'bg-gray-900 text-white font-semibold shadow-sm'
+                                                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                                             }`}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-green-700' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                                                            <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                                             <span className="text-sm">{item.label}</span>
                                                         </div>
                                                         {item.badge > 0 && (
@@ -238,7 +279,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                                             </span>
                                                         )}
                                                         {isActive && (
-                                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-green-600 rounded-r-full" />
+                                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gray-900 rounded-r-full" />
                                                         )}
                                                     </Link>
                                                 );
@@ -264,8 +305,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </aside>
 
-                <main className="flex-1 overflow-auto p-4 md:p-8">
-                    {children}
+                <main className="flex-1 overflow-y-auto relative bg-gray-50/50 backdrop-blur-sm">
+                    {/* Watermark Background */}
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0 opacity-[0.03]">
+                        <span 
+                            className="text-[15vw] font-black whitespace-nowrap text-gray-900 select-none" 
+                            style={{ fontFamily: 'var(--font-cinzel), serif' }}
+                        >
+                            MONO SHOES
+                        </span>
+                    </div>
+                    {/* Content */}
+                    <div className="relative z-10 p-4 md:p-8 min-h-full">
+                        {children}
+                    </div>
                 </main>
 
                 {/* Go to Shop Confirmation Modal */}
