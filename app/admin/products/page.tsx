@@ -987,7 +987,7 @@ export default function AdminProductsPage() {
                     {/* 템플릿 다운로드 */}
                     <button
                         onClick={downloadTemplate}
-                        className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-white text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                         <Download className="w-4 h-4" />
                         <span className="hidden sm:inline">양식 다운로드</span>
@@ -995,7 +995,7 @@ export default function AdminProductsPage() {
                     </button>
 
                     {/* 일괄 업로드 */}
-                    <label className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors cursor-pointer">
+                    <label className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-white text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
                         <FileSpreadsheet className="w-4 h-4" />
                         <span className="hidden sm:inline">일괄 업로드</span>
                         <span className="sm:hidden">일괄업로드</span>
@@ -1013,7 +1013,7 @@ export default function AdminProductsPage() {
                             resetForm();
                             setShowModal(true);
                         }}
-                        className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-gray-900 text-white rounded-lg hover:bg-black transition-colors"
                     >
                         <Plus className="w-4 h-4" />
                         상품 추가
@@ -1065,7 +1065,7 @@ export default function AdminProductsPage() {
                                     type="checkbox"
                                     checked={currentProducts.length > 0 && selectedIds.length === currentProducts.length}
                                     onChange={toggleSelectAll}
-                                    className="w-5 h-5 text-indigo-600 border-2 border-gray-400 rounded focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                                    className="w-5 h-5 text-gray-900 border-2 border-gray-400 rounded focus:ring-gray-900 cursor-pointer accent-gray-900"
                                 />
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이미지</th>
@@ -1091,14 +1091,14 @@ export default function AdminProductsPage() {
                             currentProducts.map((product) => (
                                 <tr
                                     key={product.id}
-                                    onClick={() => handleEdit(product)} className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.includes(product.id) ? 'bg-indigo-50' : ''}`}
+                                    onClick={() => handleEdit(product)} className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.includes(product.id) ? 'bg-gray-100' : ''}`}
                                 >
                                     <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                                         <input
                                             type="checkbox"
                                             checked={selectedIds.includes(product.id)}
                                             onChange={() => toggleSelect(product.id)}
-                                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                            className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900 cursor-pointer accent-gray-900"
                                         />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -1122,7 +1122,7 @@ export default function AdminProductsPage() {
                                     <td className="px-6 py-4 whitespace-nowrap text-gray-500">{CATEGORY_LABELS[product.category] || product.category}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{product.stock}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.is_available ? 'bg-gray-100 text-gray-800 border border-gray-200' : 'bg-red-100 text-red-800'}`}>
                                             {product.is_available ? '판매중' : '품절'}
                                         </span>
                                     </td>
@@ -1130,7 +1130,7 @@ export default function AdminProductsPage() {
                                         <div className="flex gap-4">
                                             <button
                                                 onClick={() => handleEdit(product)}
-                                                className="text-indigo-600 hover:text-indigo-900"
+                                                className="text-gray-600 hover:text-gray-900"
                                             >
                                                 <Edit className="w-5 h-5" />
                                             </button>
@@ -1157,7 +1157,7 @@ export default function AdminProductsPage() {
                                 type="checkbox"
                                 checked={currentProducts.length > 0 && selectedIds.length === currentProducts.length}
                                 onChange={toggleSelectAll}
-                                className="w-5 h-5 text-indigo-600 border-2 border-gray-400 rounded focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                                className="w-5 h-5 text-gray-900 border-2 border-gray-400 rounded focus:ring-gray-900 cursor-pointer accent-gray-900"
                             />
                             <span className="text-sm font-medium text-gray-700">전체 선택</span>
                         </div>
@@ -1171,7 +1171,7 @@ export default function AdminProductsPage() {
                             {currentProducts.map((product) => (
                                 <div
                                     key={product.id}
-                                    className={`p-4 flex gap-4 ${selectedIds.includes(product.id) ? 'bg-indigo-50' : ''}`}
+                                    className={`p-4 flex gap-4 ${selectedIds.includes(product.id) ? 'bg-gray-100' : ''}`}
                                 >
                                     {/* Checkbox */}
                                     <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
@@ -1179,7 +1179,7 @@ export default function AdminProductsPage() {
                                             type="checkbox"
                                             checked={selectedIds.includes(product.id)}
                                             onChange={() => toggleSelect(product.id)}
-                                            className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                            className="w-5 h-5 text-gray-900 border-gray-300 rounded focus:ring-gray-900 cursor-pointer accent-gray-900"
                                         />
                                     </div>
                                     {/* Thumbnail */}
@@ -1202,7 +1202,7 @@ export default function AdminProductsPage() {
                                         <div>
                                             <div className="flex justify-between items-start">
                                                 <h3 className="text-base font-bold text-gray-900 truncate pr-2">{product.name}</h3>
-                                                <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${product.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${product.is_available ? 'bg-gray-100 text-gray-800 border border-gray-200' : 'bg-red-100 text-red-800'}`}>
                                                     {product.is_available ? '판매중' : '품절'}
                                                 </span>
                                             </div>
@@ -1217,7 +1217,7 @@ export default function AdminProductsPage() {
                                             <div className="flex gap-5">
                                                 <button
                                                     onClick={() => handleEdit(product)}
-                                                    className="p-2 text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100"
+                                                    className="p-2 text-gray-700 bg-gray-100 rounded-full hover:bg-gray-200"
                                                 >
                                                     <Edit className="w-4 h-4" />
                                                 </button>
@@ -1244,22 +1244,9 @@ export default function AdminProductsPage() {
             />
 
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Gradient Background */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#001E10] to-[#000000] opacity-95" />
-
-                    {/* Brand Watermark */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-                        <h1
-                            className="text-[15vw] font-bold text-[#D4AF37] opacity-10 select-none whitespace-nowrap tracking-widest"
-                            style={{ fontFamily: 'var(--font-cinzel), serif' }}
-                        >
-                            MONO SHOES
-                        </h1>
-                    </div>
-
-                    <div className="relative z-10 bg-[#FDFCF5] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#D4AF37]/30 shadow-xl">
-                        <div className="sticky top-0 bg-[#FDFCF5] border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-lg">
+                <div className="admin-modal-overlay">
+                    <div className="relative z-10 bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 shadow-xl">
+                        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-xl z-20">
                             <h2 className="text-xl font-bold text-gray-900">
                                 {editingProduct ? "상품 수정" : "상품 추가"}
                             </h2>
@@ -1352,7 +1339,7 @@ export default function AdminProductsPage() {
                                             <select
                                                 value={formData.celeb_pick_image_index || 0}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, celeb_pick_image_index: parseInt(e.target.value) }))}
-                                                className="px-3 py-1.5 text-sm border border-violet-300 rounded-lg bg-violet-50 text-violet-700"
+                                                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900"
                                             >
                                                 {[...(formData.existingImages || []), ...formData.images.map((f, i) => `새이미지${i + 1}`)].map((_, idx) => (
                                                     <option key={idx} value={idx}>{idx + 1}번 이미지</option>
@@ -1376,14 +1363,14 @@ export default function AdminProductsPage() {
                                                     onDragOver={(e) => handleImageDragOver(e, index, 'existing')}
                                                     onDrop={(e) => handleImageDrop(e, index, 'existing')}
                                                     onDragEnd={handleImageDragEnd}
-                                                    className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-50 border-blue-500 scale-95' :
-                                                        isDragOver ? 'border-blue-400 ring-2 ring-blue-200' :
+                                                    className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-50 border-gray-500 scale-95' :
+                                                        isDragOver ? 'border-gray-400 ring-2 ring-gray-200' :
                                                             'border-gray-200 hover:border-gray-400'
                                                         }`}
                                                 >
                                                     <Image src={url} alt={`Existing ${index}`} fill unoptimized className="object-cover pointer-events-none" />
                                                     {/* 순서 번호 뱃지 */}
-                                                    <div className={`absolute top-1 left-1 text-white text-xs px-2 py-0.5 rounded-full font-bold ${actualIndex === 0 ? 'bg-green-600' : 'bg-gray-600'
+                                                    <div className={`absolute top-1 left-1 text-white text-xs px-2 py-0.5 rounded-full font-bold ${actualIndex === 0 ? 'bg-gray-900' : 'bg-gray-600'
                                                         }`}>
                                                         {actualIndex === 0 ? '메인' : actualIndex + 1}
                                                     </div>
@@ -1411,14 +1398,14 @@ export default function AdminProductsPage() {
                                                     onDragOver={(e) => handleImageDragOver(e, index, 'new')}
                                                     onDrop={(e) => handleImageDrop(e, index, 'new')}
                                                     onDragEnd={handleImageDragEnd}
-                                                    className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-50 border-blue-500 scale-95' :
-                                                        isDragOver ? 'border-blue-400 ring-2 ring-blue-200' :
-                                                            'border-green-300 hover:border-green-400'
+                                                    className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-50 border-gray-500 scale-95' :
+                                                        isDragOver ? 'border-gray-400 ring-2 ring-gray-200' :
+                                                            'border-gray-300 hover:border-gray-400'
                                                         }`}
                                                 >
                                                     <Image src={imagePreviewUrls[index]} alt={`New ${index}`} fill unoptimized className="object-cover pointer-events-none" />
                                                     {/* 순서 번호 뱃지 */}
-                                                    <div className={`absolute top-1 left-1 text-white text-xs px-2 py-0.5 rounded-full font-bold ${actualIndex === 0 ? 'bg-green-600' : 'bg-blue-600'
+                                                    <div className={`absolute top-1 left-1 text-white text-xs px-2 py-0.5 rounded-full font-bold ${actualIndex === 0 ? 'bg-gray-900' : 'bg-gray-600'
                                                         }`}>
                                                         {actualIndex === 0 ? '메인' : `NEW ${actualIndex + 1}`}
                                                     </div>
@@ -1436,15 +1423,15 @@ export default function AdminProductsPage() {
                                 </div>
 
                                 {/* 상세 페이지 이미지 업로드 섹션 */}
-                                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                    <label className="block text-sm font-medium mb-2 text-blue-800">📄 상세 페이지 이미지</label>
-                                    <p className="text-xs text-blue-600 mb-3">※ 상세 페이지에 순서대로 표시될 이미지입니다. (860 X 1100 PX 권장, 긴 이미지 권장)</p>
+                                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <label className="block text-sm font-medium mb-2 text-gray-800">📄 상세 페이지 이미지</label>
+                                    <p className="text-xs text-gray-600 mb-3">※ 상세 페이지에 순서대로 표시될 이미지입니다. (860 X 1100 PX 권장, 긴 이미지 권장)</p>
 
                                     {/* 업로드 버튼 */}
                                     <div className="flex items-center gap-4 mb-4">
-                                        <label className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 transition-colors">
-                                            <Upload className="w-4 h-4 text-blue-700" />
-                                            <span className="text-blue-700">상세 이미지 선택</span>
+                                        <label className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors">
+                                            <Upload className="w-4 h-4 text-gray-700" />
+                                            <span className="text-gray-700">상세 이미지 선택</span>
                                             <input
                                                 type="file"
                                                 multiple
@@ -1453,7 +1440,7 @@ export default function AdminProductsPage() {
                                                 className="hidden"
                                             />
                                         </label>
-                                        <span className="text-sm text-blue-600">
+                                        <span className="text-sm text-gray-600">
                                             {formData.detailImages.length + (formData.existingDetailImages?.length || 0)}개 이미지
                                         </span>
                                     </div>
@@ -1462,9 +1449,9 @@ export default function AdminProductsPage() {
                                     <div className="grid grid-cols-3 gap-4">
                                         {/* 기존 상세 이미지 표시 */}
                                         {formData.existingDetailImages?.map((url, index) => (
-                                            <div key={`existing-detail-${index}`} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-blue-300 bg-white">
+                                            <div key={`existing-detail-${index}`} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-gray-300 bg-white">
                                                 <Image src={url} alt={`Detail ${index}`} fill unoptimized className="object-cover" />
-                                                <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                                <div className="absolute top-2 left-2 bg-gray-600 text-white text-xs px-2 py-0.5 rounded-full">
                                                     {index + 1}
                                                 </div>
                                                 <button
@@ -1479,9 +1466,9 @@ export default function AdminProductsPage() {
 
                                         {/* 새 상세 이미지 표시 */}
                                         {formData.detailImages.map((file, index) => (
-                                            <div key={`new-detail-${index}`} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-blue-300 bg-white">
+                                            <div key={`new-detail-${index}`} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-gray-300 bg-white">
                                                 <Image src={detailImagePreviewUrls[index]} alt={`New Detail ${index}`} fill unoptimized className="object-cover" />
-                                                <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                                <div className="absolute top-2 left-2 bg-gray-800 text-white text-xs px-2 py-0.5 rounded-full">
                                                     NEW {(formData.existingDetailImages?.length || 0) + index + 1}
                                                 </div>
                                                 <button
@@ -1496,7 +1483,7 @@ export default function AdminProductsPage() {
                                     </div>
 
                                     {(formData.detailImages.length + (formData.existingDetailImages?.length || 0)) === 0 && (
-                                        <div className="text-center py-8 text-blue-400 border-2 border-dashed border-blue-200 rounded-lg">
+                                        <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
                                             상세 페이지 이미지가 없습니다
                                         </div>
                                     )}
@@ -1508,7 +1495,7 @@ export default function AdminProductsPage() {
                                         required
                                         value={formData.name || ""}
                                         onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                                     />
                                 </div>
 
@@ -1533,7 +1520,7 @@ export default function AdminProductsPage() {
                                             }}
                                             onFocus={() => setShowBrandSuggestions(true)}
                                             onBlur={() => setTimeout(() => setShowBrandSuggestions(false), 200)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                                             placeholder="브랜드를 입력하거나 선택하세요"
                                             autoComplete="off"
                                         />
@@ -1582,7 +1569,7 @@ export default function AdminProductsPage() {
                                         type="text"
                                         value={brandKoreanName}
                                         onChange={(e) => setBrandKoreanName(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                                         placeholder="셀린느, 셀린"
                                     />
                                     <p className="text-xs text-gray-400 mt-1">
@@ -1599,7 +1586,7 @@ export default function AdminProductsPage() {
                                             required
                                             value={formData.price || ""}
                                             onChange={(e) => setFormData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                                         />
                                         {formData.price > 0 && (
                                             <p className="text-sm text-gray-500 mt-1">
@@ -1667,7 +1654,7 @@ export default function AdminProductsPage() {
                                     <select
                                         value={formData.category}
                                         onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                                     >
                                         {CATEGORIES.map(cat => (
                                             <option key={cat} value={cat}>{CATEGORY_LABELS[cat] || cat}</option>
@@ -1682,7 +1669,7 @@ export default function AdminProductsPage() {
                                         rows={4}
                                         value={formData.description || ""}
                                         onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                                     />
                                 </div>
 
@@ -1694,7 +1681,7 @@ export default function AdminProductsPage() {
                                         required
                                         value={formData.stock || ""}
                                         onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                                     />
                                     {formData.stock === 0 && (
                                         <p className="text-sm text-orange-600 mt-1">⚠️ 재고가 0이면 자동 품절 처리됩니다</p>
@@ -1708,7 +1695,7 @@ export default function AdminProductsPage() {
                                         id="is_available"
                                         checked={formData.is_available}
                                         onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
-                                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                        className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded"
                                     />
                                     <label htmlFor="is_available" className="ml-2 block text-sm text-gray-900">
                                         판매 가능
@@ -1723,7 +1710,7 @@ export default function AdminProductsPage() {
                                             type="text"
                                             placeholder="색상명 (예: 블랙, 화이트, Red)"
                                             id="colorNameInput"
-                                            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                                            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm p-2 border"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     e.preventDefault();
@@ -1774,7 +1761,7 @@ export default function AdminProductsPage() {
                                                         });
                                                     }
                                                 }}
-                                                className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200 transition-colors"
+                                                className="text-xs px-2 py-1 bg-gray-50 text-gray-700 rounded hover:bg-gray-100 border border-gray-200 transition-colors"
                                             >
                                                 +{preset}
                                             </button>
@@ -1808,7 +1795,7 @@ export default function AdminProductsPage() {
                                             type="text"
                                             placeholder="사이즈 (예: S, M, L, 240)"
                                             id="sizeInput"
-                                            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                                            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm p-2 border"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     e.preventDefault();
@@ -1858,7 +1845,7 @@ export default function AdminProductsPage() {
                                                         });
                                                     }
                                                 }}
-                                                className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200 transition-colors"
+                                                className="text-xs px-2 py-1 bg-gray-50 text-gray-700 rounded hover:bg-gray-100 border border-gray-200 transition-colors"
                                             >
                                                 +{preset}
                                             </button>
@@ -1892,7 +1879,7 @@ export default function AdminProductsPage() {
                                             type="text"
                                             placeholder="특징 입력 (예: 천연 가죽)"
                                             id="featureInput"
-                                            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                                            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm p-2 border"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     e.preventDefault();
@@ -1955,7 +1942,7 @@ export default function AdminProductsPage() {
                                     <button
                                         type="submit"
                                         disabled={uploading}
-                                        className="px-4 py-2 bg-[#00704A] text-white rounded-lg hover:bg-[#005A3C] disabled:opacity-50 transition-colors"
+                                        className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black disabled:opacity-50 transition-colors"
                                     >
                                         {uploading ? "저장 중..." : (editingProduct ? "수정 완료" : "상품 추가")}
                                     </button>
@@ -1964,7 +1951,7 @@ export default function AdminProductsPage() {
                                             type="submit"
                                             disabled={uploading}
                                             onClick={() => setIsContinue(true)}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 disabled:opacity-50 transition-colors"
                                         >
                                             {uploading ? "저장 중..." : "저장 후 계속 추가"}
                                         </button>
@@ -1978,9 +1965,8 @@ export default function AdminProductsPage() {
 
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#001E10] to-[#000000] opacity-95" />
-                    <div className="relative z-10 bg-[#FDFCF5] p-6 rounded-lg max-w-sm w-full mx-4 border border-[#D4AF37]/30 shadow-xl">
+                <div className="admin-modal-overlay">
+                    <div className="relative z-10 bg-white p-6 rounded-xl max-w-sm w-full mx-4 border border-gray-200 shadow-xl">
                         <h3 className="text-lg font-bold mb-4 text-gray-900">상품 삭제</h3>
                         <p className="text-gray-600 mb-6">정말 이 상품을 삭제하시겠습니까?</p>
                         <div className="flex justify-end gap-2">
@@ -2006,8 +1992,8 @@ export default function AdminProductsPage() {
 
             {/* Bulk Delete Confirmation Modal */}
             {showBulkDeleteConfirm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+                <div className="admin-modal-overlay">
+                    <div className="relative z-10 bg-white p-6 rounded-xl max-w-sm w-full mx-4 border border-gray-200 shadow-xl">
                         <h3 className="text-lg font-bold mb-4 text-red-600">⚠️ 일괄 삭제 확인</h3>
                         <p className="text-gray-600 mb-2">
                             선택한 <span className="font-bold text-red-600">{selectedIds.length}개</span> 상품을 삭제하시겠습니까?
@@ -2033,12 +2019,12 @@ export default function AdminProductsPage() {
 
             {/* Bulk Upload Preview Modal */}
             {showBulkUploadModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                        <div className="p-6 border-b">
+                <div className="admin-modal-overlay">
+                    <div className="relative z-10 bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-gray-200 shadow-xl">
+                        <div className="p-6 border-b border-gray-200">
                             <div className="flex justify-between items-center">
                                 <h3 className="text-xl font-bold flex items-center gap-2">
-                                    <FileSpreadsheet className="w-6 h-6 text-purple-600" />
+                                    <FileSpreadsheet className="w-6 h-6 text-gray-900" />
                                     상품 일괄 등록 미리보기
                                 </h3>
                                 <button
@@ -2129,7 +2115,7 @@ export default function AdminProductsPage() {
                                                         중복
                                                     </span>
                                                 ) : (
-                                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-200 rounded text-xs font-medium">
                                                         신규
                                                     </span>
                                                 )}
@@ -2182,7 +2168,7 @@ export default function AdminProductsPage() {
                                 <button
                                     onClick={executeBulkUpload}
                                     disabled={bulkUploading || (duplicateCount > 0 && duplicateAction === 'ask')}
-                                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                    className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                                 >
                                     {bulkUploading ? (
                                         <>
