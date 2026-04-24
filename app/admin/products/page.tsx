@@ -136,7 +136,7 @@ export default function AdminProductsPage() {
 
     // 입력된 값에 따라 필터링된 브랜드 목록
     const filteredBrands = uniqueBrands.filter(brand =>
-        brand.toLowerCase().startsWith((formData.brand || "").toLowerCase())
+        brand && brand.toLowerCase().startsWith((formData.brand || "").toLowerCase())
     );
 
     // 검색 및 페이지네이션 로직
@@ -146,9 +146,9 @@ export default function AdminProductsPage() {
         if (searchTerm) {
             const lowerTerm = searchTerm.toLowerCase();
             result = result.filter(p =>
-                p.name.toLowerCase().includes(lowerTerm) ||
-                p.brand.toLowerCase().includes(lowerTerm) ||
-                p.category.toLowerCase().includes(lowerTerm)
+                (p.name && p.name.toLowerCase().includes(lowerTerm)) ||
+                (p.brand && p.brand.toLowerCase().includes(lowerTerm)) ||
+                (p.category && p.category.toLowerCase().includes(lowerTerm))
             );
         }
 
