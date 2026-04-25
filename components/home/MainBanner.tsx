@@ -207,25 +207,25 @@ export function MainBanner() {
                     />
                     {/* Premium Text Overlay */}
                     {(slides[currentSlide].title || slides[currentSlide].subtitle) && (
-                        <div className="absolute inset-0 flex flex-col justify-start items-start text-white bg-black/20 pointer-events-none p-10 md:p-20 pt-20 md:pt-32">
+                        <div className="absolute inset-0 flex flex-col justify-center items-center text-white bg-black/20 pointer-events-none p-10 md:p-20">
                             <AnimatePresence mode="wait">
                                 <motion.div
                                     key={currentSlide}
-                                    initial={{ opacity: 0, x: -30 }}
-                                    animate={{ opacity: 1, x: 0 }}
+                                    initial={{ opacity: 0, y: 30 }}
+                                    animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.8, ease: "easeOut" }}
-                                    className="flex flex-col items-start"
+                                    className="flex flex-col items-center"
                                 >
                                     {slides[currentSlide].title && (
                                         <h2 
-                                            className="text-5xl md:text-8xl font-black tracking-[0.1em] mb-6 text-left drop-shadow-2xl uppercase" 
+                                            className="text-5xl md:text-8xl font-black tracking-[0.1em] mb-6 text-center drop-shadow-2xl uppercase" 
                                             style={{ fontFamily: 'var(--font-cinzel), serif' }}
                                         >
                                             {slides[currentSlide].title}
                                         </h2>
                                     )}
                                     {slides[currentSlide].subtitle && (
-                                        <p className="text-lg md:text-2xl font-bold tracking-[0.2em] text-left drop-shadow-xl opacity-90">
+                                        <p className="text-lg md:text-2xl font-bold tracking-[0.2em] text-center drop-shadow-xl opacity-90">
                                             {slides[currentSlide].subtitle}
                                         </p>
                                     )}

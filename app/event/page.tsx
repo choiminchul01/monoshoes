@@ -96,17 +96,17 @@ export default function EventPage() {
                         <div className="col-span-full py-20 text-center text-gray-400">Loading events...</div>
                     ) : events.map((event, index) => {
                         const CardContent = (
-                            <div className="flex flex-col h-full group">
+                            <div className={`flex flex-col h-full ${event.is_active ? 'group' : ''}`}>
                                 <div className="relative w-full aspect-[3/4] bg-gray-50 overflow-hidden mb-5">
                                     <Image
                                         src={event.image}
                                         alt={event.title}
                                         fill
                                         unoptimized
-                                        className={`object-cover transition-transform duration-700 ease-out ${event.is_active ? 'group-hover:scale-110' : 'grayscale opacity-70'}`}
+                                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                                     />
                                     {/* Text Overlay */}
-                                    <div className={`absolute inset-0 flex flex-col justify-start p-8 transition-all duration-500 ${event.is_active ? 'bg-gradient-to-b from-black/80 via-black/20 to-transparent group-hover:from-black/90' : 'bg-black/40'}`}>
+                                    <div className="absolute inset-0 flex flex-col justify-start p-8 transition-all duration-500 bg-gradient-to-b from-black/80 via-black/20 to-transparent group-hover:from-black/90">
                                         <div className="flex flex-col items-start text-left">
                                             <p className="text-white/80 text-[10px] tracking-[0.3em] mb-2 uppercase font-bold">
                                                 {event.category || "SPECIAL EVENT"}
@@ -121,30 +121,27 @@ export default function EventPage() {
                                             )}
                                         </div>
                                     </div>
-                                    
-                                    {/* 기간만료 오버레이 (가운데 크게) */}
-                                    {!event.is_active && (
-                                        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20">
-                                            <div className="px-6 py-3 bg-black/80 text-white text-sm font-bold tracking-widest rounded-full shadow-xl">
-                                                기간만료
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                                 <div className="flex flex-col flex-grow px-1">
                                     <p className="text-[12px] text-[#A3A3A3] font-medium tracking-wide mb-3">
                                         {event.date}
                                     </p>
                                     <div className="mt-auto flex items-center justify-between">
-                                        {event.is_active && event.badge && (
-                                            <div className="relative w-[50px] h-[20px] opacity-80 group-hover:opacity-100 transition-opacity">
-                                                <Image
-                                                    src={event.badge}
-                                                    alt="Badge"
-                                                    fill
-                                                    unoptimized
-                                                    className="object-contain"
-                                                />
+                                        {event.is_active ? (
+                                            event.badge && (
+                                                <div className="relative w-[50px] h-[20px] opacity-80 group-hover:opacity-100 transition-opacity">
+                                                    <Image
+                                                        src={event.badge}
+                                                        alt="Badge"
+                                                        fill
+                                                        unoptimized
+                                                        className="object-contain"
+                                                    />
+                                                </div>
+                                            )
+                                        ) : (
+                                            <div className="flex items-center justify-center w-[54px] h-[20px] bg-[#999999] text-white text-[10px] font-medium tracking-tight">
+                                                기간만료
                                             </div>
                                         )}
                                         {event.is_active && (
@@ -162,14 +159,14 @@ export default function EventPage() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: index * 0.05, duration: 0.6 }}
-                                className={`group ${event.is_active ? 'cursor-pointer' : 'cursor-default'}`}
+                                className={event.is_active ? 'cursor-pointer' : 'cursor-default'}
                             >
                                 {event.is_active ? (
                                     <Link href={`/event/${event.id}`}>
                                         {CardContent}
                                     </Link>
                                 ) : (
-                                    <div className="opacity-80">
+                                    <div>
                                         {CardContent}
                                     </div>
                                 )}
