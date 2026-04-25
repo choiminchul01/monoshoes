@@ -5,7 +5,8 @@
 
 CREATE TABLE IF NOT EXISTS marketing_leads (
     id              BIGSERIAL PRIMARY KEY,          -- 순번 (자동증가)
-    phone           VARCHAR(20) NOT NULL,           -- 연락처
+    seq             INTEGER,                        -- CSV 파일 순번
+    phone           VARCHAR(20) NOT NULL UNIQUE,    -- 연락처 (UPSERT 키)
     name            VARCHAR(100) NOT NULL,          -- 이름
     birth_date      DATE,                           -- 생년월일 (YYYY-MM-DD)
     gender          VARCHAR(1),                     -- 성별: M(남성) / F(여성) / U(미확인)
@@ -16,6 +17,7 @@ CREATE TABLE IF NOT EXISTS marketing_leads (
     address_dong    VARCHAR(50),                    -- 읍/면/동
     consent_date    DATE,                           -- 고객 동의일자
     batch_id        VARCHAR(50),                    -- 업로드 배치 ID (추적용)
+    is_real         BOOLEAN DEFAULT true,           -- 실제 고객 데이터 여부 (태깅)
     is_active       BOOLEAN DEFAULT true,
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
@@ -31,26 +33,18 @@ CREATE INDEX IF NOT EXISTS idx_leads_sido         ON marketing_leads(address_sid
 CREATE INDEX IF NOT EXISTS idx_leads_sigungu      ON marketing_leads(address_sigungu);
 CREATE INDEX IF NOT EXISTS idx_leads_dong         ON marketing_leads(address_dong);
 CREATE INDEX IF NOT EXISTS idx_leads_batch_id     ON marketing_leads(batch_id);
-CREATE INDEX IF NOT EXISTS idx_leads_id_range     ON marketing_leads(id);
+CREATE INDEX IF NOT EXISTS idx_leads_is_real      ON marketing_leads(is_real);
 
 -- ============================================================
 -- Row Level Security (관리자만 접근)
 -- ============================================================
 ALTER TABLE marketing_leads ENABLE ROW LEVEL SECURITY;
 
--- 관리자 정책: admin_users 테이블 기반 접근 제어
+-- 관리자 정책: admin_roles 테이블 기반 접근 제어
 CREATE POLICY "admin_only_leads" ON marketing_leads
     USING (
         EXISTS (
-            SELECT 1 FROM admin_users
-            WHERE admin_users.user_id = auth.uid()
+            SELECT 1 FROM admin_roles
+            WHERE admin_roles.user_id = auth.uid()
         )
     );
-
--- ============================================================
--- 사용 예시 (참고용)
--- ============================================================
--- 지역별 조회: SELECT * FROM marketing_leads WHERE address_sido = '서울특별시';
--- 나이별 조회: SELECT * FROM marketing_leads WHERE EXTRACT(YEAR FROM AGE(birth_date)) BETWEEN 20 AND 29;
--- 순번 구간:   SELECT * FROM marketing_leads WHERE id BETWEEN 1 AND 10000;
--- 성별 조회:   SELECT * FROM marketing_leads WHERE gender = 'F';

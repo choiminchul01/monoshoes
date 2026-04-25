@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import * as XLSX from "xlsx";
 
-// 성별 판별
+// ── 파싱 헬퍼 (서버 액션 파일과 분리) ─────────────────────────
 function determineGender(code: string): string {
-    const c = String(code).trim();
-    if (c === "1" || c === "3") return "M";
-    if (c === "2" || c === "4") return "F";
+    if (code === "1" || code === "3") return "M";
+    if (code === "2" || code === "4") return "F";
     return "U";
 }
 
-// 주소 파싱
 function parseAddress(address: string) {
     const parts = (address || "").trim().split(/\s+/);
     return {
@@ -20,93 +19,111 @@ function parseAddress(address: string) {
     };
 }
 
-// 생년월일 파싱
-function parseBirthDate(raw: string): string | null {
-    const cleaned = (raw || "").replace(/[-./]/g, "").trim();
-    if (cleaned.length === 8) {
-        return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 6)}-${cleaned.slice(6, 8)}`;
-    }
-    if (cleaned.length === 6) {
-        const yy = parseInt(cleaned.slice(0, 2));
+function parseBirthAndGender(raw: string): { birthDate: string | null; gender: string } {
+    const cleaned = raw.trim();
+    const hyphenIdx = cleaned.indexOf("-");
+    if (hyphenIdx === 6) {
+        const front = cleaned.slice(0, 6);
+        const backFirst = cleaned.slice(7, 8);
+        const yy = parseInt(front.slice(0, 2));
         const year = yy <= 24 ? `20${String(yy).padStart(2, "0")}` : `19${String(yy).padStart(2, "0")}`;
-        return `${year}-${cleaned.slice(2, 4)}-${cleaned.slice(4, 6)}`;
+        return { birthDate: `${year}-${front.slice(2, 4)}-${front.slice(4, 6)}`, gender: determineGender(backFirst) };
     }
-    return null;
+    const digits = cleaned.replace(/[-./]/g, "");
+    if (digits.length === 8) return { birthDate: `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`, gender: "U" };
+    if (digits.length === 6) {
+        const yy = parseInt(digits.slice(0, 2));
+        const year = yy <= 24 ? `20${String(yy).padStart(2, "0")}` : `19${String(yy).padStart(2, "0")}`;
+        return { birthDate: `${year}-${digits.slice(2, 4)}-${digits.slice(4, 6)}`, gender: "U" };
+    }
+    return { birthDate: null, gender: "U" };
 }
 
+function parseLeadRow(cols: string[], defaultIsReal: boolean, batchId: string): object | null {
+    try {
+        const phone = (cols[1] || "").trim().replace(/[-\s]/g, "");
+        const name = (cols[2] || "").trim();
+        if (!phone || !name) return null;
+
+        const { birthDate, gender } = parseBirthAndGender(cols[3] || "");
+        const address = (cols[4] || "").trim();
+        const remarkRaw = (cols[5] || "").trim().toUpperCase();
+        const isReal = remarkRaw === "T" ? true : remarkRaw === "F" ? false : defaultIsReal;
+        const seqRaw = parseInt(cols[0]);
+
+        return {
+            seq: isNaN(seqRaw) ? null : seqRaw,
+            phone,
+            name,
+            birth_date: birthDate,
+            gender,
+            address: address || null,
+            ...parseAddress(address),
+            is_real: isReal,
+            batch_id: batchId,
+        };
+    } catch {
+        return null;
+    }
+}
+
+// ── API Route ─────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
     const supabase = createRouteHandlerClient({ cookies });
 
-    // 관리자 확인
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data: adminUser } = await supabase
-        .from("admin_users")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
+        .from("admin_roles").select("id").eq("user_id", user.id).single();
     if (!adminUser) return NextResponse.json({ error: "Admin only" }, { status: 403 });
 
     try {
         const formData = await request.formData();
-        const csvFile = formData.get("csv") as File;
+        const file = formData.get("file") as File;
         const batchId = (formData.get("batchId") as string) || `batch_${Date.now()}`;
+        const isRealParam = (formData.get("isReal") as string) === "true";
 
-        if (!csvFile) {
-            return NextResponse.json({ error: "No CSV file" }, { status: 400 });
+        if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
+
+        const fileName = file.name.toLowerCase();
+        let dataRows: string[][] = [];
+
+        if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+            const arrayBuffer = await file.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: "array" });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+            const hasHeader = raw.length > 0 && isNaN(Number(String(raw[0][0]).trim()));
+            dataRows = (hasHeader ? raw.slice(1) : raw).map(r =>
+                r.map((cell: any) => String(cell ?? "").trim())
+            );
+        } else {
+            const text = await file.text();
+            const lines = text.split("\n").filter(l => l.trim());
+            const firstLine = lines[0] || "";
+            const dataLines = /^\d/.test(firstLine.split(",")[0]) ? lines : lines.slice(1);
+            dataRows = dataLines.map(line =>
+                line.split(",").map(c => c.trim().replace(/^"|"$/g, "").replace(/""/g, '"'))
+            );
         }
 
-        const text = await csvFile.text();
-        const lines = text.split("\n").filter(l => l.trim());
+        if (dataRows.length === 0) return NextResponse.json({ uploaded: 0, failed: 0, total: 0 });
 
-        // 첫 번째 줄 헤더 감지 (숫자로 시작하지 않으면 헤더)
-        const firstLine = lines[0] || "";
-        const dataLines = /^\d/.test(firstLine) ? lines : lines.slice(1);
+        const rows = dataRows.map(cols => parseLeadRow(cols, isRealParam, batchId)).filter(Boolean);
 
-        const rows = dataLines.map((line) => {
-            const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
-            if (cols.length < 3) return null;
+        if (rows.length === 0) return NextResponse.json({ uploaded: 0, failed: dataRows.length, total: dataRows.length });
 
-            const phone = cols[1] || "";
-            const name = cols[2] || "";
-            if (!phone || !name) return null;
-
-            const birthRaw = cols[3] || "";
-            const genderCode = cols[4] || "";
-            const address = cols.slice(5).join(",").trim();
-            const { address_sido, address_sigungu, address_dong } = parseAddress(address);
-
-            return {
-                phone,
-                name,
-                birth_date: parseBirthDate(birthRaw),
-                gender: determineGender(genderCode),
-                gender_code: genderCode || null,
-                address: address || null,
-                address_sido,
-                address_sigungu,
-                address_dong,
-                batch_id: batchId,
-            };
-        }).filter(Boolean);
-
-        if (rows.length === 0) {
-            return NextResponse.json({ uploaded: 0, failed: dataLines.length, total: dataLines.length });
-        }
-
-        const { error } = await supabase.from("marketing_leads").insert(rows);
+        const { error } = await supabase
+            .from("marketing_leads")
+            .upsert(rows as any[], { onConflict: "phone" });
 
         if (error) {
-            console.error("Insert error:", error);
-            return NextResponse.json({ uploaded: 0, failed: rows.length, total: rows.length, error: error.message });
+            console.error("Upload upsert error:", error);
+            return NextResponse.json({ uploaded: 0, failed: rows.length, total: dataRows.length, error: error.message });
         }
 
-        return NextResponse.json({
-            uploaded: rows.length,
-            failed: dataLines.length - rows.length,
-            total: dataLines.length,
-        });
+        return NextResponse.json({ uploaded: rows.length, failed: dataRows.length - rows.length, total: dataRows.length });
 
     } catch (err: any) {
         console.error("Upload API error:", err);

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Upload, Download, Filter, Users, TrendingUp, X, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
-import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction } from "./actions";
+import { Upload, Download, Filter, Users, TrendingUp, X, RefreshCw, ChevronLeft, ChevronRight, Database, ShieldCheck, ShieldAlert } from "lucide-react";
+import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction } from "./actions";
 
 type Lead = {
     id: number;
@@ -14,12 +14,15 @@ type Lead = {
     address_sido: string | null;
     address_sigungu: string | null;
     address_dong: string | null;
+    is_real: boolean;
 };
 
 type Stats = {
     total: number;
     male: number;
     female: number;
+    realCount: number;
+    fakeCount: number;
     recentBatches: any[];
 };
 
@@ -36,7 +39,7 @@ const AGE_GROUPS = [
 
 export default function AdminLeadsPage() {
     const [leads, setLeads] = useState<Lead[]>([]);
-    const [stats, setStats] = useState<Stats>({ total: 0, male: 0, female: 0, recentBatches: [] });
+    const [stats, setStats] = useState<Stats>({ total: 0, male: 0, female: 0, realCount: 0, fakeCount: 0, recentBatches: [] });
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
     const PAGE_SIZE = 100;
@@ -50,6 +53,7 @@ export default function AdminLeadsPage() {
     const [idStart, setIdStart] = useState("");
     const [idEnd, setIdEnd] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
+    const [isRealFilter, setIsRealFilter] = useState<"T" | "F" | "">("");
 
     // 지역 목록
     const [sidoList, setSidoList] = useState<string[]>([]);
@@ -59,9 +63,11 @@ export default function AdminLeadsPage() {
     // UI 상태
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadIsReal, setUploadIsReal] = useState(true);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadResult, setUploadResult] = useState<{ uploaded: number; failed: number; total: number } | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // 통계 로드
     useEffect(() => {
@@ -104,6 +110,7 @@ export default function AdminLeadsPage() {
             dong: dong || undefined,
             gender: gender || undefined,
             ageGroup: ageGroup || undefined,
+            isReal: isRealFilter || undefined,
             idStart: idStart ? parseInt(idStart) : undefined,
             idEnd: idEnd ? parseInt(idEnd) : undefined,
             search: searchTerm || undefined,
@@ -125,6 +132,7 @@ export default function AdminLeadsPage() {
     const handleReset = () => {
         setSido(""); setSigungu(""); setDong("");
         setGender(""); setAgeGroup("");
+        setIsRealFilter("");
         setIdStart(""); setIdEnd(""); setSearchTerm("");
         setPage(1);
     };
@@ -157,6 +165,7 @@ export default function AdminLeadsPage() {
                 const formData = new FormData();
                 formData.append("csv", new Blob([chunkText], { type: "text/csv" }), "chunk.csv");
                 formData.append("batchId", batchId);
+                formData.append("isReal", String(uploadIsReal));
 
                 const res = await fetch("/api/leads/upload", {
                     method: "POST",
@@ -181,6 +190,24 @@ export default function AdminLeadsPage() {
         }
     };
 
+    const handleGenerateFake = async () => {
+        if (!confirm("테스트용 가짜 데이터 10,000건을 생성하시겠습니까?")) return;
+        setIsGenerating(true);
+        try {
+            const res = await generateFakeLeadsAction(10000);
+            if (res.success) {
+                alert(`가짜 데이터 ${res.inserted.toLocaleString()}건 생성 완료!`);
+                setPage(1);
+                fetchData(1);
+                getLeadsStatsAction().then(setStats);
+            } else {
+                alert("생성 중 오류가 발생했습니다.");
+            }
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     // CSV 다운로드
     const handleDownload = async () => {
         setIsDownloading(true);
@@ -191,6 +218,7 @@ export default function AdminLeadsPage() {
             if (dong) params.set("dong", dong);
             if (gender) params.set("gender", gender);
             if (ageGroup) params.set("ageGroup", ageGroup);
+            if (isRealFilter) params.set("isReal", isRealFilter);
             if (idStart) params.set("idStart", idStart);
             if (idEnd) params.set("idEnd", idEnd);
             if (searchTerm) params.set("search", searchTerm);
@@ -212,6 +240,28 @@ export default function AdminLeadsPage() {
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
+            {/* 전체 화면 로딩 오버레이 */}
+            {(isUploading || isGenerating) && (
+                <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 text-white backdrop-blur-sm">
+                    <RefreshCw className="w-12 h-12 animate-spin mb-4" />
+                    <h2 className="text-2xl font-bold mb-2">
+                        {isGenerating ? "테스트 데이터 생성 중..." : "데이터 업로드 중..."}
+                    </h2>
+                    {isUploading && (
+                        <div className="w-64 mt-4">
+                            <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                                <div
+                                    className="bg-white h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
+                            <p className="text-center text-sm">{uploadProgress}% 완료</p>
+                        </div>
+                    )}
+                    <p className="text-gray-400 text-sm mt-6">잠시만 기다려주세요. 브라우저를 닫거나 새로고침하지 마세요.</p>
+                </div>
+            )}
+
             {/* 헤더 */}
             <div className="mb-8">
                 <h1 className="text-2xl font-black tracking-widest mb-1">고객 DB 관리</h1>
@@ -219,14 +269,16 @@ export default function AdminLeadsPage() {
             </div>
 
             {/* 통계 카드 */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
                 {[
-                    { label: "전체 고객", value: stats.total.toLocaleString(), icon: Users, color: "text-blue-600" },
+                    { label: "전체 DB", value: stats.total.toLocaleString(), icon: Database, color: "text-black" },
+                    { label: "실제 고객", value: stats.realCount.toLocaleString(), icon: ShieldCheck, color: "text-green-600" },
+                    { label: "테스트/가짜", value: stats.fakeCount.toLocaleString(), icon: ShieldAlert, color: "text-orange-500" },
                     { label: "남성", value: stats.male.toLocaleString(), icon: TrendingUp, color: "text-blue-500" },
                     { label: "여성", value: stats.female.toLocaleString(), icon: TrendingUp, color: "text-pink-500" },
-                    { label: "조회 결과", value: totalCount > 0 ? totalCount.toLocaleString() : "-", icon: Filter, color: "text-green-600" },
+                    { label: "조회 결과", value: totalCount > 0 ? totalCount.toLocaleString() : "-", icon: Filter, color: "text-purple-600" },
                 ].map((stat) => (
-                    <div key={stat.label} className="bg-white border border-gray-200 rounded-xl p-5">
+                    <div key={stat.label} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                         <div className="flex items-center gap-2 mb-1">
                             <stat.icon className={`w-4 h-4 ${stat.color}`} />
                             <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
@@ -237,17 +289,31 @@ export default function AdminLeadsPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                {/* 업로드 패널 */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6">
+                {/* 업로드/생성 패널 */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col h-full">
                     <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-                        <Upload className="w-5 h-5" /> CSV 업로드
+                        <Upload className="w-5 h-5" /> 데이터 추가
                     </h2>
+                    
+                    <div className="mb-4">
+                        <label className="flex items-center gap-2 text-sm font-bold text-gray-700 cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={uploadIsReal} 
+                                onChange={e => setUploadIsReal(e.target.checked)}
+                                className="w-4 h-4 text-black rounded border-gray-300 focus:ring-black"
+                            />
+                            업로드하는 데이터를 '실제 고객(Real)'으로 분류
+                        </label>
+                    </div>
+
                     <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-                        <strong>서식:</strong> 순번, 연락처, 이름, 생년월일, 주민뒷자리시작번호, 주소<br />
-                        5,000건씩 자동 분할 업로드됩니다.
+                        <strong>서식:</strong> 순번, 연락처, 이름, 생년월일, 주민뒷자리시작번호, 주소, 비고(선택)<br />
+                        * 비고 란에 T 또는 F 입력 시 개별 설정 가능<br />
+                        * 대용량 파일은 5,000건씩 자동 분할 처리됩니다.
                     </p>
 
-                    <label className="block w-full cursor-pointer">
+                    <label className="block w-full cursor-pointer mb-4">
                         <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isUploading ? "border-blue-300 bg-blue-50" : "border-gray-300 hover:border-black"}`}>
                             {isUploading ? (
                                 <div>
@@ -269,12 +335,23 @@ export default function AdminLeadsPage() {
                         </div>
                         <input
                             type="file"
-                            accept=".csv"
+                            accept=".csv,.txt"
                             className="hidden"
                             onChange={handleFileUpload}
                             disabled={isUploading}
                         />
                     </label>
+
+                    <div className="mt-auto pt-4 border-t border-gray-100">
+                        <button
+                            onClick={handleGenerateFake}
+                            disabled={isGenerating || isUploading}
+                            className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            <Database className="w-4 h-4" />
+                            테스트용 가짜 데이터 1만건 생성
+                        </button>
+                    </div>
 
                     {uploadResult && (
                         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
@@ -316,6 +393,13 @@ export default function AdminLeadsPage() {
                             <option value="">전체 성별</option>
                             <option value="M">남성</option>
                             <option value="F">여성</option>
+                        </select>
+
+                        {/* 진위 여부 필터 */}
+                        <select value={isRealFilter} onChange={e => setIsRealFilter(e.target.value as any)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black">
+                            <option value="">데이터 종류 전체</option>
+                            <option value="T">실제 데이터 (Real)</option>
+                            <option value="F">테스트 데이터 (Fake)</option>
                         </select>
 
                         {/* 나이대 필터 */}
@@ -412,8 +496,8 @@ export default function AdminLeadsPage() {
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
-                                    {["순번", "연락처", "이름", "생년월일", "성별", "시/도", "시/군/구", "읍/면/동"].map(h => (
-                                        <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 tracking-wider">{h}</th>
+                                    {["순번", "종류", "연락처", "이름", "생년월일", "성별", "시/도", "시/군/구", "읍/면/동"].map(h => (
+                                        <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 tracking-wider whitespace-nowrap">{h}</th>
                                     ))}
                                 </tr>
                             </thead>
@@ -421,8 +505,15 @@ export default function AdminLeadsPage() {
                                 {leads.map((lead) => (
                                     <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-4 py-3 text-gray-400 text-xs">{lead.id}</td>
+                                        <td className="px-4 py-3 text-xs">
+                                            {lead.is_real ? (
+                                                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-bold">Real</span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-bold">Fake</span>
+                                            )}
+                                        </td>
                                         <td className="px-4 py-3 font-mono text-xs">{lead.phone}</td>
-                                        <td className="px-4 py-3 font-medium">{lead.name}</td>
+                                        <td className="px-4 py-3 font-medium whitespace-nowrap">{lead.name}</td>
                                         <td className="px-4 py-3 text-gray-600">{lead.birth_date || "-"}</td>
                                         <td className="px-4 py-3">
                                             {lead.gender === "M" ? (

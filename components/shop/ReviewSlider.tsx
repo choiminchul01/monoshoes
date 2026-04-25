@@ -173,7 +173,7 @@ export default function ReviewSlider() {
                                         <div className="relative inline-flex">
                                             <div className="flex gap-0.5">
                                                 {[...Array(5)].map((_, i) => (
-                                                    <Star key={`bg-${i}`} className="w-4 h-4 text-gray-200 fill-gray-200" />
+                                                    <Star key={`bg-${i}`} className="w-4 h-4 text-gray-200 fill-gray-200 flex-shrink-0" />
                                                 ))}
                                             </div>
                                             <div 
@@ -181,7 +181,7 @@ export default function ReviewSlider() {
                                                 style={{ width: `${((review as any).displayRating / 5) * 100}%` }}
                                             >
                                                 {[...Array(5)].map((_, i) => (
-                                                    <Star key={`fg-${i}`} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                                    <Star key={`fg-${i}`} className="w-4 h-4 text-yellow-400 fill-yellow-400 flex-shrink-0" />
                                                 ))}
                                             </div>
                                         </div>

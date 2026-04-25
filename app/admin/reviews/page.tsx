@@ -7,6 +7,7 @@ import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
 import Image from "next/image";
+import { createAdminReview, updateAdminReview, deleteAdminReview } from "./actions";
 
 type Review = {
     id: string;
@@ -47,10 +48,19 @@ export default function AdminReviewsPage() {
         content: "",
         image: null as File | null
     });
-    const [productSearch, setProductSearch] = useState("");
-    const [searchedProducts, setSearchedProducts] = useState<Product[]>([]);
+    const [allProducts, setAllProducts] = useState<Product[]>([]);
+    const [isFetchingProducts, setIsFetchingProducts] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Custom searchable dropdown state
+    const [productSearchTerm, setProductSearchTerm] = useState("");
+    const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
+
+    // Filter products locally
+    const filteredProducts = allProducts.filter(p => 
+        p.name.toLowerCase().includes(productSearchTerm.toLowerCase())
+    );
 
     useEffect(() => {
         fetchReviews();
@@ -105,8 +115,8 @@ export default function AdminReviewsPage() {
         if (!confirm("정말 이 리뷰를 삭제하시겠습니까?")) return;
 
         try {
-            const { error } = await supabase.from("reviews").delete().eq("id", id);
-            if (error) throw error;
+            const result = await deleteAdminReview(id);
+            if (!result.success) throw new Error(result.error);
             toast.success("리뷰가 삭제되었습니다.");
             fetchReviews();
         } catch (error) {
@@ -115,23 +125,27 @@ export default function AdminReviewsPage() {
         }
     };
 
-    // Product Search for Create Modal
-    useEffect(() => {
-        const searchProducts = async () => {
-            if (productSearch.length < 2) {
-                setSearchedProducts([]);
-                return;
-            }
+    const openCreateModal = async () => {
+        setIsCreateModalOpen(true);
+        setProductSearchTerm("");
+        setIsProductDropdownOpen(false);
+        if (allProducts.length === 0) {
+            setIsFetchingProducts(true);
             const { data } = await supabase
                 .from("products")
-                .select("id, name, image_url")
-                .ilike("name", `%${productSearch}%`)
-                .limit(5);
-            setSearchedProducts(data || []);
-        };
-        const debounce = setTimeout(searchProducts, 300);
-        return () => clearTimeout(debounce);
-    }, [productSearch]);
+                .select("id, name, images")
+                .order("created_at", { ascending: false });
+            
+            if (data) {
+                setAllProducts(data.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    image_url: p.images && p.images.length > 0 ? p.images[0] : null
+                })));
+            }
+            setIsFetchingProducts(false);
+        }
+    };
 
     const handleCreateReview = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -161,22 +175,26 @@ export default function AdminReviewsPage() {
                 imageUrl = publicUrl;
             }
 
-            const { error } = await supabase.from("reviews").insert({
+            const insertData = {
                 product_id: selectedProduct.id,
                 author_name: newReview.authorName,
                 rating: newReview.rating,
                 content: newReview.content,
-                image_url: imageUrl,
-                is_admin_created: true
-            });
+                image_url: imageUrl
+            };
+            
+            const result = await createAdminReview(insertData);
 
-            if (error) throw error;
+            if (!result.success) {
+                console.error("Server action error:", result.error);
+                throw new Error(result.error);
+            }
 
             toast.success("리뷰가 생성되었습니다.");
             setIsCreateModalOpen(false);
             setNewReview({ productId: "", authorName: "", rating: 5, content: "", image: null });
             setSelectedProduct(null);
-            setProductSearch("");
+            setProductSearchTerm("");
             fetchReviews();
         } catch (error) {
             console.error("Error creating review:", error);
@@ -238,9 +256,12 @@ export default function AdminReviewsPage() {
                 updateData.image_url = imageUrl;
             }
 
-            const { error } = await supabase.from("reviews").update(updateData).eq("id", editingReviewId);
+            const result = await updateAdminReview(editingReviewId, updateData);
 
-            if (error) throw error;
+            if (!result.success) {
+                console.error("Server action error:", result.error);
+                throw new Error(result.error);
+            }
 
             toast.success("리뷰가 수정되었습니다.");
             setIsEditModalOpen(false);
@@ -316,7 +337,7 @@ export default function AdminReviewsPage() {
                     </button>
                 </div>
                 <button
-                    onClick={() => setIsCreateModalOpen(true)}
+                    onClick={openCreateModal}
                     className="flex items-center justify-center gap-2 px-4 py-2 font-bold bg-gray-900 text-white rounded-lg hover:bg-black transition-colors"
                 >
                     <Plus className="w-4 h-4" />
@@ -438,51 +459,74 @@ export default function AdminReviewsPage() {
                         </div>
 
                         <form onSubmit={handleCreateReview} className="admin-modal-body space-y-4">
-                            {/* Product Search */}
-                            <div>
+                            {/* Product Selection */}
+                            <div className="relative">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">상품 선택</label>
                                 {selectedProduct ? (
                                     <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
-                                        <div className="relative w-12 h-12 rounded overflow-hidden bg-gray-200">
-                                            <Image src={selectedProduct.image_url} alt={selectedProduct.name} fill className="object-cover" />
+                                        <div className="relative w-10 h-10 rounded overflow-hidden bg-gray-200 flex-shrink-0">
+                                            {selectedProduct.image_url ? (
+                                                <Image src={selectedProduct.image_url} alt={selectedProduct.name} fill className="object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full bg-gray-200" />
+                                            )}
                                         </div>
-                                        <span className="font-medium text-sm flex-1">{selectedProduct.name}</span>
+                                        <span className="font-medium text-sm flex-1 truncate">{selectedProduct.name}</span>
                                         <button
                                             type="button"
-                                            onClick={() => setSelectedProduct(null)}
-                                            className="text-gray-500 hover:text-red-500"
+                                            onClick={() => {
+                                                setSelectedProduct(null);
+                                                setProductSearchTerm("");
+                                            }}
+                                            className="text-gray-500 hover:text-red-500 p-1"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
                                     </div>
                                 ) : (
                                     <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="상품명 검색..."
-                                            value={productSearch}
-                                            onChange={(e) => setProductSearch(e.target.value)}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704A] focus:border-transparent"
-                                        />
-                                        {searchedProducts.length > 0 && (
-                                            <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-10 max-h-48 overflow-y-auto">
-                                                {searchedProducts.map(product => (
-                                                    <button
-                                                        key={product.id}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setSelectedProduct(product);
-                                                            setSearchedProducts([]);
-                                                            setProductSearch("");
-                                                        }}
-                                                        className="w-full flex items-center gap-3 p-2 hover:bg-gray-50 text-left"
-                                                    >
-                                                        <div className="relative w-8 h-8 rounded overflow-hidden bg-gray-200">
-                                                            <Image src={product.image_url} alt={product.name} fill className="object-cover" />
-                                                        </div>
-                                                        <span className="text-sm truncate">{product.name}</span>
-                                                    </button>
-                                                ))}
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <input
+                                                type="text"
+                                                placeholder={isFetchingProducts ? "상품 목록을 불러오는 중..." : "상품명 검색..."}
+                                                value={productSearchTerm}
+                                                onChange={(e) => {
+                                                    setProductSearchTerm(e.target.value);
+                                                    setIsProductDropdownOpen(true);
+                                                }}
+                                                onFocus={() => setIsProductDropdownOpen(true)}
+                                                disabled={isFetchingProducts}
+                                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
+                                            />
+                                        </div>
+                                        
+                                        {isProductDropdownOpen && !isFetchingProducts && (
+                                            <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-10 max-h-60 overflow-y-auto">
+                                                {filteredProducts.length > 0 ? (
+                                                    filteredProducts.map(product => (
+                                                        <button
+                                                            key={product.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedProduct(product);
+                                                                setIsProductDropdownOpen(false);
+                                                            }}
+                                                            className="w-full flex items-center gap-3 p-2 hover:bg-gray-50 text-left border-b border-gray-50 last:border-0"
+                                                        >
+                                                            <div className="relative w-8 h-8 rounded overflow-hidden bg-gray-200 flex-shrink-0">
+                                                                {product.image_url && (
+                                                                    <Image src={product.image_url} alt={product.name} fill className="object-cover" />
+                                                                )}
+                                                            </div>
+                                                            <span className="text-sm truncate text-gray-700">{product.name}</span>
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="p-4 text-center text-sm text-gray-500">
+                                                        검색 결과가 없습니다.
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>

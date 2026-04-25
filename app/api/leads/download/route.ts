@@ -2,48 +2,52 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
+const CHUNK_SIZE = 20000; // 2만 건씩 분할
+
 export async function GET(request: NextRequest) {
     const supabase = createRouteHandlerClient({ cookies });
     const { searchParams } = new URL(request.url);
 
-    // 필터 파라미터 파싱
+    // 관리자 확인
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { data: adminUser } = await supabase
+        .from("admin_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+    if (!adminUser) return NextResponse.json({ error: "Admin only" }, { status: 403 });
+
+    // 필터 파라미터
     const sido = searchParams.get("sido") || "";
     const sigungu = searchParams.get("sigungu") || "";
     const dong = searchParams.get("dong") || "";
     const gender = searchParams.get("gender") || "";
     const ageGroup = searchParams.get("ageGroup") || "";
+    const isRealParam = searchParams.get("isReal") || "";
     const idStart = searchParams.get("idStart") ? parseInt(searchParams.get("idStart")!) : null;
     const idEnd = searchParams.get("idEnd") ? parseInt(searchParams.get("idEnd")!) : null;
     const search = searchParams.get("search") || "";
 
-    // 관리자 권한 확인
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const { data: adminUser } = await supabase
-        .from("admin_users")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-    if (!adminUser) {
-        return NextResponse.json({ error: "Admin only" }, { status: 403 });
-    }
+    // 청크 인덱스 (0부터 시작)
+    const chunkIndex = parseInt(searchParams.get("chunkIndex") || "0");
 
     // 쿼리 빌드
     let query = supabase
         .from("marketing_leads")
-        .select("id, phone, name, birth_date, gender, address, address_sido, address_sigungu, address_dong, consent_date, created_at");
+        .select("id, seq, phone, name, birth_date, gender, address, address_sido, address_sigungu, address_dong, is_real, created_at", { count: "exact" });
 
     if (sido) query = query.eq("address_sido", sido);
     if (sigungu) query = query.eq("address_sigungu", sigungu);
     if (dong) query = query.eq("address_dong", dong);
     if (gender) query = query.eq("gender", gender);
+    if (isRealParam === "T") query = query.eq("is_real", true);
+    if (isRealParam === "F") query = query.eq("is_real", false);
     if (idStart !== null) query = query.gte("id", idStart);
     if (idEnd !== null) query = query.lte("id", idEnd);
     if (search) query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
 
-    // 나이대 필터
     if (ageGroup) {
         const currentYear = new Date().getFullYear();
         const ageMap: Record<string, [number, number]> = {
@@ -52,21 +56,37 @@ export async function GET(request: NextRequest) {
         };
         const range = ageMap[ageGroup];
         if (range) {
-            const maxBirth = `${currentYear - range[0]}-12-31`;
-            const minBirth = `${currentYear - range[1]}-01-01`;
-            query = query.gte("birth_date", minBirth).lte("birth_date", maxBirth);
+            query = query
+                .gte("birth_date", `${currentYear - range[1]}-01-01`)
+                .lte("birth_date", `${currentYear - range[0]}-12-31`);
         }
     }
 
-    const { data, error } = await query.order("id", { ascending: true });
+    // 청크 범위 계산
+    const from = chunkIndex * CHUNK_SIZE;
+    const to = from + CHUNK_SIZE - 1;
 
-    if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    const { data, error, count } = await query
+        .order("id", { ascending: true })
+        .range(from, to);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    const totalCount = count || 0;
+    const totalChunks = Math.ceil(totalCount / CHUNK_SIZE);
+
+    // 최대 10만 건 제한
+    if (totalCount > 100000 && chunkIndex === 0) {
+        return NextResponse.json(
+            { error: `조회 결과가 ${totalCount.toLocaleString()}건입니다. 필터를 좁혀서 10만 건 이하로 조회해 주세요.`, totalCount },
+            { status: 413 }
+        );
     }
 
     // CSV 생성
-    const headers = ["순번", "연락처", "이름", "생년월일", "성별", "주소", "시/도", "시/군/구", "읍/면/동", "동의일자", "등록일시"];
+    const headers = ["순번", "DB순번", "연락처", "이름", "생년월일", "성별", "주소", "시/도", "시/군/구", "읍/면/동", "DB구분", "등록일시"];
     const rows = (data || []).map((row: any) => [
+        row.seq || "",
         row.id,
         row.phone,
         row.name,
@@ -76,7 +96,7 @@ export async function GET(request: NextRequest) {
         row.address_sido || "",
         row.address_sigungu || "",
         row.address_dong || "",
-        row.consent_date || "",
+        row.is_real ? "T" : "F",
         row.created_at ? new Date(row.created_at).toLocaleDateString("ko-KR") : "",
     ]);
 
@@ -87,12 +107,20 @@ export async function GET(request: NextRequest) {
 
     // BOM 포함 (엑셀 한글 깨짐 방지)
     const bom = "\uFEFF";
-    const filename = `mono_shoes_leads_${new Date().toISOString().slice(0, 10)}.csv`;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const chunkLabel = totalChunks > 1
+        ? `_${(from + 1).toLocaleString()}~${Math.min(to + 1, totalCount).toLocaleString()}`
+        : "";
+    const filename = `mono_leads_${dateStr}${chunkLabel}.csv`;
 
     return new NextResponse(bom + csvContent, {
         headers: {
             "Content-Type": "text/csv; charset=utf-8",
             "Content-Disposition": `attachment; filename="${filename}"`,
+            "X-Total-Count": String(totalCount),
+            "X-Chunk-Index": String(chunkIndex),
+            "X-Total-Chunks": String(totalChunks),
+            "X-Chunk-Size": String(CHUNK_SIZE),
         },
     });
 }
