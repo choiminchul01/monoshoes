@@ -49,13 +49,13 @@ export function Sidebar({ onFilterSelect }: SidebarProps) {
 
     return (
         <aside className="w-full md:w-56 flex-shrink-0">
-            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2 scrollbar-hide">
+            <div className="overflow-y-auto pr-2 scrollbar-hide">
 
                 {/* 전체 보기 */}
                 <Link
                     href="/shop"
                     onClick={handleClick}
-                    className={`block text-xs font-bold tracking-widest mb-6 transition-all ${!selectedCategory && !selectedGender ? "text-black" : "text-gray-400 hover:text-black"}`}
+                    className={`block text-base font-bold tracking-widest mb-6 transition-all ${!selectedCategory && !selectedGender ? "text-black" : "text-gray-400 hover:text-black"}`}
                 >
                     ALL SHOES
                 </Link>

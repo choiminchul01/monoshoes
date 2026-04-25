@@ -323,7 +323,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     };
 
     return (
-        <div className="container mx-auto px-4 pt-0 pb-6 md:pb-12 md:pt-0 relative">
+        <div className="container mx-auto px-4 pt-20 pb-6 md:pb-12 relative">
             {/* Flying Image Animation */}
             <AnimatePresence>
                 {isFlying && product?.images?.[0] && (

@@ -42,7 +42,7 @@ export default function EventSlider() {
 
     return (
         <section className="py-24 bg-[#FAFAFA]">
-            <div className="max-w-[1400px] mx-auto px-6">
+            <div className="max-w-[1800px] mx-auto px-4 md:px-8">
                 <div className="text-center mb-16">
                     <p className="text-[#C41E3A] text-[10px] tracking-[0.4em] font-black uppercase mb-3">EXCLUSIVE</p>
                     <div className="inline-block">
