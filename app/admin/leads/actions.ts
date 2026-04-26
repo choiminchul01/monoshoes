@@ -75,7 +75,8 @@ function parseBirthAndGender(raw: string): { birthDate: string | null; gender: s
 // 통계 대시보드 (실제/가짜 건수 포함)
 // ============================================================
 export async function getLeadsStatsAction() {
-    const supabase = createServerActionClient({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createServerActionClient({ cookies: () => cookieStore });
 
     const [totalRes, maleRes, femaleRes, realRes, fakeRes, batchRes] = await Promise.all([
         supabase.from("marketing_leads").select("id", { count: "exact", head: true }),
@@ -112,7 +113,11 @@ export async function fetchLeadsAction(filters: {
     page?: number;
     pageSize?: number;
 }) {
-    const supabase = createServerActionClient({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createServerActionClient({ cookies: () => cookieStore });
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log("=== [DEBUG] fetchLeadsAction ===");
+    console.log("Session User ID:", session?.user?.id);
 
     const page = filters.page || 1;
     const pageSize = filters.pageSize || 100;
@@ -151,7 +156,10 @@ export async function fetchLeadsAction(filters: {
 
     const { data, error, count } = await query.order("id", { ascending: true }).range(from, to);
 
-    if (error) return { success: false, error: error.message, data: [], count: 0 };
+    if (error) {
+        console.error("=== [DEBUG] Query Error ===", error);
+        return { success: false, error: error.message, data: [], count: 0 };
+    }
     return { success: true, data: data || [], count: count || 0 };
 }
 
@@ -159,7 +167,8 @@ export async function fetchLeadsAction(filters: {
 // 지역 목록 조회 (필터 드롭다운용)
 // ============================================================
 export async function getLeadsRegionsAction(level: "sido" | "sigungu" | "dong", parent?: string) {
-    const supabase = createServerActionClient({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createServerActionClient({ cookies: () => cookieStore });
 
     const columnMap = { sido: "address_sido", sigungu: "address_sigungu", dong: "address_dong" };
     const col = columnMap[level];

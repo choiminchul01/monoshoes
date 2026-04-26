@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Shield } from "lucide-react";
 
 // Admin email validation is now handled by admin_roles table in database
@@ -10,6 +10,7 @@ import { Shield } from "lucide-react";
 
 export default function AdminLoginPage() {
     const router = useRouter();
+    const supabase = createClientComponentClient();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);

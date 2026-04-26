@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 
 export type AdminPermissions = {
@@ -32,6 +32,7 @@ export function useAdminPermissions() {
     const [role, setRole] = useState<AdminRole | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const supabase = createClientComponentClient();
 
     useEffect(() => {
         fetchPermissions();

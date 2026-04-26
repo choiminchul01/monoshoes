@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { Package, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, Megaphone, Handshake, ChevronDown, LayoutDashboard } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { ToastProvider } from '@/context/ToastContext';
 import { useAdminPermissions } from '@/lib/useAdminPermissions';
 
@@ -57,6 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
     const { user, loading } = useAuth();
     const { hasPermission, isMaster, loading: permLoading } = useAdminPermissions();
+    const supabase = createClientComponentClient();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showShopConfirm, setShowShopConfirm] = useState(false);
     const [counts, setCounts] = useState({ products: 0 });

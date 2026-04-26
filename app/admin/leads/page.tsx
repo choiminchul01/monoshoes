@@ -191,12 +191,12 @@ export default function AdminLeadsPage() {
     };
 
     const handleGenerateFake = async () => {
-        if (!confirm("테스트용 가짜 데이터 10,000건을 생성하시겠습니까?")) return;
+        if (!confirm("테스트용 데이터(1만건)를 생성하시겠습니까?")) return;
         setIsGenerating(true);
         try {
             const res = await generateFakeLeadsAction(10000);
             if (res.success) {
-                alert(`가짜 데이터 ${res.inserted.toLocaleString()}건 생성 완료!`);
+                alert(`테스트용 데이터 ${res.inserted.toLocaleString()}건 생성 완료!`);
                 setPage(1);
                 fetchData(1);
                 getLeadsStatsAction().then(setStats);
@@ -349,7 +349,7 @@ export default function AdminLeadsPage() {
                             className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             <Database className="w-4 h-4" />
-                            테스트용 가짜 데이터 1만건 생성
+                            테스트용 데이터(1만건) 생성
                         </button>
                     </div>
 
