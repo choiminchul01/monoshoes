@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 const CHUNK_SIZE = 20000; // 2만 건씩 분할
 
 export async function GET(request: NextRequest) {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     const { searchParams } = new URL(request.url);
 
     // 관리자 확인

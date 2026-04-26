@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Upload, Download, Filter, Users, TrendingUp, X, RefreshCw, ChevronLeft, ChevronRight, Database, ShieldCheck, ShieldAlert } from "lucide-react";
-import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction } from "./actions";
+import { Upload, Download, Filter, Users, TrendingUp, X, RefreshCw, ChevronLeft, ChevronRight, Database, ShieldCheck, ShieldAlert, Trash2 } from "lucide-react";
+import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction } from "./actions";
 
 type Lead = {
     id: number;
@@ -58,7 +58,6 @@ export default function AdminLeadsPage() {
     // 지역 목록
     const [sidoList, setSidoList] = useState<string[]>([]);
     const [sigunguList, setSigunguList] = useState<string[]>([]);
-    const [dongList, setDongList] = useState<string[]>([]);
 
     // UI 상태
     const [isLoading, setIsLoading] = useState(false);
@@ -81,25 +80,18 @@ export default function AdminLeadsPage() {
             getLeadsRegionsAction("sigungu", sido).then(setSigunguList);
             setSigungu("");
             setDong("");
-            setDongList([]);
         } else {
             setSigunguList([]);
             setSigungu("");
             setDong("");
-            setDongList([]);
         }
     }, [sido]);
 
-    // 시/군/구 변경 시 읍/면/동 로드
+    // 드롭다운 필터 변경 시 자동 조회
     useEffect(() => {
-        if (sigungu) {
-            getLeadsRegionsAction("dong", sigungu).then(setDongList);
-            setDong("");
-        } else {
-            setDongList([]);
-            setDong("");
-        }
-    }, [sigungu]);
+        setPage(1);
+        fetchData(1);
+    }, [sido, sigungu, dong, gender, ageGroup, isRealFilter]);
 
     // 데이터 조회
     const fetchData = useCallback(async (p = 1) => {
@@ -122,7 +114,14 @@ export default function AdminLeadsPage() {
             setTotalCount(result.count);
         }
         setIsLoading(false);
-    }, [sido, sigungu, dong, gender, ageGroup, idStart, idEnd, searchTerm]);
+    }, [sido, sigungu, dong, gender, ageGroup, isRealFilter, idStart, idEnd, searchTerm]);
+
+    // 드롭다운 필터 변경 시 자동 조회 (텍스트 입력 시엔 자동조회 막음)
+    useEffect(() => {
+        setPage(1);
+        fetchData(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sido, sigungu, dong, gender, ageGroup, isRealFilter]);
 
     const handleSearch = () => {
         setPage(1);
@@ -205,6 +204,26 @@ export default function AdminLeadsPage() {
             }
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleDeleteFakeData = async () => {
+        if (!confirm("주의! 생성된 모든 '테스트용 가짜 데이터'가 삭제됩니다. 계속하시겠습니까?\n(실제 고객 데이터는 유지됩니다)")) return;
+        
+        setIsLoading(true);
+        try {
+            const res = await deleteFakeLeadsAction();
+            if (res.success) {
+                alert("테스트 데이터가 모두 삭제되었습니다.");
+                fetchData();
+                getLeadsStatsAction().then(setStats);
+            } else {
+                alert("삭제 실패");
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -342,7 +361,7 @@ export default function AdminLeadsPage() {
                         />
                     </label>
 
-                    <div className="mt-auto pt-4 border-t border-gray-100">
+                    <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-2">
                         <button
                             onClick={handleGenerateFake}
                             disabled={isGenerating || isUploading}
@@ -350,6 +369,14 @@ export default function AdminLeadsPage() {
                         >
                             <Database className="w-4 h-4" />
                             테스트용 데이터(1만건) 생성
+                        </button>
+                        <button
+                            onClick={handleDeleteFakeData}
+                            disabled={isGenerating || isUploading || isLoading}
+                            className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            테스트 데이터 전체 삭제
                         </button>
                     </div>
 
@@ -383,10 +410,13 @@ export default function AdminLeadsPage() {
                             {sigunguList.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
 
-                        <select value={dong} onChange={e => setDong(e.target.value)} disabled={!sigungu} className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black disabled:opacity-50">
-                            <option value="">읍/면/동 전체</option>
-                            {dongList.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
+                        <input
+                            type="text"
+                            placeholder="읍/면/동 직접 입력"
+                            value={dong}
+                            onChange={e => setDong(e.target.value)}
+                            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black"
+                        />
 
                         {/* 성별 필터 */}
                         <select value={gender} onChange={e => setGender(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black">
