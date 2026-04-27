@@ -149,7 +149,7 @@ export function Header() {
                                 <span className="text-xl md:text-2xl font-black tracking-[0.1em] text-black transition-all duration-300 group-hover:opacity-0 group-hover:invisible" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
                                     MONO SHOES
                                 </span>
-                                <span className="absolute inset-0 flex items-center justify-center text-2xl md:text-3xl font-bold tracking-[0.05em] text-black opacity-0 invisible transition-all duration-300 group-hover:opacity-100 group-hover:visible whitespace-nowrap" style={{ fontFamily: "'SDSwagger', sans-serif" }}>
+                                <span className="absolute inset-0 flex items-center justify-center text-2xl md:text-3xl font-bold tracking-[0.05em] text-black opacity-0 invisible transition-all duration-300 group-hover:opacity-100 group-hover:visible whitespace-nowrap" style={{ fontFamily: "'DesignHouse', sans-serif" }}>
                                     모노 슈즈
                                 </span>
                             </Link>
