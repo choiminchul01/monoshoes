@@ -22,6 +22,7 @@ type Review = {
     content: string;
     image_url: string | null;
     created_at: string;
+    is_admin_created?: boolean;
 };
 
 interface ProductDetailTabsProps {
@@ -339,8 +340,8 @@ function ReviewTabContent({ productId }: { productId: string }) {
                                         />
                                     </div>
                                 )}
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
+                                <div className="flex-1 flex flex-col items-center text-center">
+                                    <div className="flex items-center gap-2 mb-1 justify-center">
                                         <div className="flex gap-0.5">
                                             {[1, 2, 3, 4, 5].map(s => (
                                                 <Star
@@ -354,7 +355,7 @@ function ReviewTabContent({ productId }: { productId: string }) {
                                         </span>
                                     </div>
                                     <p className="text-xs font-bold text-gray-600 mb-2">
-                                        {review.is_admin_created ? "MONO SHOES" : review.author_name}
+                                        {review.author_name}
                                     </p>
                                     <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
                                 </div>

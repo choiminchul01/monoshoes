@@ -168,8 +168,8 @@ export default function ReviewSlider() {
                             </div>
 
                             <div className="p-6 flex flex-col flex-grow justify-between">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-3">
+                                <div className="flex flex-col items-center text-center">
+                                    <div className="flex items-center gap-2 mb-3 justify-center">
                                         <div className="relative inline-flex">
                                             <div className="flex gap-0.5">
                                                 {[...Array(5)].map((_, i) => (
@@ -189,10 +189,10 @@ export default function ReviewSlider() {
                                             {((review as any).displayRating).toFixed(1)}
                                         </span>
                                     </div>
-                                    <p className="text-[12px] font-bold text-gray-400 mb-2 truncate">
+                                    <p className="text-[12px] font-bold text-gray-400 mb-2 w-full truncate">
                                         {review.product?.name || "모노슈즈 베스트 아이템"}
                                     </p>
-                                    <p className="text-[14px] text-gray-800 leading-relaxed font-medium line-clamp-3">
+                                    <p className="text-[14px] text-gray-800 leading-relaxed font-medium line-clamp-3 w-full">
                                         {review.content}
                                     </p>
                                 </div>
