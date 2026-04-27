@@ -209,6 +209,26 @@ export async function deleteFakeLeadsAction() {
 }
 
 // ============================================================
+// 개별 데이터 삭제
+// ============================================================
+export async function deleteLeadAction(id: number) {
+    const cookieStore = await cookies();
+    const supabase = createServerActionClient({ cookies: () => cookieStore });
+
+    const { error } = await supabase
+        .from("marketing_leads")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        console.error("=== [deleteLeadAction] Error ===", error);
+        return { success: false, error: error.message };
+    }
+
+    return { success: true };
+}
+
+// ============================================================
 // 대한민국 실제 행정구역 데이터 (시/도 - 시/군/구 - 실제 동 이름 매핑)
 // 가중치: 인구 비례 / dongs: 해당 지역의 대표적인 실제 동/읍/면 이름
 const KOREA_ADMIN_DISTRICTS: Record<string, { weight: number, sigungus: Record<string, string[]> }> = {

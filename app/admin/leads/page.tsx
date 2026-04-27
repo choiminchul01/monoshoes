@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Upload, Download, Filter, Users, TrendingUp, X, RefreshCw, ChevronLeft, ChevronRight, Database, ShieldCheck, ShieldAlert, Trash2 } from "lucide-react";
-import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction, deleteAllRealLeadsAction } from "./actions";
+import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction, deleteAllRealLeadsAction, deleteLeadAction } from "./actions";
 
 type Lead = {
     id: number;
@@ -135,6 +135,18 @@ export default function AdminLeadsPage() {
         setIsRealFilter("");
         setIdStart(""); setIdEnd(""); setSearchTerm("");
         setPage(1);
+    };
+
+    const handleDeleteLead = async (id: number) => {
+        if (!confirm("이 데이터를 정말 삭제하시겠습니까?")) return;
+        
+        const res = await deleteLeadAction(id);
+        if (res.success) {
+            alert("삭제되었습니다.");
+            fetchData(page);
+        } else {
+            alert("삭제 실패: " + res.error);
+        }
     };
 
     const handleDeleteReal = async () => {
@@ -604,7 +616,7 @@ export default function AdminLeadsPage() {
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
-                                    {["순번", "종류", "연락처", "이름", "생년월일", "성별", "시/도", "시/군/구", "읍/면/동"].map(h => (
+                                    {["순번", "종류", "연락처", "이름", "생년월일", "성별", "시/도", "시/군/구", "읍/면/동", "관리"].map(h => (
                                         <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 tracking-wider whitespace-nowrap">{h}</th>
                                     ))}
                                 </tr>
@@ -635,6 +647,15 @@ export default function AdminLeadsPage() {
                                         <td className="px-4 py-3 text-gray-600 text-xs">{lead.address_sido || "-"}</td>
                                         <td className="px-4 py-3 text-gray-600 text-xs">{lead.address_sigungu || "-"}</td>
                                         <td className="px-4 py-3 text-gray-600 text-xs">{lead.address_dong || "-"}</td>
+                                        <td className="px-4 py-3">
+                                            <button
+                                                onClick={() => handleDeleteLead(lead.id)}
+                                                className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="삭제"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
