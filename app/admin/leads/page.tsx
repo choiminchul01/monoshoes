@@ -171,6 +171,7 @@ export default function AdminLeadsPage() {
             const dataLines = lines.slice(1);
             const CHUNK_SIZE = 5000;
             let uploaded = 0;
+            let skipped = 0;
             let failed = 0;
 
             for (let i = 0; i < dataLines.length; i += CHUNK_SIZE) {
