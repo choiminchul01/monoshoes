@@ -14,6 +14,13 @@
 
 @font-face {
     font-family: 'DesignHouse';
+    src: url('/fonts/DesignHouse.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'SDSwagger';
     src: url('/fonts/SDSWAGGER.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
