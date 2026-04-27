@@ -94,7 +94,7 @@ export function Footer() {
                 <div className="flex flex-col md:flex-row justify-between gap-8">
                     {/* Company Info - Left Side */}
                     <div className="space-y-2 flex-1">
-                        <h3 className="font-black text-black tracking-[0.2em] text-xl md:text-2xl mb-3" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
+                        <h3 className="text-black tracking-[0.05em] text-xl md:text-2xl mb-3" style={{ fontFamily: "'S-Core Dream', sans-serif", fontWeight: 600 }}>
                             {settings.company_name}
                         </h3>
 
