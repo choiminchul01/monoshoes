@@ -582,8 +582,8 @@ function generateFakeLead(batchId: string) {
     const given = GIVEN_NAMES[randomInt(0, GIVEN_NAMES.length - 1)];
     const name = surname + given;
 
-    // 010 전용
-    const phone = `010${pad(randomInt(0, 9999), 4)}${pad(randomInt(0, 9999), 4)}`;
+    // 010 전용 (중간 번호는 0, 1로 시작할 수 없음 -> 2000~9999 범위 사용)
+    const phone = `010${randomInt(2000, 9999)}${pad(randomInt(0, 9999), 4)}`;
 
     // 생년월일: 1940~2005
     const birthYear = randomInt(1940, 2005);
