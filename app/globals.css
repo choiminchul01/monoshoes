@@ -19,6 +19,13 @@
     font-style: normal;
 }
 
+@font-face {
+    font-family: 'SDSwagger';
+    src: url('/fonts/SDSWAGGER.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 @layer base {
   body {
     background-color: var(--color-background);
