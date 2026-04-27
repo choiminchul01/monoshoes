@@ -72,7 +72,7 @@ function parseBirthAndGender(raw: string): { birthDate: string | null; gender: s
 
 
 // ============================================================
-// 통계 대시보드 (실제/가짜 건수 포함)
+// 통계 대시보드 (실제/테스트 건수 포함)
 // ============================================================
 export async function getLeadsStatsAction() {
     const cookieStore = await cookies();
@@ -163,8 +163,33 @@ export async function fetchLeadsAction(filters: {
     return { success: true, data: data || [], count: count || 0 };
 }
 
+// 실제 고객 데이터 전체 삭제 (is_real = true)
+export async function deleteAllRealLeadsAction() {
+    const cookieStore = await cookies();
+    const supabase = createServerActionClient({ cookies: () => cookieStore });
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const { data: adminUser } = await supabase
+        .from("admin_roles").select("id").eq("user_id", user.id).single();
+    if (!adminUser) return { success: false, error: "Admin only" };
+
+    const { error } = await supabase
+        .from("marketing_leads")
+        .delete()
+        .eq("is_real", true);
+
+    if (error) {
+        console.error("=== [deleteAllRealLeadsAction] Error ===", error);
+        return { success: false, error: error.message };
+    }
+
+    return { success: true };
+}
+
 // ============================================================
-// 가짜 데이터 전체 삭제 (is_real = false)
+// 테스트 데이터 전체 삭제 (is_real = false)
 // ============================================================
 export async function deleteFakeLeadsAction() {
     const cookieStore = await cookies();
@@ -539,7 +564,7 @@ export async function getLeadsRegionsAction(level: "sido" | "sigungu" | "dong", 
 
 
 
-// 가짜 DB 임의 생성 (010 전용, 최대 10,000건)
+// 테스트 데이터 임의 생성 (010 전용, 최대 10,000건)
 // ============================================================
 const SURNAMES = ["김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "신", "권", "황", "안", "송", "류", "전"];
 const GIVEN_NAMES = ["민준", "서연", "지호", "수아", "현우", "지우", "서준", "하은", "도윤", "지유", "예은", "민서", "준혁", "수빈", "재원", "나연", "태양", "유진", "성민", "보람"];

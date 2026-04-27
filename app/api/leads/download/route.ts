@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
-const CHUNK_SIZE = 20000; // 2만 건씩 분할
+const CHUNK_SIZE = 50000; // 한 파일당 최대 5만 건으로 분할 다운로드 지원
 
 export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
@@ -67,13 +67,29 @@ export async function GET(request: NextRequest) {
     const from = chunkIndex * CHUNK_SIZE;
     const to = from + CHUNK_SIZE - 1;
 
-    const { data, error, count } = await query
-        .order("id", { ascending: true })
-        .range(from, to);
+    // Supabase 기본 제한(1000건)을 우회하기 위해 루프 사용
+    let allData: any[] = [];
+    let currentFrom = from;
+    let finalCount = 0;
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    while (currentFrom <= to) {
+        const currentTo = Math.min(currentFrom + 999, to);
+        const { data: chunkData, error: chunkError, count: chunkCount } = await query
+            .order("id", { ascending: true })
+            .range(currentFrom, currentTo);
 
-    const totalCount = count || 0;
+        if (chunkError) return NextResponse.json({ error: chunkError.message }, { status: 500 });
+        
+        if (chunkData) allData = [...allData, ...chunkData];
+        if (chunkCount !== null) finalCount = chunkCount;
+        
+        // 더 이상 가져올 데이터가 없거나 청크 끝에 도달하면 중단
+        if (!chunkData || chunkData.length < 1000 || currentTo === to) break;
+        currentFrom = currentTo + 1;
+    }
+
+    const data = allData;
+    const totalCount = finalCount;
     const totalChunks = Math.ceil(totalCount / CHUNK_SIZE);
 
     // 최대 10만 건 제한

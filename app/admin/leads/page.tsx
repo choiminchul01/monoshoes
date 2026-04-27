@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Upload, Download, Filter, Users, TrendingUp, X, RefreshCw, ChevronLeft, ChevronRight, Database, ShieldCheck, ShieldAlert, Trash2 } from "lucide-react";
-import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction } from "./actions";
+import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction, deleteAllRealLeadsAction } from "./actions";
 
 type Lead = {
     id: number;
@@ -63,8 +63,9 @@ export default function AdminLeadsPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadIsReal, setUploadIsReal] = useState(true);
+    const [uploadIgnoreDuplicates, setUploadIgnoreDuplicates] = useState(true);
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [uploadResult, setUploadResult] = useState<{ uploaded: number; failed: number; total: number } | null>(null);
+    const [uploadResult, setUploadResult] = useState<{ uploaded: number; skipped: number; failed: number; total: number } | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -136,6 +137,21 @@ export default function AdminLeadsPage() {
         setPage(1);
     };
 
+    const handleDeleteReal = async () => {
+        if (!confirm("모든 실제 고객 데이터(T)를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) return;
+        
+        setIsLoading(true);
+        const res = await deleteAllRealLeadsAction();
+        if (res.success) {
+            alert("실제 고객 데이터가 모두 삭제되었습니다.");
+            getLeadsStatsAction().then(setStats);
+            fetchData(1);
+        } else {
+            alert("삭제 중 오류 발생: " + res.error);
+        }
+        setIsLoading(false);
+    };
+
     // CSV 업로드
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -165,6 +181,7 @@ export default function AdminLeadsPage() {
                 formData.append("csv", new Blob([chunkText], { type: "text/csv" }), "chunk.csv");
                 formData.append("batchId", batchId);
                 formData.append("isReal", String(uploadIsReal));
+                formData.append("ignoreDuplicates", String(uploadIgnoreDuplicates));
 
                 const res = await fetch("/api/leads/upload", {
                     method: "POST",
@@ -172,13 +189,14 @@ export default function AdminLeadsPage() {
                 });
                 const result = await res.json();
                 uploaded += result.uploaded || 0;
+                skipped += result.skipped || 0;
                 failed += result.failed || 0;
 
                 const progress = Math.round(((i + chunk.length) / dataLines.length) * 100);
                 setUploadProgress(progress);
             }
 
-            setUploadResult({ uploaded, failed, total: dataLines.length });
+            setUploadResult({ uploaded, skipped, failed, total: dataLines.length });
             // 통계 갱신
             getLeadsStatsAction().then(setStats);
         } catch (err) {
@@ -208,7 +226,7 @@ export default function AdminLeadsPage() {
     };
 
     const handleDeleteFakeData = async () => {
-        if (!confirm("주의! 생성된 모든 '테스트용 가짜 데이터'가 삭제됩니다. 계속하시겠습니까?\n(실제 고객 데이터는 유지됩니다)")) return;
+        if (!confirm("주의! 생성된 모든 '테스트용 데이터'가 삭제됩니다. 계속하시겠습니까?\n(실제 고객 데이터는 유지됩니다)")) return;
         
         setIsLoading(true);
         try {
@@ -227,8 +245,11 @@ export default function AdminLeadsPage() {
         }
     };
 
+    const DOWNLOAD_CHUNK_SIZE = 50000;
+    const numChunks = Math.ceil(totalCount / DOWNLOAD_CHUNK_SIZE);
+
     // CSV 다운로드
-    const handleDownload = async () => {
+    const handleDownload = async (chunkIndex = 0) => {
         setIsDownloading(true);
         try {
             const params = new URLSearchParams();
@@ -241,13 +262,15 @@ export default function AdminLeadsPage() {
             if (idStart) params.set("idStart", idStart);
             if (idEnd) params.set("idEnd", idEnd);
             if (searchTerm) params.set("search", searchTerm);
+            params.set("chunkIndex", String(chunkIndex));
 
             const res = await fetch(`/api/leads/download?${params.toString()}`);
             const blob = await res.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `mono_shoes_leads_${new Date().toISOString().slice(0, 10)}.csv`;
+            const chunkLabel = numChunks > 1 ? `_part${chunkIndex + 1}` : "";
+            a.download = `mono_shoes_leads_${new Date().toISOString().slice(0, 10)}${chunkLabel}.csv`;
             a.click();
             URL.revokeObjectURL(url);
         } finally {
@@ -291,8 +314,8 @@ export default function AdminLeadsPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
                 {[
                     { label: "전체 DB", value: stats.total.toLocaleString(), icon: Database, color: "text-black" },
-                    { label: "실제 고객", value: stats.realCount.toLocaleString(), icon: ShieldCheck, color: "text-green-600" },
-                    { label: "테스트/가짜", value: stats.fakeCount.toLocaleString(), icon: ShieldAlert, color: "text-orange-500" },
+                    { label: "실제 고객(T)", value: stats.realCount.toLocaleString(), icon: ShieldCheck, color: "text-green-600" },
+                    { label: "테스트(F)", value: stats.fakeCount.toLocaleString(), icon: ShieldAlert, color: "text-orange-500" },
                     { label: "남성", value: stats.male.toLocaleString(), icon: TrendingUp, color: "text-blue-500" },
                     { label: "여성", value: stats.female.toLocaleString(), icon: TrendingUp, color: "text-pink-500" },
                     { label: "조회 결과", value: totalCount > 0 ? totalCount.toLocaleString() : "-", icon: Filter, color: "text-purple-600" },
@@ -314,7 +337,7 @@ export default function AdminLeadsPage() {
                         <Upload className="w-5 h-5" /> 데이터 추가
                     </h2>
                     
-                    <div className="mb-4">
+                    <div className="space-y-2 mb-4">
                         <label className="flex items-center gap-2 text-sm font-bold text-gray-700 cursor-pointer">
                             <input 
                                 type="checkbox" 
@@ -322,8 +345,33 @@ export default function AdminLeadsPage() {
                                 onChange={e => setUploadIsReal(e.target.checked)}
                                 className="w-4 h-4 text-black rounded border-gray-300 focus:ring-black"
                             />
-                            업로드하는 데이터를 '실제 고객(Real)'으로 분류
+                            업로드하는 데이터를 '실제 고객(T)'으로 분류
                         </label>
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">중복 데이터 처리 (전화번호 기준)</p>
+                            <div className="flex gap-4">
+                                <label className="flex items-center gap-2 text-xs font-bold text-gray-600 cursor-pointer">
+                                    <input 
+                                        type="radio" 
+                                        name="duplicateAction"
+                                        checked={uploadIgnoreDuplicates === true} 
+                                        onChange={() => setUploadIgnoreDuplicates(true)}
+                                        className="w-3.5 h-3.5 text-black border-gray-300 focus:ring-black"
+                                    />
+                                    건너뛰기 (안전)
+                                </label>
+                                <label className="flex items-center gap-2 text-xs font-bold text-gray-600 cursor-pointer">
+                                    <input 
+                                        type="radio" 
+                                        name="duplicateAction"
+                                        checked={uploadIgnoreDuplicates === false} 
+                                        onChange={() => setUploadIgnoreDuplicates(false)}
+                                        className="w-3.5 h-3.5 text-black border-gray-300 focus:ring-black"
+                                    />
+                                    덮어쓰기 (갱신)
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     <p className="text-xs text-gray-500 mb-4 leading-relaxed">
@@ -378,6 +426,24 @@ export default function AdminLeadsPage() {
                             <Trash2 className="w-4 h-4" />
                             테스트 데이터 전체 삭제
                         </button>
+                        {uploadResult && (
+                            <div className="mt-3 p-3 bg-green-50 rounded-xl border border-green-100">
+                                <p className="text-xs font-bold text-green-700">업로드 결과</p>
+                                <p className="text-[10px] text-green-600 mt-1">
+                                    성공 {uploadResult.uploaded.toLocaleString()}건 / 
+                                    중복(제외) {uploadResult.skipped.toLocaleString()}건 / 
+                                    실패 {uploadResult.failed.toLocaleString()}건
+                                </p>
+                            </div>
+                        )}
+                        <button
+                            onClick={handleDeleteReal}
+                            disabled={isGenerating || isUploading || isLoading}
+                            className="w-full py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 border border-blue-200"
+                        >
+                            <ShieldAlert className="w-4 h-4" />
+                            실제 고객 데이터(T) 전체 삭제
+                        </button>
                     </div>
 
                     {uploadResult && (
@@ -428,8 +494,8 @@ export default function AdminLeadsPage() {
                         {/* 진위 여부 필터 */}
                         <select value={isRealFilter} onChange={e => setIsRealFilter(e.target.value as any)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black">
                             <option value="">데이터 종류 전체</option>
-                            <option value="T">실제 데이터 (Real)</option>
-                            <option value="F">테스트 데이터 (Fake)</option>
+                            <option value="T">실제 데이터 (T)</option>
+                            <option value="F">테스트 데이터 (F)</option>
                         </select>
 
                         {/* 나이대 필터 */}
@@ -481,14 +547,35 @@ export default function AdminLeadsPage() {
                         >
                             <X className="w-4 h-4" /> 초기화
                         </button>
-                        <button
-                            onClick={handleDownload}
-                            disabled={isDownloading || totalCount === 0}
-                            className="px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {isDownloading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                            CSV 다운로드
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                            {numChunks <= 1 ? (
+                                <button
+                                    onClick={() => handleDownload(0)}
+                                    disabled={isDownloading || totalCount === 0}
+                                    className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isDownloading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                                    CSV 다운로드
+                                </button>
+                            ) : (
+                                <div className="flex flex-col gap-2 w-full">
+                                    <p className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-1 rounded">대용량 데이터 분할 다운로드 (5만건 단위)</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {Array.from({ length: numChunks }).map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => handleDownload(i)}
+                                                disabled={isDownloading}
+                                                className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                            >
+                                                <Download className="w-3 h-3" />
+                                                파트 {i + 1}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -537,9 +624,9 @@ export default function AdminLeadsPage() {
                                         <td className="px-4 py-3 text-gray-400 text-xs">{lead.id}</td>
                                         <td className="px-4 py-3 text-xs">
                                             {lead.is_real ? (
-                                                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-bold">Real</span>
+                                                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-bold">T</span>
                                             ) : (
-                                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-bold">Fake</span>
+                                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-bold">F</span>
                                             )}
                                         </td>
                                         <td className="px-4 py-3 font-mono text-xs">{lead.phone}</td>

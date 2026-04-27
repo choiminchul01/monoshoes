@@ -159,9 +159,9 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
     };
 
     return (
-        <div className="mt-24 border-t border-gray-200 pt-16 max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-bold tracking-widest">PRODUCT Q&A</h3>
                 <button
                     onClick={() => user ? setIsWriteModalOpen(true) : toast.error('로그인이 필요합니다.')}
@@ -181,12 +181,12 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
                     <p className="text-sm text-gray-400 mt-2">제품에 대해 궁금한 점을 물어보세요.</p>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                     {qnas.map((qna) => (
                         <div key={qna.id} className="border border-gray-200 rounded-lg overflow-hidden">
                             <button
                                 onClick={() => setExpandedId(expandedId === qna.id ? null : qna.id)}
-                                className="w-full flex items-center justify-between p-5 bg-white hover:bg-gray-50 transition-colors text-left"
+                                className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition-colors text-left"
                             >
                                 <div className="flex items-center gap-3 flex-1">
                                     {/* 기타 문의이거나 본인 문의가 아닌 경우 자물쇠 표시 */}
@@ -223,7 +223,7 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
 
                             {/* 답변 표시 - 본인만 실제 내용 확인 가능 */}
                             {expandedId === qna.id && qna.answer && (
-                                <div className="p-5 bg-[#F0FAF5] border-t border-gray-200">
+                                <div className="p-4 bg-[#F0FAF5] border-t border-gray-200">
                                     <div className="flex items-start gap-3">
                                         {/* 비공개 답변일 경우 자물쇠 아이콘 먼저 표시 */}
                                         {(!user || user.id !== qna.user_id) && (
@@ -250,7 +250,7 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
                             )}
 
                             {expandedId === qna.id && !qna.answer && (
-                                <div className="p-5 bg-gray-50 border-t border-gray-200 text-center text-gray-500 text-sm">
+                                <div className="p-4 bg-gray-50 border-t border-gray-200 text-center text-gray-500 text-sm">
                                     답변 대기 중입니다.
                                 </div>
                             )}

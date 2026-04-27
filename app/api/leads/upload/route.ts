@@ -39,24 +39,60 @@ function parseBirthAndGender(raw: string): { birthDate: string | null; gender: s
     return { birthDate: null, gender: "U" };
 }
 
-function parseLeadRow(cols: string[], defaultIsReal: boolean, batchId: string): object | null {
-    try {
-        const phone = (cols[1] || "").trim().replace(/[-\s]/g, "");
-        const name = (cols[2] || "").trim();
-        if (!phone || !name) return null;
+// 헤더 매핑 헬퍼
+function getHeaderMap(headers: string[]) {
+    const map: Record<string, number> = {};
+    headers.forEach((h, i) => {
+        const clean = h.trim().replace(/\s+/g, "");
+        if (clean.includes("연락처") || clean.includes("전화")) map.phone = i;
+        if (clean.includes("이름") || clean.includes("성함")) map.name = i;
+        if (clean.includes("생년월일") || clean.includes("생일")) map.birth = i;
+        if (clean.includes("주소")) map.address = i;
+        if (clean.includes("성별")) map.gender = i;
+        if (clean.includes("비고") || clean.includes("DB구분")) map.remark = i;
+        if (clean.includes("순번") && !clean.includes("DB")) map.seq = i;
+    });
+    return map;
+}
 
-        const { birthDate, gender } = parseBirthAndGender(cols[3] || "");
-        const address = (cols[4] || "").trim();
-        const remarkRaw = (cols[5] || "").trim().toUpperCase();
-        const isReal = remarkRaw === "T" ? true : remarkRaw === "F" ? false : defaultIsReal;
-        const seqRaw = parseInt(cols[0]);
+function parseLeadRow(cols: string[], headerMap: Record<string, number>, defaultIsReal: boolean, batchId: string): object | null {
+    try {
+        // 매핑된 인덱스가 있으면 사용, 없으면 기존 기본값 사용
+        const phoneIdx = headerMap.phone ?? 1;
+        const nameIdx = headerMap.name ?? 2;
+        const birthIdx = headerMap.birth ?? 3;
+        const addressIdx = headerMap.address ?? 4;
+        const remarkIdx = headerMap.remark ?? 5;
+        const seqIdx = headerMap.seq ?? 0;
+
+        const phone = (cols[phoneIdx] || "").trim().replace(/[-\s]/g, "");
+        const name = (cols[nameIdx] || "").trim();
+        if (!phone || !name || phone.length < 5) return null; // 유효하지 않은 전화번호(예: DB순번) 필터링
+
+        const { birthDate, gender: parsedGender } = parseBirthAndGender(cols[birthIdx] || "");
+        
+        // 다운로드 파일 대응: 성별 칸이 따로 있는 경우
+        let finalGender = parsedGender;
+        if (headerMap.gender !== undefined) {
+            const gRaw = (cols[headerMap.gender] || "").trim();
+            if (gRaw.includes("남")) finalGender = "M";
+            else if (gRaw.includes("여")) finalGender = "F";
+        }
+
+        const address = (cols[addressIdx] || "").trim();
+        const remarkRaw = (cols[remarkIdx] || "").trim().toUpperCase();
+        const isReal = remarkRaw === "T" || remarkRaw.includes("실제") ? true : 
+                       remarkRaw === "F" || remarkRaw.includes("테스트") || remarkRaw.includes("가짜") ? false : 
+                       defaultIsReal;
+        
+        const seqRaw = parseInt(cols[seqIdx]);
 
         return {
             seq: isNaN(seqRaw) ? null : seqRaw,
             phone,
             name,
             birth_date: birthDate,
-            gender,
+            gender: finalGender,
             address: address || null,
             ...parseAddress(address),
             is_real: isReal,
@@ -81,13 +117,15 @@ export async function POST(request: NextRequest) {
 
     try {
         const formData = await request.formData();
-        const file = formData.get("file") as File;
+        const file = (formData.get("csv") || formData.get("file")) as File;
         const batchId = (formData.get("batchId") as string) || `batch_${Date.now()}`;
         const isRealParam = (formData.get("isReal") as string) === "true";
+        const ignoreDuplicates = (formData.get("ignoreDuplicates") as string) === "true";
 
         if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
         const fileName = file.name.toLowerCase();
+        let headers: string[] = [];
         let dataRows: string[][] = [];
 
         if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
@@ -95,36 +133,51 @@ export async function POST(request: NextRequest) {
             const workbook = XLSX.read(arrayBuffer, { type: "array" });
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
             const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-            const hasHeader = raw.length > 0 && isNaN(Number(String(raw[0][0]).trim()));
-            dataRows = (hasHeader ? raw.slice(1) : raw).map(r =>
-                r.map((cell: any) => String(cell ?? "").trim())
-            );
+            
+            if (raw.length > 0) {
+                headers = raw[0].map((h: any) => String(h || ""));
+                dataRows = raw.slice(1).map(r => r.map((cell: any) => String(cell ?? "").trim()));
+            }
         } else {
             const text = await file.text();
             const lines = text.split("\n").filter(l => l.trim());
-            const firstLine = lines[0] || "";
-            const dataLines = /^\d/.test(firstLine.split(",")[0]) ? lines : lines.slice(1);
-            dataRows = dataLines.map(line =>
-                line.split(",").map(c => c.trim().replace(/^"|"$/g, "").replace(/""/g, '"'))
-            );
+            if (lines.length > 0) {
+                headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+                dataRows = lines.slice(1).map(line =>
+                    line.split(",").map(c => c.trim().replace(/^"|"$/g, "").replace(/""/g, '"'))
+                );
+            }
         }
 
         if (dataRows.length === 0) return NextResponse.json({ uploaded: 0, failed: 0, total: 0 });
 
-        const rows = dataRows.map(cols => parseLeadRow(cols, isRealParam, batchId)).filter(Boolean);
+        const headerMap = getHeaderMap(headers);
+        const rows = dataRows.map(cols => parseLeadRow(cols, headerMap, isRealParam, batchId)).filter(Boolean);
 
         if (rows.length === 0) return NextResponse.json({ uploaded: 0, failed: dataRows.length, total: dataRows.length });
 
-        const { error } = await supabase
+        const { data: upsertedData, error } = await supabase
             .from("marketing_leads")
-            .upsert(rows as any[], { onConflict: "phone" });
+            .upsert(rows as any[], { 
+                onConflict: "phone",
+                ignoreDuplicates: ignoreDuplicates
+            })
+            .select("id"); // 실제로 처리된 행의 ID만 가져옴
 
         if (error) {
             console.error("Upload upsert error:", error);
             return NextResponse.json({ uploaded: 0, failed: rows.length, total: dataRows.length, error: error.message });
         }
 
-        return NextResponse.json({ uploaded: rows.length, failed: dataRows.length - rows.length, total: dataRows.length });
+        const actualUploaded = upsertedData ? upsertedData.length : 0;
+        const skipped = rows.length - actualUploaded;
+
+        return NextResponse.json({ 
+            uploaded: actualUploaded, 
+            skipped: skipped,
+            failed: dataRows.length - rows.length, 
+            total: dataRows.length 
+        });
 
     } catch (err: any) {
         console.error("Upload API error:", err);
