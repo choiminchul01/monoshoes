@@ -11,7 +11,7 @@ import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { fetchBrandAliasesAction, saveBrandAliasesAction, type BrandAliases } from "@/lib/brandAliases";
-import { saveProductAction, deleteProductAction } from "./actions";
+import { saveProductAction, deleteProductAction, deleteProductsBulkAction } from "./actions";
 
 type Product = {
     id: string;
@@ -522,17 +522,28 @@ export default function AdminProductsPage() {
     const confirmDelete = async () => {
         if (!deleteTargetId) return;
 
-        const result = await deleteProductAction(deleteTargetId);
-        if (!result.success) {
-            console.error("Delete error:", result.error);
-            toast.error(`삭제 실패: ${result.error}`);
-            return;
-        }
+        try {
+            const result = await deleteProductAction(deleteTargetId);
+            if (!result.success) {
+                console.error("Delete error:", result.error);
+                toast.error(`삭제 실패: ${result.error}`);
+                return;
+            }
 
-        toast.success("상품이 삭제되었습니다");
-        fetchProducts();
-        setShowDeleteConfirm(false);
-        setDeleteTargetId(null);
+            toast.success("상품이 삭제되었습니다");
+            
+            // 목록 새로고침 및 모달 닫기
+            setShowDeleteConfirm(false);
+            setDeleteTargetId(null);
+            
+            // 가장 확실한 방법으로 목록 갱신 (전체 페이지 새로고침)
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } catch (err) {
+            console.error("Delete call failed:", err);
+            toast.error("서버 연결에 실패했습니다");
+        }
     };
 
     // Bulk delete functions
@@ -563,20 +574,28 @@ export default function AdminProductsPage() {
     const confirmBulkDelete = async () => {
         if (selectedIds.length === 0) return;
 
-        const { error } = await supabase
-            .from("products")
-            .delete()
-            .in("id", selectedIds);
+        try {
+            const result = await deleteProductsBulkAction(selectedIds);
+            if (!result.success) {
+                console.error("Bulk delete error:", result.error);
+                toast.error(`삭제 실패: ${result.error}`);
+                return;
+            }
 
-        if (!error) {
-            toast.success(`${selectedIds.length}개 상품이 삭제되었습니다`);
+            toast.success(`${result.count}개의 상품이 삭제되었습니다`);
+            
+            // 상태 초기화 및 모달 닫기
             setSelectedIds([]);
-            fetchProducts();
-        } else {
-            console.error("Bulk delete error:", error);
-            toast.error(`삭제 실패: ${error.message}`);
+            setShowBulkDeleteConfirm(false);
+            
+            // 전체 페이지 새로고침
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } catch (err) {
+            console.error("Bulk delete call failed:", err);
+            toast.error("서버 연결에 실패했습니다");
         }
-        setShowBulkDeleteConfirm(false);
     };
 
     // Excel 템플릿 다운로드 (exceljs 적용 - 드롭다운 포함)
