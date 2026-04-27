@@ -48,6 +48,7 @@ const SHOE_SIZES_TABLE = [
 
 const TABS = [
     { id: "detail", label: "상품 상세" },
+    { id: "review", label: "리뷰" },
     { id: "size-guide", label: "사이즈 가이드" },
     { id: "delivery", label: "배송·교환·반품" },
     { id: "qna", label: "Q&A" },
@@ -120,7 +121,12 @@ export default function ProductDetailTabs({ product }: ProductDetailTabsProps) {
                         </div>
                     )}
 
-                    {/* ② 사이즈 가이드 */}
+                    {/* ② 리뷰 */}
+                    {activeTab === "review" && (
+                        <ReviewTabContent productId={product.id} />
+                    )}
+
+                    {/* ③ 사이즈 가이드 */}
                     {activeTab === "size-guide" && (
                         <div className="max-w-2xl mx-auto">
                             <h3 className="text-xl font-bold tracking-widest mb-8 text-center">사이즈 가이드</h3>
