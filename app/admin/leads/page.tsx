@@ -447,16 +447,6 @@ export default function AdminLeadsPage() {
                         </button>
                     </div>
 
-                    {uploadResult && (
-                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
-                            <p className="font-bold text-green-700">업로드 완료!</p>
-                            <p className="text-green-600">
-                                성공 {uploadResult.uploaded.toLocaleString()}건 /
-                                실패 {uploadResult.failed}건 /
-                                전체 {uploadResult.total.toLocaleString()}건
-                            </p>
-                        </div>
-                    )}
                 </div>
 
                 {/* 필터 패널 */}
