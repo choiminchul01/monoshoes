@@ -721,7 +721,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {/* Related Products */}
             {relatedProducts.length > 0 && (
                 <div className="mt-32">
-                    <h3 className="text-xl font-light tracking-tight mb-12 text-center">YOU MAY ALSO LIKE</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-12 text-center" style={{ fontFamily: 'var(--font-cinzel), serif', letterSpacing: '0.05em' }}>
+                        YOU MAY ALSO LIKE
+                    </h3>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
                         {relatedProducts.map((product, idx) => (
                             <ProductCard

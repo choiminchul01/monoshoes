@@ -19,9 +19,6 @@ type Review = {
 
 export default function ReviewSlider() {
     const [reviews, setReviews] = useState<Review[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [isHovered, setIsHovered] = useState(false);
-    const [isTransitioning, setIsTransitioning] = useState(false);
 
     // Fetch Reviews
     useEffect(() => {
@@ -34,7 +31,7 @@ export default function ReviewSlider() {
                     .like('products.category', 'W_%')
                     .gte('rating', 4)
                     .order('created_at', { ascending: false })
-                    .limit(15);
+                    .limit(10);
 
                 // Fetch Male (남성) Reviews
                 const { data: maleData, error: maleError } = await supabase
@@ -50,11 +47,10 @@ export default function ReviewSlider() {
 
                 let combined = [...(femaleData || []), ...(maleData || [])];
                 
-                // Shuffle array and assign persistent float ratings (4.5 ~ 5.0) for variety
+                // Shuffle array and assign persistent float ratings
                 const processed = combined.map(review => {
-                    // Generate a stable pseudo-random float between 4.5 and 5.0 based on the first character of ID
                     const charCode = review.id.charCodeAt(0) || 0;
-                    const pseudoRandom = (charCode % 6) / 10; // 0.0 to 0.5
+                    const pseudoRandom = (charCode % 6) / 10;
                     const floatRating = Math.min(5.0, 4.5 + pseudoRandom);
                     return { ...review, displayRating: floatRating };
                 });
@@ -65,10 +61,6 @@ export default function ReviewSlider() {
                 }
 
                 setReviews(processed as (Review & { displayRating: number })[]);
-                setCurrentIndex(processed.length); // Start at middle block
-                
-                // Enable transitions shortly after first render to prevent initial load slide
-                setTimeout(() => setIsTransitioning(true), 100);
             } catch (error) {
                 console.error("Error in fetchReviews:", error);
             }
@@ -77,56 +69,32 @@ export default function ReviewSlider() {
         fetchReviews();
     }, []);
 
-    // Auto-slide logic
-    useEffect(() => {
-        if (reviews.length === 0 || isHovered) return;
-
-        const interval = setInterval(() => {
-            setCurrentIndex((prev) => {
-                if (prev === reviews.length * 2) {
-                    return prev; // Wait for snap
-                }
-                setIsTransitioning(true);
-                return prev + 1;
-            });
-        }, 4000);
-
-        return () => clearInterval(interval);
-    }, [reviews.length, isHovered]);
-
-    // Handle seamless infinite loop resetting
-    useEffect(() => {
-        // If we reach the end of the second block, snap back to the start of the second block
-        if (currentIndex === reviews.length * 2 && reviews.length > 0) {
-            const timeout = setTimeout(() => {
-                setIsTransitioning(false);
-                setCurrentIndex(reviews.length);
-            }, 1000); // Wait for CSS transition
-            return () => clearTimeout(timeout);
-        }
-    }, [currentIndex, reviews.length]);
-
     if (reviews.length === 0) return null;
 
-    // 3배열 생성: 왼쪽 예비, 가운데 실제, 오른쪽 예비 (무한 루프용)
-    const displayReviews = [...reviews, ...reviews, ...reviews];
+    // 무한 루프를 위해 배열을 복제
+    const displayReviews = [...reviews, ...reviews, ...reviews, ...reviews];
 
     return (
-        <div className="w-full bg-gray-50/50 py-12 my-8 border-t border-b border-gray-100 overflow-hidden">
+        <div className="w-full bg-gray-50/50 py-12 my-8 border-t border-b border-gray-100 overflow-hidden pointer-events-none select-none">
             <style dangerouslySetInnerHTML={{ __html: `
-                .review-slider-wrapper { 
-                    --slide-width: 85vw; 
-                    --slide-gap: 16px;
-                    /* 양쪽 끝 페이드 아웃 마스크 */
-                    mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-                    -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+                @keyframes scroll {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(calc(-1 * (var(--slide-width) + var(--slide-gap)) * ${reviews.length})); }
                 }
-                @media (min-width: 768px) { 
-                    .review-slider-wrapper { 
-                        --slide-width: 320px; 
-                        mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent);
-                        -webkit-mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent);
-                    } 
+                .review-slider-wrapper { 
+                    --slide-width: 280px; 
+                    --slide-gap: 20px;
+                    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+                    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+                }
+                .review-track {
+                    display: flex;
+                    width: max-content;
+                    animation: scroll 60s linear infinite;
+                }
+                @media (max-width: 768px) {
+                    .review-slider-wrapper { --slide-width: 240px; }
+                    .review-track { animation-duration: 40s; }
                 }
             `}} />
             
@@ -137,29 +105,25 @@ export default function ReviewSlider() {
                 <p className="text-sm text-gray-500 mt-2">고객님들이 증명하는 모노슈즈의 가치</p>
             </div>
 
-            <div 
-                className="relative w-full overflow-hidden review-slider-wrapper py-4"
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-            >
-                <div 
-                    className="flex w-max"
-                    style={{
-                        // 50vw - (slideWidth / 2) 로 현재 활성화된 슬라이드를 중앙에 배치
-                        transform: `translateX(calc(50vw - (var(--slide-width) / 2) - ${currentIndex} * (var(--slide-width) + var(--slide-gap))))`,
-                        transition: isTransitioning ? 'transform 1s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'none',
-                    }}
-                >
+            <div className="relative w-full overflow-hidden review-slider-wrapper py-4">
+                <div className="review-track">
                     {displayReviews.map((review, idx) => (
                         <div 
                             key={`${review.id}-${idx}`}
-                            className="flex-shrink-0 bg-white border border-gray-200 rounded-xl mr-4 flex flex-col overflow-hidden shadow-sm transition-transform hover:-translate-y-1 hover:shadow-md"
+                            className="flex-shrink-0 bg-white border border-gray-200 rounded-xl flex flex-col overflow-hidden shadow-sm mr-[var(--slide-gap)]"
                             style={{ width: 'var(--slide-width)' }}
                         >
-                            {/* 정사각형 리뷰 이미지 란 */}
+                            {/* 정사각형 리뷰 이미지 */}
                             <div className="w-full aspect-square bg-gray-50 relative border-b border-gray-100">
                                 {review.image_url ? (
-                                    <Image src={review.image_url} alt="Review" fill className="object-cover" />
+                                    <Image 
+                                        src={review.image_url} 
+                                        alt="Review" 
+                                        fill 
+                                        sizes="280px"
+                                        className="object-cover" 
+                                        unoptimized
+                                    />
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center text-gray-300">
                                         <span className="text-xs tracking-widest font-medium uppercase">No Image</span>
@@ -167,13 +131,13 @@ export default function ReviewSlider() {
                                 )}
                             </div>
 
-                            <div className="p-6 flex flex-col flex-grow justify-between">
+                            <div className="p-5 flex flex-col flex-grow justify-between">
                                 <div className="flex flex-col items-center text-center">
                                     <div className="flex items-center gap-2 mb-3 justify-center">
                                         <div className="relative inline-flex">
                                             <div className="flex gap-0.5">
                                                 {[...Array(5)].map((_, i) => (
-                                                    <Star key={`bg-${i}`} className="w-4 h-4 text-gray-200 fill-gray-200 flex-shrink-0" />
+                                                    <Star key={`bg-${i}`} className="w-3.5 h-3.5 text-gray-100 fill-gray-100 flex-shrink-0" />
                                                 ))}
                                             </div>
                                             <div 
@@ -181,30 +145,30 @@ export default function ReviewSlider() {
                                                 style={{ width: `${((review as any).displayRating / 5) * 100}%` }}
                                             >
                                                 {[...Array(5)].map((_, i) => (
-                                                    <Star key={`fg-${i}`} className="w-4 h-4 text-yellow-400 fill-yellow-400 flex-shrink-0" />
+                                                    <Star key={`fg-${i}`} className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400 flex-shrink-0" />
                                                 ))}
                                             </div>
                                         </div>
-                                        <span className="text-sm font-bold text-gray-700">
+                                        <span className="text-xs font-bold text-gray-700">
                                             {((review as any).displayRating).toFixed(1)}
                                         </span>
                                     </div>
-                                    <p className="text-[12px] font-bold text-gray-400 mb-2 w-full truncate">
+                                    <p className="text-[11px] font-bold text-gray-400 mb-2 w-full truncate px-2">
                                         {review.product?.name || "모노슈즈 베스트 아이템"}
                                     </p>
-                                    <p className="text-[14px] text-gray-800 leading-relaxed font-medium line-clamp-3 w-full">
+                                    <p className="text-[13px] text-gray-800 leading-relaxed font-medium line-clamp-2 w-full px-1">
                                         {review.content}
                                     </p>
                                 </div>
                                 
-                                <div className="mt-6 flex items-center justify-between border-t border-gray-50 pt-4">
-                                    <span className="text-sm font-bold text-gray-900">
+                                <div className="mt-4 flex items-center justify-center border-t border-gray-50 pt-3">
+                                    <span className="text-[11px] font-bold text-gray-500">
                                         {review.author_name?.length > 2 
                                             ? review.author_name.substring(0, 1) + '*' + review.author_name.substring(2) 
                                             : review.author_name?.length === 2 
                                             ? review.author_name.substring(0, 1) + '*'
                                             : review.author_name} 
-                                        <span className="text-xs font-normal text-gray-500 ml-1">고객님</span>
+                                        <span className="font-normal text-gray-400 ml-1">고객님</span>
                                     </span>
                                 </div>
                             </div>
