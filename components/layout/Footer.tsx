@@ -94,7 +94,9 @@ export function Footer() {
                 <div className="flex flex-col md:flex-row justify-between gap-8">
                     {/* Company Info - Left Side */}
                     <div className="space-y-2 flex-1">
-                        <h3 className="font-bold text-black tracking-[0.15em] text-lg mb-3">{settings.company_name}</h3>
+                        <h3 className="font-bold text-black tracking-[0.15em] text-xl md:text-2xl mb-3" style={{ fontFamily: "'DesignHouse', sans-serif" }}>
+                            {settings.company_name}
+                        </h3>
 
                         {/* Business Info - Only show enabled items */}
                         {hasVisibleInfo && (

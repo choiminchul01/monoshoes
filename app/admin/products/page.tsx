@@ -11,6 +11,7 @@ import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { fetchBrandAliasesAction, saveBrandAliasesAction, type BrandAliases } from "@/lib/brandAliases";
+import { saveProductAction, deleteProductAction } from "./actions";
 
 type Product = {
     id: string;
@@ -439,27 +440,20 @@ export default function AdminProductsPage() {
 
             if (editingProduct) {
                 // 수정
-                const { error } = await supabase
-                    .from("products")
-                    .update(productData)
-                    .eq("id", editingProduct.id);
-
-                if (error) throw error;
+                const result = await saveProductAction(productData, editingProduct.id);
+                if (!result.success) throw new Error(result.error);
+                
                 toast.success("상품이 수정되었습니다");
                 setShowModal(false);
                 resetForm();
             } else {
                 // 추가
-                const { error } = await supabase
-                    .from("products")
-                    .insert([productData]);
-
-                if (error) throw error;
+                const result = await saveProductAction(productData);
+                if (!result.success) throw new Error(result.error);
 
                 if (isContinue) {
                     toast.success("상품이 추가되었습니다. 다음 상품을 입력해주세요.");
                     resetForm();
-                    // 모달 유지
                 } else {
                     toast.success("상품이 추가되었습니다");
                     setShowModal(false);
@@ -528,18 +522,15 @@ export default function AdminProductsPage() {
     const confirmDelete = async () => {
         if (!deleteTargetId) return;
 
-        const { error } = await supabase
-            .from("products")
-            .delete()
-            .eq("id", deleteTargetId);
-
-        if (!error) {
-            toast.success("상품이 삭제되었습니다");
-            fetchProducts();
-        } else {
-            console.error("Delete error:", error);
-            toast.error(`삭제 실패: ${error.message}`);
+        const result = await deleteProductAction(deleteTargetId);
+        if (!result.success) {
+            console.error("Delete error:", result.error);
+            toast.error(`삭제 실패: ${result.error}`);
+            return;
         }
+
+        toast.success("상품이 삭제되었습니다");
+        fetchProducts();
         setShowDeleteConfirm(false);
         setDeleteTargetId(null);
     };

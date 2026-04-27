@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useAdminPermissions, AdminPermissions, AdminRole, AdminRoleData } from "@/lib/useAdminPermissions";
 import { useToast } from "@/context/ToastContext";
 import { Plus, Edit2, Trash2, X, Save, Shield, User, Users } from "lucide-react";
+import { saveAdminAction, deleteAdminAction } from "./actions";
 
 export default function AdminAccountsPage() {
     const toast = useToast();
@@ -93,43 +94,29 @@ export default function AdminAccountsPage() {
         try {
             const { data: { user } } = await supabase.auth.getUser();
 
-            if (editingAdmin) {
-                // Update existing admin
-                const { error } = await supabase
-                    .from('admin_roles')
-                    .update({
-                        role: formData.role,
-                        permissions: formData.permissions,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', editingAdmin.id);
+            const result = await saveAdminAction({
+                id: editingAdmin?.id,
+                email: formData.email,
+                role: formData.role,
+                permissions: formData.permissions,
+                createdBy: user?.id
+            });
 
-                if (error) throw error;
-                toast.success('관리자 정보가 수정되었습니다.');
-            } else {
-                // Create new admin
-                const { error } = await supabase
-                    .from('admin_roles')
-                    .insert({
-                        email: formData.email,
-                        role: formData.role,
-                        permissions: formData.permissions,
-                        created_by: user?.id
-                    });
-
-                if (error) throw error;
-                toast.success('관리자가 추가되었습니다. 해당 이메일로 가입 후 접근 가능합니다.');
+            if (!result.success) {
+                if (result.code === '23505') {
+                    toast.error('이미 등록된 이메일입니다.');
+                } else {
+                    throw new Error(result.error);
+                }
+                return;
             }
 
+            toast.success(editingAdmin ? '관리자 정보가 수정되었습니다.' : '관리자가 추가되었습니다. 해당 이메일로 가입 후 접근 가능합니다.');
             setIsModalOpen(false);
             fetchAdmins();
         } catch (error: any) {
             console.error('Error saving admin:', error);
-            if (error.code === '23505') {
-                toast.error('이미 등록된 이메일입니다.');
-            } else {
-                toast.error('관리자 저장 중 오류가 발생했습니다.');
-            }
+            toast.error('관리자 저장 중 오류가 발생했습니다.');
         }
     };
 
@@ -142,12 +129,9 @@ export default function AdminAccountsPage() {
         if (!confirm(`정말 이 관리자를 삭제하시겠습니까?\n${email}`)) return;
 
         try {
-            const { error } = await supabase
-                .from('admin_roles')
-                .delete()
-                .eq('id', id);
+            const result = await deleteAdminAction(id);
+            if (!result.success) throw new Error(result.error);
 
-            if (error) throw error;
             toast.success('관리자가 삭제되었습니다.');
             fetchAdmins();
         } catch (error) {
