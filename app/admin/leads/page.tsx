@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Upload, Download, Filter, Users, TrendingUp, X, RefreshCw, ChevronLeft, ChevronRight, Database, ShieldCheck, ShieldAlert, Trash2 } from "lucide-react";
-import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction, deleteAllRealLeadsAction, deleteLeadAction } from "./actions";
+import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction, deleteAllRealLeadsAction, deleteLeadAction, deleteLeadsByRangeAction } from "./actions";
 
 type Lead = {
     id: number;
@@ -68,6 +68,8 @@ export default function AdminLeadsPage() {
     const [uploadResult, setUploadResult] = useState<{ uploaded: number; skipped: number; failed: number; total: number } | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [rangeDeleteStart, setRangeDeleteStart] = useState("");
+    const [rangeDeleteEnd, setRangeDeleteEnd] = useState("");
 
     // 통계 로드
     useEffect(() => {
@@ -147,6 +149,30 @@ export default function AdminLeadsPage() {
         } else {
             alert("삭제 실패: " + res.error);
         }
+    };
+
+    const handleRangeDelete = async () => {
+        const start = parseInt(rangeDeleteStart);
+        const end = parseInt(rangeDeleteEnd);
+
+        if (isNaN(start) || isNaN(end)) {
+            alert("시작 번호와 끝 번호를 정확히 입력해 주세요.");
+            return;
+        }
+
+        if (!confirm(`${start}번부터 ${end}번까지의 데이터를 모두 삭제하시겠습니까?`)) return;
+
+        setIsLoading(true);
+        const res = await deleteLeadsByRangeAction(start, end);
+        if (res.success) {
+            alert("해당 범위의 데이터가 삭제되었습니다.");
+            setRangeDeleteStart("");
+            setRangeDeleteEnd("");
+            fetchData(1);
+        } else {
+            alert("삭제 실패: " + res.error);
+        }
+        setIsLoading(false);
     };
 
     const handleDeleteReal = async () => {
@@ -439,6 +465,37 @@ export default function AdminLeadsPage() {
                             <Trash2 className="w-4 h-4" />
                             테스트 데이터 전체 삭제
                         </button>
+
+                        <div className="mt-2 p-3 bg-red-50/30 border border-red-100 rounded-lg">
+                            <p className="text-[10px] font-bold text-red-700 mb-2 flex items-center gap-1">
+                                <ShieldAlert className="w-3 h-3" /> 임의 번호 범위 삭제
+                            </p>
+                            <div className="flex gap-2 items-center">
+                                <input 
+                                    type="number" 
+                                    placeholder="시작ID" 
+                                    value={rangeDeleteStart}
+                                    onChange={e => setRangeDeleteStart(e.target.value)}
+                                    className="w-full px-2 py-1.5 text-xs border border-red-100 rounded focus:outline-none focus:border-red-300"
+                                />
+                                <span className="text-gray-400">~</span>
+                                <input 
+                                    type="number" 
+                                    placeholder="끝ID" 
+                                    value={rangeDeleteEnd}
+                                    onChange={e => setRangeDeleteEnd(e.target.value)}
+                                    className="w-full px-2 py-1.5 text-xs border border-red-100 rounded focus:outline-none focus:border-red-300"
+                                />
+                                <button
+                                    onClick={handleRangeDelete}
+                                    disabled={isLoading}
+                                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 transition-colors shrink-0 disabled:opacity-50"
+                                >
+                                    삭제
+                                </button>
+                            </div>
+                        </div>
+
                         {uploadResult && (
                             <div className="mt-3 p-3 bg-green-50 rounded-xl border border-green-100">
                                 <p className="text-xs font-bold text-green-700">업로드 결과</p>
@@ -616,7 +673,7 @@ export default function AdminLeadsPage() {
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
-                                    {["순번", "종류", "연락처", "이름", "생년월일", "성별", "시/도", "시/군/구", "읍/면/동", "관리"].map(h => (
+                                    {["순번", "종류", "연락처", "이름", "생년월일", "성별", "시/도", "시/군/구", "읍/면/동"].map(h => (
                                         <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 tracking-wider whitespace-nowrap">{h}</th>
                                     ))}
                                 </tr>
@@ -647,15 +704,6 @@ export default function AdminLeadsPage() {
                                         <td className="px-4 py-3 text-gray-600 text-xs">{lead.address_sido || "-"}</td>
                                         <td className="px-4 py-3 text-gray-600 text-xs">{lead.address_sigungu || "-"}</td>
                                         <td className="px-4 py-3 text-gray-600 text-xs">{lead.address_dong || "-"}</td>
-                                        <td className="px-4 py-3">
-                                            <button
-                                                onClick={() => handleDeleteLead(lead.id)}
-                                                className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                title="삭제"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

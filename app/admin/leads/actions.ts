@@ -208,9 +208,6 @@ export async function deleteFakeLeadsAction() {
     return { success: true };
 }
 
-// ============================================================
-// 개별 데이터 삭제
-// ============================================================
 export async function deleteLeadAction(id: number) {
     const cookieStore = await cookies();
     const supabase = createServerActionClient({ cookies: () => cookieStore });
@@ -222,6 +219,27 @@ export async function deleteLeadAction(id: number) {
 
     if (error) {
         console.error("=== [deleteLeadAction] Error ===", error);
+        return { success: false, error: error.message };
+    }
+
+    return { success: true };
+}
+
+// ============================================================
+// 범위 데이터 삭제 (ID 기준)
+// ============================================================
+export async function deleteLeadsByRangeAction(startId: number, endId: number) {
+    const cookieStore = await cookies();
+    const supabase = createServerActionClient({ cookies: () => cookieStore });
+
+    const { error } = await supabase
+        .from("marketing_leads")
+        .delete()
+        .gte("id", startId)
+        .lte("id", endId);
+
+    if (error) {
+        console.error("=== [deleteLeadsByRangeAction] Error ===", error);
         return { success: false, error: error.message };
     }
 
