@@ -1596,6 +1596,7 @@ export default function AdminProductsPage() {
                                             required
                                             value={formData.price || ""}
                                             onChange={(e) => setFormData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
+                                            onWheel={(e) => e.currentTarget.blur()}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                                         />
                                         {formData.price > 0 && (
@@ -1641,6 +1642,7 @@ export default function AdminProductsPage() {
                                                 placeholder="임의%"
                                                 value={![0, 5, 10, 15].includes(formData.discount_percent || 0) ? formData.discount_percent : ''}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, discount_percent: parseInt(e.target.value) || 0 }))}
+                                                onWheel={(e) => e.currentTarget.blur()}
                                                 className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
                                             />
                                             <span className="text-sm text-gray-500">%</span>
@@ -1691,6 +1693,7 @@ export default function AdminProductsPage() {
                                         required
                                         value={formData.stock || ""}
                                         onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                                        onWheel={(e) => e.currentTarget.blur()}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                                     />
                                     {formData.stock === 0 && (

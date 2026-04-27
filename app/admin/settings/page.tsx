@@ -4,14 +4,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {
     uploadBannerAction, deleteBannerAction, fetchBannersAction,
-    uploadPolicyImageAction, deletePolicyImageAction, fetchPolicyImagesAction,
     saveBannerOrderAction,
-    uploadPartnershipImageAction, deletePartnershipImageAction, fetchPartnershipImageAction, savePartnershipImagesOrderAction,
     uploadPWAIconAction, deletePWAIconAction, fetchPWAIconsAction,
     uploadBrandLogoAction, deleteBrandLogoAction, saveBrandLogosAction, fetchBrandLogosAction,
     type MainBanner
 } from "./actions";
-import { Upload, Save, Image as ImageIcon, CheckCircle, ChevronDown, ChevronUp, Link as LinkIcon, Smartphone, Trash2, Plus, GripVertical, Info } from "lucide-react";
+import { Upload, Save, Image as ImageIcon, CheckCircle, ChevronDown, ChevronUp, Link as LinkIcon, Smartphone, Trash2, Plus, GripVertical } from "lucide-react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/context/ToastContext";
@@ -24,11 +22,7 @@ export default function AdminSettingsPage() {
     const [banners, setBanners] = useState<MainBanner[]>([]);
     const [uploading, setUploading] = useState<boolean>(false);
 
-    const [policyImages, setPolicyImages] = useState<string[]>([]);
-    const [policyUploading, setPolicyUploading] = useState<number | null>(null);
 
-    const [partnershipImages, setPartnershipImages] = useState<string[]>([]);
-    const [partnershipUploading, setPartnershipUploading] = useState(false);
 
     // 디자인 탭 아코디언 상태 (한 번에 하나만 열림, 기본 모두 닫힘)
     const [designAccordion, setDesignAccordion] = useState<string | null>(null);
@@ -76,93 +70,13 @@ export default function AdminSettingsPage() {
     useEffect(() => {
         fetchBanners();
         fetchSiteSettings();
-        fetchPolicyImages();
-        fetchPartnershipImage();
+
         fetchPwaIcons();
         fetchBrandLogos();
     }, []);
 
     // --- Handlers ---
-    const fetchPartnershipImage = async () => {
-        try {
-            const result = await fetchPartnershipImageAction();
-            if (result.success && result.imageUrls) {
-                setPartnershipImages(result.imageUrls);
-            }
-        } catch (error) {
-            console.error("Failed to fetch partnership images:", error);
-        }
-    };
 
-    const handlePartnershipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-        const file = e.target.files[0];
-        if (file.size > 10 * 1024 * 1024) {
-            alert("파일 크기는 10MB를 초과할 수 없습니다.");
-            e.target.value = '';
-            return;
-        }
-        setPartnershipUploading(true);
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            const result = await uploadPartnershipImageAction(formData);
-            if (!result.success) throw new Error(result.error);
-            toast.success("제휴 제안서 이미지가 추가되었습니다.");
-            await fetchPartnershipImage();
-        } catch (error: any) {
-            console.error("Partnership image upload failed:", error);
-            toast.error(`업로드 실패: ${error.message}`);
-        } finally {
-            setPartnershipUploading(false);
-            e.target.value = '';
-        }
-    };
-
-    const handlePartnershipDelete = async (targetUrl: string) => {
-        if (!confirm("선택한 이미지를 삭제하시겠습니까?")) return;
-        try {
-            const result = await deletePartnershipImageAction(targetUrl);
-            if (!result.success) throw new Error(result.error);
-            toast.success("이미지가 삭제되었습니다.");
-            await fetchPartnershipImage();
-        } catch (error) {
-            console.error("Partnership image delete failed:", error);
-            toast.error("삭제 중 오류가 발생했습니다.");
-        }
-    };
-
-    const handlePartnershipMoveUp = async (index: number) => {
-        if (index === 0) return; // Already at top
-        const newImages = [...partnershipImages];
-        [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
-        setPartnershipImages(newImages);
-        try {
-            const result = await savePartnershipImagesOrderAction(newImages);
-            if (!result.success) throw new Error(result.error);
-            toast.success("순서가 변경되었습니다.");
-        } catch (error) {
-            console.error("Partnership image reorder failed:", error);
-            toast.error("순서 변경 중 오류가 발생했습니다.");
-            await fetchPartnershipImage(); // Revert on error
-        }
-    };
-
-    const handlePartnershipMoveDown = async (index: number) => {
-        if (index === partnershipImages.length - 1) return; // Already at bottom
-        const newImages = [...partnershipImages];
-        [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
-        setPartnershipImages(newImages);
-        try {
-            const result = await savePartnershipImagesOrderAction(newImages);
-            if (!result.success) throw new Error(result.error);
-            toast.success("순서가 변경되었습니다.");
-        } catch (error) {
-            console.error("Partnership image reorder failed:", error);
-            toast.error("순서 변경 중 오류가 발생했습니다.");
-            await fetchPartnershipImage(); // Revert on error
-        }
-    };
 
     const fetchPwaIcons = async () => {
         try {
@@ -347,55 +261,7 @@ export default function AdminSettingsPage() {
         }
     };
 
-    const fetchPolicyImages = async () => {
-        try {
-            const result = await fetchPolicyImagesAction();
-            if (result.success && result.images) {
-                setPolicyImages(result.images);
-            }
-        } catch (error) {
-            console.error("Failed to fetch policy images:", error);
-        }
-    };
 
-    const handlePolicyImageUpload = async (imageIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-        const file = e.target.files[0];
-        if (file.size > 10 * 1024 * 1024) {
-            alert("파일 크기는 10MB를 초과할 수 없습니다.");
-            e.target.value = '';
-            return;
-        }
-        setPolicyUploading(imageIndex);
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('imageIndex', imageIndex.toString());
-            const result = await uploadPolicyImageAction(formData);
-            if (!result.success) throw new Error(result.error);
-            toast.success(`이용 안내 이미지 ${imageIndex}번이 업로드되었습니다.`);
-            await fetchPolicyImages();
-        } catch (error: any) {
-            console.error("Policy image upload failed:", error);
-            toast.error(`업로드 실패: ${error.message}`);
-        } finally {
-            setPolicyUploading(null);
-            e.target.value = '';
-        }
-    };
-
-    const handlePolicyImageDelete = async (imageIndex: number) => {
-        if (!confirm(`이용 안내 이미지 ${imageIndex}번을 삭제하시겠습니까?`)) return;
-        try {
-            const result = await deletePolicyImageAction(imageIndex);
-            if (!result.success) throw new Error(result.error);
-            toast.success(`이용 안내 이미지 ${imageIndex}번이 삭제되었습니다.`);
-            await fetchPolicyImages();
-        } catch (error) {
-            console.error("Policy image delete failed:", error);
-            toast.error("삭제 중 오류가 발생했습니다.");
-        }
-    };
 
     const fetchSiteSettings = async () => {
         try {
@@ -984,202 +850,7 @@ export default function AdminSettingsPage() {
                             )}
                         </div>
 
-                        {/* 제휴 제안서 이미지 관리 */}
-                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                            <button
-                                onClick={() => toggleDesignAccordion('partnership')}
-                                className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-1 h-6 bg-green-700 rounded-full"></div>
-                                    <h2 className="text-xl font-bold text-gray-900">제휴 제안서 이미지</h2>
-                                    <span className="text-sm text-gray-400 ml-2">{partnershipImages.length}장</span>
-                                </div>
-                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${designAccordion === 'partnership' ? 'rotate-180' : ''}`} />
-                            </button>
-                            {designAccordion === 'partnership' && (
-                                <div className="p-8 border-t border-gray-100">
-                                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                        <div className="flex items-start gap-3">
-                                            <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-                                            <div className="text-sm text-blue-800">
-                                                <p className="font-semibold mb-1">제휴 문의 페이지 이미지</p>
-                                                <p className="text-blue-700">제휴 문의 페이지(/partner/inquiry)에 표시되는 제안서 이미지입니다.</p>
-                                                <ul className="mt-2 space-y-1 text-blue-600">
-                                                    <li>• 여러 장의 이미지를 순서대로 업로드할 수 있습니다</li>
-                                                    <li>• 권장 형식: PNG, JPG (최대 10MB)</li>
-                                                    <li>• 권장 사이즈: 1200px 너비 이상</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    {/* 이미지 업로드 버튼 */}
-                                    <div className="flex justify-between items-center mb-6">
-                                        <p className="text-sm text-gray-500">현재 등록된 이미지: {partnershipImages.length}장</p>
-                                        <label className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer text-sm font-bold shadow-sm">
-                                            <Plus className="w-4 h-4" />
-                                            {partnershipUploading ? '업로드 중...' : '이미지 추가'}
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handlePartnershipUpload}
-                                                disabled={partnershipUploading}
-                                            />
-                                        </label>
-                                    </div>
-
-                                    {/* 이미지 목록 */}
-                                    {partnershipImages.length === 0 ? (
-                                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-12 text-center">
-                                            <ImageIcon className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                                            <p className="text-gray-500 mb-2">등록된 제휴 제안서 이미지가 없습니다</p>
-                                            <p className="text-sm text-gray-400">이미지를 업로드하여 제휴 문의 페이지에 표시하세요</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {partnershipImages.map((imageUrl, index) => (
-                                                <div key={index} className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100 items-start group">
-                                                    {/* 순서 번호 + 이동 버튼 */}
-                                                    <div className="flex flex-col items-center gap-1 pt-2">
-                                                        <button
-                                                            onClick={() => handlePartnershipMoveUp(index)}
-                                                            disabled={index === 0}
-                                                            className={`p-1.5 rounded-md transition-colors ${index === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:bg-white hover:text-green-700 hover:shadow-sm'}`}
-                                                            title="위로 이동"
-                                                        >
-                                                            <ChevronUp className="w-4 h-4" />
-                                                        </button>
-                                                        <div className="p-2 bg-white rounded-md shadow-sm text-gray-600 group-hover:text-green-700 transition-colors">
-                                                            <span className="text-xs font-bold">{index + 1}</span>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handlePartnershipMoveDown(index)}
-                                                            disabled={index === partnershipImages.length - 1}
-                                                            className={`p-1.5 rounded-md transition-colors ${index === partnershipImages.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:bg-white hover:text-green-700 hover:shadow-sm'}`}
-                                                            title="아래로 이동"
-                                                        >
-                                                            <ChevronDown className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="relative w-48 aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
-                                                        <Image
-                                                            src={imageUrl}
-                                                            alt={`제휴 제안서 ${index + 1}`}
-                                                            fill
-                                                            className="object-cover"
-                                                        />
-                                                    </div>
-
-                                                    <div className="flex-1 flex flex-col justify-between h-full py-2">
-                                                        <div>
-                                                            <p className="font-semibold text-gray-900 mb-1">제안서 이미지 {index + 1}</p>
-                                                            <p className="text-xs text-gray-500 truncate max-w-xs">{imageUrl.split('/').pop()}</p>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handlePartnershipDelete(imageUrl)}
-                                                            className="mt-4 flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium w-fit"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                            삭제
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 이용안내 이미지 관리 */}
-                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                            <button
-                                onClick={() => toggleDesignAccordion('policy')}
-                                className="w-full px-8 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-1 h-6 bg-green-700 rounded-full"></div>
-                                    <h2 className="text-xl font-bold text-gray-900">이용안내 이미지</h2>
-                                    <span className="text-sm text-gray-400 ml-2">{policyImages.length}장</span>
-                                </div>
-                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${designAccordion === 'policy' ? 'rotate-180' : ''}`} />
-                            </button>
-                            {designAccordion === 'policy' && (
-                                <div className="p-8 border-t border-gray-100">
-                                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                        <div className="flex items-start gap-3">
-                                            <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-                                            <div className="text-sm text-blue-800">
-                                                <p className="font-semibold mb-1">상품 상세 페이지 하단 이용안내</p>
-                                                <p className="text-blue-700">모든 상품 상세 페이지 하단에 공통으로 노출되는 이미지입니다.</p>
-                                                <ul className="mt-2 space-y-1 text-blue-600">
-                                                    <li>• 배송/교환/반품 정책 등을 안내할 때 사용</li>
-                                                    <li>• 권장 형식: PNG, JPG (최대 10MB)</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* 이미지 업로드 버튼 */}
-                                    <div className="flex justify-between items-center mb-6">
-                                        <p className="text-sm text-gray-500">현재 등록된 이미지: {policyImages.length}장</p>
-                                        <label className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer text-sm font-bold shadow-sm">
-                                            <Plus className="w-4 h-4" />
-                                            이미지 추가
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={(e) => {
-                                                    if (e.target.files && e.target.files[0]) {
-                                                        const newIndex = policyImages.length + 1;
-                                                        handlePolicyImageUpload(newIndex, e);
-                                                    }
-                                                }}
-                                                disabled={policyUploading !== null}
-                                            />
-                                        </label>
-                                    </div>
-
-                                    {/* 이미지 목록 */}
-                                    {policyImages.length === 0 ? (
-                                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-12 text-center">
-                                            <ImageIcon className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                                            <p className="text-gray-500 mb-2">등록된 이용안내 이미지가 없습니다</p>
-                                            <p className="text-sm text-gray-400">이미지를 업로드하여 상품 상세 페이지에 표시하세요</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            {policyImages.map((url, index) => (
-                                                <div key={index} className="relative aspect-[3/4] group rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
-                                                    <Image
-                                                        src={url}
-                                                        alt={`이용안내 ${index + 1}`}
-                                                        fill
-                                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <button
-                                                            onClick={() => handlePolicyImageDelete(index + 1)}
-                                                            className="p-2 bg-white text-red-500 rounded-full hover:bg-red-50 transition-colors shadow-lg"
-                                                            title="삭제"
-                                                        >
-                                                            <Trash2 className="w-5 h-5" />
-                                                        </button>
-                                                    </div>
-                                                    <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-sm">
-                                                        {index + 1}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
 
                         {/* 앱 아이콘 관리 */}
                         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">

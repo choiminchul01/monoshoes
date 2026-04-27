@@ -57,19 +57,9 @@ export function MainBanner() {
     const [direction, setDirection] = useState(1); // 1: next, -1: prev
     const [isDragging, setIsDragging] = useState(false);
 
-    // 배너 클릭 핸들러
+    // 배너 클릭 핸들러 (비활성화)
     const handleBannerClick = () => {
-        if (isDragging) return; // 드래그 중에는 클릭 무시
-
-        const link = slides[currentSlide]?.link;
-        if (link && link.trim()) {
-            // 외부 링크인지 내부 링크인지 확인
-            if (link.startsWith('http://') || link.startsWith('https://')) {
-                window.open(link, '_blank');
-            } else {
-                router.push(link);
-            }
-        }
+        // 클릭 반응 없음
     };
 
     useEffect(() => {
@@ -172,7 +162,7 @@ export function MainBanner() {
                     animate="center"
                     exit="exit"
                     transition={{ duration: 0.5, ease: "easeInOut" }}
-                    className={`absolute inset-0 ${slides[currentSlide]?.link?.trim() ? 'cursor-pointer' : 'cursor-grab'} active:cursor-grabbing`}
+                    className="absolute inset-0 cursor-grab active:cursor-grabbing"
                     drag="x"
                     dragConstraints={{ left: 0, right: 0 }}
                     dragElastic={0.2}
@@ -181,7 +171,7 @@ export function MainBanner() {
                         setTimeout(() => setIsDragging(false), 100);
                         handleDragEnd(e, info);
                     }}
-                    onClick={handleBannerClick}
+                    onClick={(e) => e.stopPropagation()}
                 >
                     {/* Background Extension for Wide Screens */}
                     <div className="absolute inset-0 bg-[#b8b8b8] hidden md:block">
