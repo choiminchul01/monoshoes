@@ -168,6 +168,7 @@ export default function AdminLeadsPage() {
             alert("해당 범위의 데이터가 삭제되었습니다.");
             setRangeDeleteStart("");
             setRangeDeleteEnd("");
+            getLeadsStatsAction().then(setStats);
             fetchData(1);
         } else {
             alert("삭제 실패: " + res.error);
