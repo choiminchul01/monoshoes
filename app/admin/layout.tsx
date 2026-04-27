@@ -145,8 +145,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             items: [
                 { href: '/admin/customers', label: '고객 관리', icon: Users, badge: 0, permission: 'customers' as const },
                 { href: '/admin/leads', label: '고객 DB (마케팅)', icon: Users, badge: 0, permission: 'customers' as const },
-                { href: '/admin/coupons', label: '쿠폰 관리', icon: Ticket, badge: 0, permission: 'coupons' as const },
-                { href: '/admin/board', label: '게시판 관리', icon: FileText, badge: 0, permission: 'board' as const },
                 { href: '/admin/inquiries', label: '문의 관리', icon: HelpCircle, badge: 0, permission: 'inquiries' as const },
             ]
         },
@@ -158,7 +156,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 // Master only items
                 ...(isMaster ? [
                     { href: '/admin/admins', label: '관리자 계정', icon: Shield, badge: 0, permission: null },
-                    { href: '/admin/partnership', label: '모노슈즈 파트너십', icon: Handshake, badge: 0, permission: null }
                 ] : [])
             ]
         }

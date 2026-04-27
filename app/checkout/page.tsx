@@ -358,12 +358,6 @@ function CheckoutContent() {
                                         <span className="text-gray-500">배송비</span>
                                         <span className="font-medium">{shippingCost === 0 ? "무료" : formatPrice(shippingCost)}</span>
                                     </div>
-                                    {selectedUserCoupon && (
-                                        <div className="flex justify-between text-sm text-red-600">
-                                            <span>쿠폰 할인</span>
-                                            <span className="font-medium">-{formatPrice(couponDiscount)}</span>
-                                        </div>
-                                    )}
                                     <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-100">
                                         <span>최종 결제금액</span>
                                         <span>{formatPrice(finalTotal)}</span>
@@ -559,59 +553,6 @@ function CheckoutContent() {
                         </div>
                     </section>
 
-                    {/* Coupon Section */}
-                    <section className="mb-10">
-                        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <Ticket className="w-5 h-5" />
-                            할인 쿠폰
-                        </h2>
-
-                        {!user ? (
-                            <div className="bg-gray-50 p-4 rounded-md border border-gray-200 text-sm text-center text-gray-500">
-                                로그인 후 보유한 쿠폰을 사용할 수 있습니다.
-                            </div>
-                        ) : couponsLoading ? (
-                            <div className="text-sm text-gray-500">쿠폰 목록을 불러오는 중...</div>
-                        ) : coupons.length > 0 ? (
-                            <div className="space-y-3">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    보유 쿠폰 선택 ({coupons.length}장)
-                                </label>
-                                <select
-                                    className="w-full h-12 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all bg-white text-sm"
-                                    value={selectedCouponId}
-                                    onChange={(e) => setSelectedCouponId(e.target.value)}
-                                >
-                                    <option value="">쿠폰을 선택해주세요 (미적용)</option>
-                                    {coupons.map((userCoupon) => {
-                                        const discountText = userCoupon.coupons.type === 'percentage'
-                                            ? `${userCoupon.coupons.discount_value}% 할인`
-                                            : `${formatPrice(userCoupon.coupons.discount_value)} 할인`;
-
-                                        return (
-                                            <option key={userCoupon.id} value={userCoupon.coupon_id}>
-                                                [{userCoupon.coupons.code}] {userCoupon.coupons.name} - {discountText}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-                                <p className="text-xs text-gray-500">* 주문 금액에 따라 사용이 제한될 수 있습니다.</p>
-                            </div>
-                        ) : (
-                            <div className="bg-gray-50 p-4 rounded-md border border-gray-200 text-sm text-center text-gray-500">
-                                사용 가능한 쿠폰이 없습니다.
-                            </div>
-                        )}
-
-                        {selectedUserCoupon && (
-                            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                                <p className="text-sm text-green-800">
-                                    <span className="font-bold">{selectedUserCoupon.coupons.name}</span>이 적용되었습니다.
-                                    <span className="font-bold ml-1">{formatPrice(couponDiscount)}</span> 할인!
-                                </p>
-                            </div>
-                        )}
-                    </section>
 
                     {/* Payment Method */}
                     <section className="mb-10">
@@ -665,12 +606,6 @@ function CheckoutContent() {
                                         {shippingCost === 0 ? "무료" : formatPrice(shippingCost)}
                                     </span>
                                 </div>
-                                {selectedUserCoupon && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600">쿠폰 할인</span>
-                                        <span className="font-medium text-red-600">-{formatPrice(couponDiscount)}</span>
-                                    </div>
-                                )}
 
 
                                 <div className="border-t-2 border-gray-300 pt-4 mt-4">
@@ -767,12 +702,6 @@ function CheckoutContent() {
                                 {shippingCost === 0 ? "무료" : formatPrice(shippingCost)}
                             </span>
                         </div>
-                        {selectedUserCoupon && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">쿠폰 할인</span>
-                                <span className="font-medium text-red-600">-{formatPrice(couponDiscount)}</span>
-                            </div>
-                        )}
                         {shippingCost > 0 && (
                             <p className="text-xs text-gray-400">* 50만원 이상 구매 시 배송비 무료</p>
                         )}

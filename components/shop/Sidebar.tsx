@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 const WOMEN_CATEGORIES = [
@@ -38,8 +38,12 @@ export function Sidebar({ onFilterSelect }: SidebarProps) {
     const defaultGender = selectedGender === "M" ? "M" : "W";
     const [activeGender, setActiveGender] = useState<"W" | "M">(defaultGender as "W" | "M");
 
-    const [womenOpen, setWomenOpen] = useState(selectedGender === "W" || !selectedGender);
-    const [menOpen, setMenOpen] = useState(selectedGender === "M");
+    // URL 파라미터가 변경될 때 사이드바 상태 동기화
+    useEffect(() => {
+        if (selectedGender === "M" || selectedGender === "W") {
+            setActiveGender(selectedGender as "W" | "M");
+        }
+    }, [selectedGender]);
 
     const handleClick = () => {
         if (onFilterSelect) onFilterSelect();

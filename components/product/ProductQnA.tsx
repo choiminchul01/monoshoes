@@ -57,17 +57,19 @@ const getCategoryLabel = (categoryId: string | undefined): string => {
     return category ? category.label : categoryId || '문의';
 };
 
-// 문의 내용 마스킹 함수: 기타 문의인 경우 내용 숨김
+// 문의 내용 마스킹 함수
 const maskQuestionContent = (qna: QnA, isOwner: boolean): string => {
     // 본인 문의는 전체 표시
     if (isOwner) return qna.question;
 
-    // 기타 문의(other)가 아닌 경우 그대로 표시 (색상/사이즈/배송/결제 문의)
-    if (qna.category && qna.category !== 'other') {
+    // 비공개 문의가 아니면 전체 표시
+    if (!qna.is_private) return qna.question;
+
+    // 비공개일 경우 카테고리 라벨만 표시, 없으면 '비공개 문의'
+    if (qna.category) {
         return getCategoryLabel(qna.category);
     }
 
-    // 기타 문의인 경우 또는 카테고리가 없는 레거시 데이터는 마스킹
     return '비공개 문의입니다';
 };
 
@@ -94,7 +96,6 @@ export default function ProductQnA({ productId }: ProductQnAProps) {
         const { data } = await supabase
             .from('product_qna')
             .select('*')
-            .eq('product_id', productId)
             .order('created_at', { ascending: false });
 
         if (data) {

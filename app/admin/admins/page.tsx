@@ -337,8 +337,6 @@ export default function AdminAccountsPage() {
                                         { key: 'orders' as keyof AdminPermissions, label: '주문 관리' },
                                         { key: 'products' as keyof AdminPermissions, label: '상품 관리' },
                                         { key: 'reviews' as keyof AdminPermissions, label: '리뷰 관리' },
-                                        { key: 'board' as keyof AdminPermissions, label: '게시판 관리' },
-                                        { key: 'coupons' as keyof AdminPermissions, label: '쿠폰 관리' },
                                         { key: 'inquiries' as keyof AdminPermissions, label: '문의 관리' },
                                         { key: 'settings' as keyof AdminPermissions, label: '설정' }
                                     ].map(({ key, label }) => (

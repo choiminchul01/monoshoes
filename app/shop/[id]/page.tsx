@@ -63,8 +63,11 @@ const expandSizes = (sizes: string[]) => {
             expanded.add(strSize);
         }
     });
-    return Array.from(expanded);
+    return Array.from(expanded).sort((a, b) => parseInt(a) - parseInt(b));
 };
+
+const DEFAULT_MENS_SIZES = ["250", "255", "260", "265", "270", "275", "280", "285"];
+const DEFAULT_WOMENS_SIZES = ["225", "230", "235", "240", "245", "250", "255"];
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const [product, setProduct] = useState<Product | null>(null);
@@ -575,7 +578,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     </div>
                                 ) : (
                                     <div className="flex flex-wrap gap-2">
-                                        {['220', '225', '230', '235', '240', '245', '250', '255', '260'].map((size) => (
+                                        {(product.category?.startsWith("M_") ? DEFAULT_MENS_SIZES : DEFAULT_WOMENS_SIZES).map((size) => (
                                             <button
                                                 key={size}
                                                 onClick={() => setSelectedSize(size)}

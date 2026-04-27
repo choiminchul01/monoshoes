@@ -106,16 +106,15 @@ export type Database = {
         is_admin_created: boolean
         created_at: string
     }
-    inquiries: {
+    general_qna: {
         id: string
         user_id: string | null
-        type: 'general' | 'request'
+        author_name: string | null
         title: string
         content: string
-        image_url: string | null
-        is_private: boolean
-        status: 'pending' | 'answered'
         answer: string | null
+        is_private: boolean
+        is_answered: boolean
         answered_at: string | null
         created_at: string
     }
