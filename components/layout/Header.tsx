@@ -91,7 +91,7 @@ export function Header() {
                     >
                         {[...Array(40)].map((_, i) => (
                             <span key={i} className="text-white text-[13px] font-medium px-12 tracking-wider">
-                                모노슈즈와 함께하는 프리미엄 풋웨어 라이프
+                                신규 회원가입시 5000원 쿠폰 증정!
                             </span>
                         ))}
                     </motion.div>
