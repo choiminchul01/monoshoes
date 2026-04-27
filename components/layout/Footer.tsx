@@ -144,10 +144,11 @@ export function Footer() {
                             </Link>
                         </div>
 
-                        <div className="mt-2">
+                        <div className="mt-2 flex flex-col items-end">
                             <Link href="/home" className="text-xl md:text-2xl font-black tracking-[0.2em] text-black opacity-80 hover:opacity-100 transition-opacity" style={{ fontFamily: 'var(--font-cinzel), serif' }}>
                                 MONO SHOES
                             </Link>
+                            <p className="text-[10px] tracking-[0.3em] font-bold text-gray-400 mt-1">PREMIUM FOOTWEAR BRAND</p>
                         </div>
                     </div>
                 </div>
