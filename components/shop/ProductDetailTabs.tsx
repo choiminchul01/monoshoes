@@ -329,9 +329,9 @@ function ReviewTabContent({ productId }: { productId: string }) {
                 <div className="space-y-4">
                     {reviews.map((review) => (
                         <div key={review.id} className="border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow">
-                            <div className="flex items-start gap-4">
+                            <div className="flex flex-col items-center text-center">
                                 {review.image_url && (
-                                    <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+                                    <div className="w-full max-w-[400px] aspect-square rounded-2xl overflow-hidden mb-6 bg-gray-100 shadow-sm border border-gray-50">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={review.image_url}
@@ -340,24 +340,29 @@ function ReviewTabContent({ productId }: { productId: string }) {
                                         />
                                     </div>
                                 )}
-                                <div className="flex-1 flex flex-col items-center text-center">
-                                    <div className="flex items-center gap-2 mb-1 justify-center">
+                                <div className="flex flex-col items-center">
+                                    <div className="flex items-center gap-2 mb-2 justify-center">
                                         <div className="flex gap-0.5">
                                             {[1, 2, 3, 4, 5].map(s => (
                                                 <Star
                                                     key={s}
-                                                    className={`w-3.5 h-3.5 ${s <= review.rating ? "fill-[#D4AF37] text-[#D4AF37]" : "text-gray-200"}`}
+                                                    className={`w-4 h-4 ${s <= review.rating ? "fill-[#D4AF37] text-[#D4AF37]" : "text-gray-200"}`}
                                                 />
                                             ))}
                                         </div>
-                                        <span className="text-xs text-gray-400">
-                                            {new Date(review.created_at).toLocaleDateString("ko-KR")}
+                                        <span className="text-sm font-bold text-gray-900 ml-1">
+                                            {review.rating.toFixed(1)}
                                         </span>
                                     </div>
-                                    <p className="text-xs font-bold text-gray-600 mb-2">
-                                        {review.author_name}
+                                    <div className="text-xs text-gray-400 mb-4">
+                                        {new Date(review.created_at).toLocaleDateString("ko-KR")}
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-900 mb-3">
+                                        {review.author_name} <span className="font-normal text-gray-400 ml-1">고객님</span>
                                     </p>
-                                    <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
+                                    <p className="text-[15px] text-gray-700 leading-relaxed max-w-2xl">
+                                        {review.content}
+                                    </p>
                                 </div>
                             </div>
                         </div>
