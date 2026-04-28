@@ -152,17 +152,19 @@ export default function AdminAccountsPage() {
 
     const getRoleBadgeColor = (role: AdminRole) => {
         switch (role) {
-            case 'master': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'master':  return 'bg-purple-100 text-purple-700 border-purple-200';
             case 'manager': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'staff': return 'bg-gray-100 text-gray-700 border-gray-200';
+            case 'staff':   return 'bg-gray-100 text-gray-700 border-gray-200';
+            case 'partner': return 'bg-amber-100 text-amber-700 border-amber-200';
         }
     };
 
     const getRoleIcon = (role: AdminRole) => {
         switch (role) {
-            case 'master': return <Shield className="w-4 h-4" />;
+            case 'master':  return <Shield className="w-4 h-4" />;
             case 'manager': return <Users className="w-4 h-4" />;
-            case 'staff': return <User className="w-4 h-4" />;
+            case 'staff':   return <User className="w-4 h-4" />;
+            case 'partner': return <User className="w-4 h-4" />;
         }
     };
 
@@ -226,9 +228,10 @@ export default function AdminAccountsPage() {
                                     <td className="px-6 py-4">
                                         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${getRoleBadgeColor(admin.role)}`}>
                                             {getRoleIcon(admin.role)}
-                                            {admin.role === 'master' && '마스터'}
+                                            {admin.role === 'master'  && '마스터'}
                                             {admin.role === 'manager' && '매니저'}
-                                            {admin.role === 'staff' && '스태프'}
+                                            {admin.role === 'staff'   && '스태프'}
+                                            {admin.role === 'partner' && '파트너사'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -308,6 +311,7 @@ export default function AdminAccountsPage() {
                                 >
                                     <option value="staff">스태프 (Staff)</option>
                                     <option value="manager">매니저 (Manager)</option>
+                                    <option value="partner">파트너 (Partner)</option>
                                 </select>
                             </div>
 

@@ -16,7 +16,7 @@ export type AdminPermissions = {
     settings: boolean;
 };
 
-export type AdminRole = "master" | "manager" | "staff";
+export type AdminRole = "master" | "manager" | "staff" | "partner";
 
 export type AdminRoleData = {
     id: string;
@@ -107,6 +107,7 @@ export function useAdminPermissions() {
         isMaster: role === 'master',
         isManager: role === 'manager',
         isStaff: role === 'staff',
+        isPartner: role === 'partner',
         hasPermission,
         refetch: fetchPermissions
     };

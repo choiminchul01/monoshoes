@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Upload, Download, Filter, Users, TrendingUp, X, RefreshCw, ChevronLeft, ChevronRight, Database, ShieldCheck, ShieldAlert, Trash2 } from "lucide-react";
 import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction, deleteAllRealLeadsAction, deleteLeadAction, deleteLeadsByRangeAction, resetAllLeadsAction } from "./actions";
+import { useAdminPermissions } from "@/lib/useAdminPermissions";
 
 type Lead = {
     id: number;
@@ -43,6 +44,7 @@ export default function AdminLeadsPage() {
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
     const PAGE_SIZE = 100;
+    const { isMaster } = useAdminPermissions();
 
     // 필터 상태
     const [sido, setSido] = useState("");
@@ -177,12 +179,12 @@ export default function AdminLeadsPage() {
     };
 
     const handleDeleteReal = async () => {
-        if (!confirm("모든 실제 고객 데이터(T)를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) return;
+        if (!confirm("모든 자사몰 유입 고객 데이터(T)를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) return;
         
         setIsLoading(true);
         const res = await deleteAllRealLeadsAction();
         if (res.success) {
-            alert("실제 고객 데이터가 모두 삭제되었습니다.");
+            alert("자사몰 유입 고객 데이터가 모두 삭제되었습니다.");
             getLeadsStatsAction().then(setStats);
             fetchData(1);
         } else {
@@ -248,12 +250,12 @@ export default function AdminLeadsPage() {
     };
 
     const handleGenerateFake = async () => {
-        if (!confirm("테스트용 데이터(1만건)를 생성하시겠습니까?")) return;
+        if (!confirm("외부 유입 임의 데이터(1만건)를 생성하시겠습니까?")) return;
         setIsGenerating(true);
         try {
             const res = await generateFakeLeadsAction(10000);
             if (res.success) {
-                alert(`테스트용 데이터 ${res.inserted.toLocaleString()}건 생성 완료!`);
+                alert(`외부 유입 데이터 ${res.inserted.toLocaleString()}건 생성 완료!`);
                 setPage(1);
                 fetchData(1);
                 getLeadsStatsAction().then(setStats);
@@ -266,13 +268,13 @@ export default function AdminLeadsPage() {
     };
 
     const handleDeleteFakeData = async () => {
-        if (!confirm("주의! 생성된 모든 '테스트용 데이터'가 삭제됩니다. 계속하시겠습니까?\n(실제 고객 데이터는 유지됩니다)")) return;
+        if (!confirm("주의! 모든 '외부 유입 고객(F)' 데이터가 삭제됩니다. 계속하시겠습니까?\n(자사몰 유입 고객 데이터는 유지됩니다)")) return;
         
         setIsLoading(true);
         try {
             const res = await deleteFakeLeadsAction();
             if (res.success) {
-                alert("테스트 데이터가 모두 삭제되었습니다.");
+                alert("외부 유입 고객 데이터가 모두 삭제되었습니다.");
                 fetchData();
                 getLeadsStatsAction().then(setStats);
             } else {
@@ -286,7 +288,7 @@ export default function AdminLeadsPage() {
     };
 
     const handleMasterReset = async () => {
-        if (!confirm("!!! 경고 !!!\n모든 데이터(실제+테스트)가 삭제되고 번호표 기계가 1번으로 리셋됩니다.\n정말로 초기화하시겠습니까?")) return;
+        if (!confirm("!!! 경고 !!!\n모든 데이터(자사몰+외부)가 삭제되고 번호표 기계가 1번으로 리셋됩니다.\n정말로 초기화하시겠습니까?")) return;
         
         setIsLoading(true);
         try {
@@ -370,13 +372,11 @@ export default function AdminLeadsPage() {
             </div>
 
             {/* 통계 카드 */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {[
                     { label: "전체 DB", value: stats.total.toLocaleString(), icon: Database, color: "text-black" },
-                    { label: "실제 고객(T)", value: stats.realCount.toLocaleString(), icon: ShieldCheck, color: "text-green-600" },
-                    { label: "테스트(F)", value: stats.fakeCount.toLocaleString(), icon: ShieldAlert, color: "text-orange-500" },
-                    { label: "남성", value: stats.male.toLocaleString(), icon: TrendingUp, color: "text-blue-500" },
-                    { label: "여성", value: stats.female.toLocaleString(), icon: TrendingUp, color: "text-pink-500" },
+                    { label: "자사몰 유입 고객(T)", value: stats.realCount.toLocaleString(), icon: ShieldCheck, color: "text-green-600" },
+                    { label: "외부 유입 고객(F)", value: stats.fakeCount.toLocaleString(), icon: ShieldAlert, color: "text-orange-500" },
                     { label: "조회 결과", value: totalCount > 0 ? totalCount.toLocaleString() : "-", icon: Filter, color: "text-purple-600" },
                 ].map((stat) => (
                     <div key={stat.label} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -404,7 +404,7 @@ export default function AdminLeadsPage() {
                                 onChange={e => setUploadIsReal(e.target.checked)}
                                 className="w-4 h-4 text-black rounded border-gray-300 focus:ring-black"
                             />
-                            업로드하는 데이터를 '실제 고객(T)'으로 분류
+                            업로드하는 데이터를 '자사몰 유입 고객(T)'으로 분류
                         </label>
                         <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">중복 데이터 처리 (전화번호 기준)</p>
@@ -469,7 +469,8 @@ export default function AdminLeadsPage() {
                     </label>
 
                     <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-4">
-                        {/* 1. 데이터 추가 그룹 */}
+                            {/* 1. 데이터 추가 그룹 — 마스터 전용 */}
+                        {isMaster && (
                         <div className="space-y-2">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">데이터 생성</p>
                             <button
@@ -478,11 +479,13 @@ export default function AdminLeadsPage() {
                                 className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 <Database className="w-4 h-4" />
-                                테스트용 데이터(1만건) 생성
+                                외부 유입 고객 임의 생성(1만건)
                             </button>
                         </div>
+                        )}
 
-                        {/* 2. 데이터 관리 (위험 구역) */}
+                        {/* 2. 데이터 관리 (위험 구역) — 마스터 전용 */}
+                        {isMaster && (
                         <div className="p-4 bg-white border-2 border-red-500 rounded-xl space-y-4">
                             <p className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-1">
                                 <ShieldAlert className="w-3.5 h-3.5" /> 데이터 관리 및 위험 작업
@@ -528,7 +531,7 @@ export default function AdminLeadsPage() {
                                     className="w-full py-2.5 bg-white border border-red-500 text-red-600 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 hover:bg-red-50 disabled:opacity-50"
                                 >
                                     <span className="w-4 h-4 flex items-center justify-center bg-red-500 text-white rounded-full text-[9px]">2</span>
-                                    테스트 데이터(F) 전체 삭제
+                                    외부 유입 고객(F) 전체 삭제
                                 </button>
 
                                 {/* 3번: 실제 고객 데이터(T) 전체 삭제 */}
@@ -538,7 +541,7 @@ export default function AdminLeadsPage() {
                                     className="w-full py-2.5 bg-white border border-red-500 text-red-600 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 hover:bg-red-50 disabled:opacity-50"
                                 >
                                     <span className="w-4 h-4 flex items-center justify-center bg-red-500 text-white rounded-full text-[9px]">3</span>
-                                    실제 고객 데이터(T) 전체 삭제
+                                    자사몰 유입 고객(T) 전체 삭제
                                 </button>
 
                                 {/* 4번: DB 전체 초기화 (번호 리셋) */}
@@ -555,6 +558,7 @@ export default function AdminLeadsPage() {
                                 </div>
                             </div>
                         </div>
+                        )}
 
                         {uploadResult && (
                             <div className="p-3 bg-green-50 rounded-xl border border-green-100">
@@ -606,8 +610,8 @@ export default function AdminLeadsPage() {
                         {/* 진위 여부 필터 */}
                         <select value={isRealFilter} onChange={e => setIsRealFilter(e.target.value as any)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black">
                             <option value="">데이터 종류 전체</option>
-                            <option value="T">실제 데이터 (T)</option>
-                            <option value="F">테스트 데이터 (F)</option>
+                            <option value="T">자사몰 유입 고객 (T)</option>
+                            <option value="F">외부 유입 고객 (F)</option>
                         </select>
 
                         {/* 나이대 필터 */}
