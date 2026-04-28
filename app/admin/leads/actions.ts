@@ -684,17 +684,7 @@ function generateFakeLead(batchId: string) {
     const isMale = Math.random() > 0.5;
     const name = surname + pickGivenName(birthYear, isMale);
 
-    // 010 전용 (중간 번호는 0, 1로 시작할 수 없음 -> 2000~9999 범위 사용)
-    const phone = `010${randomInt(2000, 9999)}${pad(randomInt(0, 9999), 4)}`;
-
-    // 생년월일: 1940~2005
-    const birthYear = randomInt(1940, 2005);
-    const birthMonth = randomInt(1, 12);
-    const birthDay = randomInt(1, 28);
-    const birth_date = `${birthYear}-${pad(birthMonth)}-${pad(birthDay)}`;
-
     // 성별 (1=남/1900년대, 2=여/1900년대, 3=남/2000년대, 4=여/2000년대)
-    const isMale = Math.random() > 0.5;
     const is2000s = birthYear >= 2000;
     const genderCode = is2000s ? (isMale ? "3" : "4") : (isMale ? "1" : "2");
     const gender = isMale ? "M" : "F";
