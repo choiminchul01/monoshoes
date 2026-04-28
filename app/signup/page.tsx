@@ -92,8 +92,17 @@ export default function SignupPage() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [phone, setPhone] = useState('');
+    const [birthdate, setBirthdate] = useState('');
+    const [gender, setGender] = useState('');
     const [address, setAddress] = useState('');
     const [addressDetail, setAddressDetail] = useState('');
+    
+    // Consent states
+    const [agreedTerms, setAgreedTerms] = useState(false);
+    const [agreedPrivacy, setAgreedPrivacy] = useState(false);
+    const [agreedThirdParty, setAgreedThirdParty] = useState(false);
+    const [agreedMarketing, setAgreedMarketing] = useState(false);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -112,6 +121,12 @@ export default function SignupPage() {
             return;
         }
 
+        if (!agreedTerms || !agreedPrivacy) {
+            setError("필수 약관에 동의해주세요.");
+            setLoading(false);
+            return;
+        }
+
         try {
             const { error } = await supabase.auth.signUp({
                 email,
@@ -120,8 +135,17 @@ export default function SignupPage() {
                     data: {
                         full_name: name,
                         phone: phone,
+                        birthdate: birthdate,
+                        gender: gender,
                         address: address,
                         address_detail: addressDetail,
+                        consents: {
+                            terms: agreedTerms,
+                            privacy: agreedPrivacy,
+                            third_party: agreedThirdParty,
+                            marketing: agreedMarketing,
+                            agreed_at: new Date().toISOString()
+                        }
                     },
                 },
             });
@@ -228,6 +252,40 @@ export default function SignupPage() {
                                 />
                             </div>
 
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="birthdate" className="block text-sm font-medium text-gray-700">생년월일</label>
+                                    <input
+                                        id="birthdate"
+                                        name="birthdate"
+                                        type="date"
+                                        required
+                                        value={birthdate}
+                                        onChange={(e) => setBirthdate(e.target.value)}
+                                        className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 focus:ring-2 focus:ring-[#00704A] focus:border-transparent text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">성별</label>
+                                    <div className="mt-1 flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setGender('male')}
+                                            className={`flex-1 py-2 px-3 text-sm rounded-md border ${gender === 'male' ? 'bg-[#00704A] text-white border-[#00704A]' : 'bg-white text-gray-700 border-gray-300'} transition-colors`}
+                                        >
+                                            남성
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setGender('female')}
+                                            className={`flex-1 py-2 px-3 text-sm rounded-md border ${gender === 'female' ? 'bg-[#00704A] text-white border-[#00704A]' : 'bg-white text-gray-700 border-gray-300'} transition-colors`}
+                                        >
+                                            여성
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="border-t border-gray-200 pt-4 mt-4">
                                 <h3 className="text-sm font-medium text-gray-900 mb-3">추가 정보 (선택)</h3>
                                 <div className="space-y-4">
@@ -267,6 +325,98 @@ export default function SignupPage() {
                                             placeholder="동/호수 등 상세 주소"
                                         />
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 약관 동의 섹션 */}
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
+                            <div className="flex items-center pb-2 border-b border-gray-200">
+                                <input
+                                    id="allAgreed"
+                                    type="checkbox"
+                                    checked={agreedTerms && agreedPrivacy && agreedThirdParty && agreedMarketing}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setAgreedTerms(checked);
+                                        setAgreedPrivacy(checked);
+                                        setAgreedThirdParty(checked);
+                                        setAgreedMarketing(checked);
+                                    }}
+                                    className="h-4 w-4 text-[#00704A] focus:ring-[#00704A] border-gray-300 rounded"
+                                />
+                                <label htmlFor="allAgreed" className="ml-2 block text-sm font-bold text-gray-900">전체 동의하기</label>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <input
+                                            id="terms"
+                                            type="checkbox"
+                                            required
+                                            checked={agreedTerms}
+                                            onChange={(e) => setAgreedTerms(e.target.checked)}
+                                            className="h-4 w-4 text-[#00704A] focus:ring-[#00704A] border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="terms" className="ml-2 block text-xs text-gray-700">
+                                            <span className="text-red-500 mr-1">(필수)</span> 이용약관 동의
+                                        </label>
+                                    </div>
+                                    <Link href="/terms" className="text-[10px] text-gray-400 hover:underline">보기</Link>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <input
+                                            id="privacy"
+                                            type="checkbox"
+                                            required
+                                            checked={agreedPrivacy}
+                                            onChange={(e) => setAgreedPrivacy(e.target.checked)}
+                                            className="h-4 w-4 text-[#00704A] focus:ring-[#00704A] border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="privacy" className="ml-2 block text-xs text-gray-700">
+                                            <span className="text-red-500 mr-1">(필수)</span> 개인정보 수집 및 이용 동의
+                                        </label>
+                                    </div>
+                                    <Link href="/privacy" className="text-[10px] text-gray-400 hover:underline">보기</Link>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <input
+                                            id="thirdParty"
+                                            type="checkbox"
+                                            checked={agreedThirdParty}
+                                            onChange={(e) => setAgreedThirdParty(e.target.checked)}
+                                            className="h-4 w-4 text-[#00704A] focus:ring-[#00704A] border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="thirdParty" className="ml-2 block text-xs text-gray-700">
+                                            <span className="text-gray-400 mr-1">(선택)</span> 개인정보 제3자 제공 동의
+                                        </label>
+                                    </div>
+                                    <div className="group relative">
+                                        <span className="text-[10px] text-gray-400 cursor-help underline">상세</span>
+                                        <div className="absolute bottom-full right-0 mb-2 w-64 bg-white border border-gray-200 p-3 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 text-[10px] leading-relaxed text-gray-600">
+                                            제공처: 굿가드솔루션, 하이솔루션, 에니스 컴퍼니<br/>
+                                            목적: 타겟팅 광고 및 홍보<br/>
+                                            항목: 성명, 이메일, 전화번호 등 수집 데이터 일체
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center">
+                                    <input
+                                        id="marketing"
+                                        type="checkbox"
+                                        checked={agreedMarketing}
+                                        onChange={(e) => setAgreedMarketing(e.target.checked)}
+                                        className="h-4 w-4 text-[#00704A] focus:ring-[#00704A] border-gray-300 rounded"
+                                    />
+                                    <label htmlFor="marketing" className="ml-2 block text-xs text-gray-700">
+                                        <span className="text-gray-400 mr-1">(선택)</span> 마케팅 정보 수신 동의
+                                    </label>
                                 </div>
                             </div>
                         </div>
