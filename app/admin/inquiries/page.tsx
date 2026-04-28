@@ -30,6 +30,7 @@ type ProductQnA = {
     answer: string | null;
     is_private: boolean;
     is_answered: boolean;
+    status: 'pending' | 'answered';
     created_at: string;
     answered_at: string | null;
     product: {
@@ -142,7 +143,8 @@ export default function AdminInquiriesPage() {
                 question: item.question,
                 answer: item.answer,
                 is_private: item.is_private,
-                is_answered: item.is_answered,
+                is_answered: !!item.is_answered,
+                status: item.is_answered ? 'answered' : 'pending',
                 created_at: item.created_at,
                 answered_at: item.answered_at,
                 product: {
@@ -357,7 +359,7 @@ export default function AdminInquiriesPage() {
                                             <div className="text-xs text-gray-400">{qna.user?.email}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            {qna.is_answered ? (
+                                            {qna.status === 'answered' ? (
                                                 <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
                                                     <CheckCircle className="w-4 h-4" /> 답변완료
                                                 </span>
