@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { User, RefreshCw } from "lucide-react";
-import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
 import { fetchRealLeadsAction, fetchUnmatchedMembersAction } from "./actions";
@@ -46,7 +45,8 @@ export default function AdminCustomersPage() {
     // ── 미업로드 가입 회원 ─────────────────────────────────────
     const [unmatchedMembers, setUnmatchedMembers] = useState<RealLead[]>([]);
 
-    const [search, setSearch] = useState("");
+    const [search, setSearch] = useState("");          // 입력창 텍스트 (즉시 반영)
+    const [appliedSearch, setAppliedSearch] = useState(""); // 실제 조회에 사용된 검색어
     const [loading, setLoading] = useState(false);
     const [expandedId, setExpandedId] = useState<number | string | null>(null);
 
@@ -112,6 +112,14 @@ export default function AdminCustomersPage() {
         loadUnmatched("");
     }, []);
 
+    // ── 조회 실행 (버튼 or Enter) ─────────────────────────────
+    const handleSearchSubmit = () => {
+        setLeadsPage(1);
+        setAppliedSearch(search);
+        fetchLeads(1, search);
+        loadUnmatched(search);
+    };
+
     // ── 리드 + 미업로드 회원 병합 ─────────────────────────────
     // 미업로드 회원 중 검색어 필터는 서버에서 처리됨
     const mergedLeads: RealLead[] = [
@@ -144,14 +152,14 @@ export default function AdminCustomersPage() {
 
     const handlePageChange = (p: number) => {
         setLeadsPage(p);
-        fetchLeads(p, search);
+        fetchLeads(p, appliedSearch);
         setExpandedId(null);
     };
 
     const handleRefresh = () => {
         loadMeta();
-        fetchLeads(leadsPage, search);
-        loadUnmatched(search);
+        fetchLeads(leadsPage, appliedSearch);
+        loadUnmatched(appliedSearch);
     };
 
     // ── 성별 뱃지 ────────────────────────────────────────────
@@ -188,8 +196,27 @@ export default function AdminCustomersPage() {
             </div>
 
             {/* Search */}
-            <div className="mb-6">
-                <AdminSearch value={search} onChange={handleSearch} placeholder="이름, 전화번호 검색..." />
+            <div className="mb-6 flex gap-2">
+                <div className="relative flex-1 max-w-md">
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSearchSubmit()}
+                        placeholder="이름, 전화번호 검색..."
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition-shadow text-sm"
+                    />
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                    </svg>
+                </div>
+                <button
+                    onClick={handleSearchSubmit}
+                    disabled={loading}
+                    className="px-5 py-2 bg-black text-white text-sm font-bold rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 shrink-0"
+                >
+                    조회
+                </button>
             </div>
 
             {/* Table */}
