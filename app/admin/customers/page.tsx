@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { User, ShoppingBag, ChevronDown, ChevronUp, RefreshCw, UserCheck } from "lucide-react";
+import { User, ShoppingBag, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
@@ -181,12 +181,6 @@ export default function AdminCustomersPage() {
                 <div className="flex items-center gap-3">
                     <h1 className="text-3xl font-bold">고객 관리</h1>
                     <span className="text-sm text-gray-400 font-medium">총 {totalCount.toLocaleString()}명</span>
-                    {unmatchedMembers.length > 0 && (
-                        <span className="flex items-center gap-1 text-xs px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full font-medium">
-                            <UserCheck className="w-3 h-3" />
-                            가입 회원 {unmatchedMembers.length}명 포함
-                        </span>
-                    )}
                 </div>
                 <button onClick={handleRefresh} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                     <RefreshCw className="w-4 h-4" /> 새로고침
@@ -228,12 +222,12 @@ export default function AdminCustomersPage() {
                             <tbody className="divide-y divide-gray-100">
                                 {mergedLeads.map((lead) => (
                                     <React.Fragment key={String(lead.id)}>
-                                        <tr className={`hover:bg-gray-50 transition-colors ${lead.source === "member" ? "bg-green-50/40" : ""} ${expandedId === lead.id ? "bg-gray-50" : ""}`}>
+                                        <tr className={`hover:bg-gray-50 transition-colors ${expandedId === lead.id ? "bg-gray-50" : ""}`}>
                                             {/* 이름 */}
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2">
-                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${lead.source === "member" ? "bg-green-100" : "bg-gray-100"}`}>
-                                                        <User className={`w-3.5 h-3.5 ${lead.source === "member" ? "text-green-600" : "text-gray-500"}`} />
+                                                    <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                                                        <User className="w-3.5 h-3.5 text-gray-500" />
                                                     </div>
                                                     <div>
                                                         <div className="font-medium">{lead.name}</div>
