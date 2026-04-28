@@ -598,12 +598,12 @@ export default function AdminProductsPage() {
         }
     };
 
-    // Excel 템플릿 다운로드 (exceljs 적용 - 드롭다운 포함)
+    // Excel 템플릿 다운로드 (exceljs 적용 - 드롭다운 포함, 이미지 컬럼 없음)
     const downloadTemplate = async () => {
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet("상품목록");
 
-        // 컬럼 정의
+        // 컬럼 정의 (이미지 제외 - 이미지는 개별 상품 수정으로 업로드)
         sheet.columns = [
             { header: "카테고리", key: "category", width: 25 },
             { header: "브랜드", key: "brand", width: 15 },
@@ -618,16 +618,6 @@ export default function AdminProductsPage() {
             { header: "SHOP추천여부", key: "is_celeb", width: 15 },
             { header: "특가할인율", key: "discount", width: 10 },
             { header: "상품설명", key: "description", width: 40 },
-            { header: "이미지1", key: "img1", width: 60 },
-            { header: "이미지2", key: "img2", width: 60 },
-            { header: "이미지3", key: "img3", width: 60 },
-            { header: "이미지4", key: "img4", width: 60 },
-            { header: "이미지5", key: "img5", width: 60 },
-            { header: "이미지6", key: "img6", width: 60 },
-            { header: "이미지7", key: "img7", width: 60 },
-            { header: "이미지8", key: "img8", width: 60 },
-            { header: "이미지9", key: "img9", width: 60 },
-            { header: "이미지10", key: "img10", width: 60 }
         ];
 
         // 샘플 데이터 추가
@@ -645,16 +635,6 @@ export default function AdminProductsPage() {
             is_celeb: "N",
             discount: 0,
             description: "상품에 대한 상세 설명을 입력하세요.",
-            img1: "https://...",
-            img2: "",
-            img3: "",
-            img4: "",
-            img5: "",
-            img6: "",
-            img7: "",
-            img8: "",
-            img9: "",
-            img10: ""
         });
 
         // 1행(헤더) 스타일 지정
@@ -694,17 +674,9 @@ export default function AdminProductsPage() {
         // 파일 생성 및 다운로드
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-        saveAs(blob, "상품등록_양식_드롭다운적용.xlsx");
+        saveAs(blob, "상품등록_양식.xlsx");
         
-        toast.success("드롭다운이 적용된 템플릿이 다운로드되었습니다.");
-    };
-
-    // 이미지 URL 검증 함수
-    const isValidImageUrl = (url: string): boolean => {
-        if (!url || url.trim() === "") return false;
-        // URL 형식 기본 검증 (http/https로 시작, 이미지 확장자)
-        const urlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)$/i;
-        return urlPattern.test(url.trim());
+        toast.success("양식이 다운로드되었습니다. 이미지는 상품 수정 화면에서 개별 업로드하세요.");
     };
 
     // Excel 파일 업로드 처리
@@ -722,27 +694,9 @@ export default function AdminProductsPage() {
                 const jsonData = XLSX.utils.sheet_to_json(sheet);
 
                 const parsedData: BulkProductData[] = jsonData.map((row: any) => {
-                    // 메인 이미지 URL 추출 (이미지1-2)
+                    // 이미지는 엑셀 업로드에서 제외 - 개별 상품 수정으로 업로드
                     const mainImageUrls: string[] = [];
-                    for (let i = 1; i <= 2; i++) {
-                        const imgUrl = row[`이미지${i}`];
-                        if (imgUrl && typeof imgUrl === 'string' && imgUrl.trim() !== '') {
-                            if (isValidImageUrl(imgUrl)) {
-                                mainImageUrls.push(imgUrl.trim());
-                            }
-                        }
-                    }
-
-                    // 상세페이지 이미지 URL 추출 (이미지3-10)
                     const detailImageUrls: string[] = [];
-                    for (let i = 3; i <= 10; i++) {
-                        const imgUrl = row[`이미지${i}`];
-                        if (imgUrl && typeof imgUrl === 'string' && imgUrl.trim() !== '') {
-                            if (isValidImageUrl(imgUrl)) {
-                                detailImageUrls.push(imgUrl.trim());
-                            }
-                        }
-                    }
 
                     // Reverse category mapping (한글 레이블 → 코드 변환)
                     let catVal = String(row["카테고리"] || "").trim();
@@ -807,19 +761,13 @@ export default function AdminProductsPage() {
                 setDuplicateCount(duplicates.length);
                 setDuplicateAction('ask'); // 매번 초기화
 
-                // 이미지 포함 통계
-                const withMainImages = dataWithDuplicateCheck.filter(item => item.images.length > 0);
-                const withDetailImages = dataWithDuplicateCheck.filter(item => item.detailImages.length > 0);
-                const totalMainImages = dataWithDuplicateCheck.reduce((sum, item) => sum + item.images.length, 0);
-                const totalDetailImages = dataWithDuplicateCheck.reduce((sum, item) => sum + item.detailImages.length, 0);
-
                 setBulkUploadData(dataWithDuplicateCheck);
                 setShowBulkUploadModal(true);
 
                 if (duplicates.length > 0) {
                     toast.warning(`${dataWithDuplicateCheck.length}개 상품 중 ${duplicates.length}개 중복 발견`);
                 } else {
-                    toast.success(`${dataWithDuplicateCheck.length}개 상품 (메인 ${totalMainImages}장, 상세 ${totalDetailImages}장)`);
+                    toast.success(`${dataWithDuplicateCheck.length}개 상품 파싱 완료. 이미지는 등록 후 개별 수정하세요.`);
                 }
             } catch (error) {
                 console.error("Excel parse error:", error);
@@ -2057,7 +2005,7 @@ export default function AdminProductsPage() {
                             <div className="mt-4 flex flex-wrap gap-4">
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm text-gray-500">전체:</span>
-                                    <span className="font-bold text-purple-600">{bulkUploadData.length}개</span>
+                                    <span className="font-bold text-gray-900">{bulkUploadData.length}개</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm text-gray-500">신규:</span>
@@ -2069,6 +2017,10 @@ export default function AdminProductsPage() {
                                         <span className="font-bold text-orange-600">{duplicateCount}개</span>
                                     </div>
                                 )}
+                            </div>
+                            {/* 이미지 업로드 안내 */}
+                            <div className="mt-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                                📷 이미지는 엑셀 등록 대상에서 제외됩니다. 등록 후 상품 목록에서 각 상품을 클릭하여 이미지를 개별 업로드하세요.
                             </div>
 
                             {/* 중복 처리 옵션 */}
@@ -2112,7 +2064,6 @@ export default function AdminProductsPage() {
                                         <th className="px-3 py-2 text-right font-medium">가격</th>
                                         <th className="px-3 py-2 text-left font-medium">카테고리</th>
                                         <th className="px-3 py-2 text-right font-medium">재고</th>
-                                        <th className="px-3 py-2 text-center font-medium">이미지</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -2142,12 +2093,6 @@ export default function AdminProductsPage() {
                                                 </span>
                                             </td>
                                             <td className="px-3 py-2 text-right">{item.stock}</td>
-                                            <td className="px-3 py-2 text-center text-gray-500 text-xs">
-                                                {item.images.length > 0 || item.detailImages.length > 0
-                                                    ? `${item.images.length}+${item.detailImages.length}`
-                                                    : '-'
-                                                }
-                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

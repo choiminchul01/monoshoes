@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { Download, RefreshCw, Trash2, Eye, Search, Upload, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Download, RefreshCw, Trash2, Eye, Search, Upload } from "lucide-react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import ConfirmModal from "@/components/admin/ConfirmModal";
@@ -12,6 +11,23 @@ import BulkTrackingModal from "@/components/admin/BulkTrackingModal";
 import OrderEditModal from "@/components/admin/OrderEditModal";
 import OrderPreparingCard from "@/components/admin/OrderPreparingCard";
 import { useToast } from "@/context/ToastContext";
+
+// ── 임의 고정값 Mock 주문 데이터 (천원 단위 현실 가격, 5만원 이상 무료배송) ──
+const MOCK_ORDERS = [
+    { id: '1',  order_number: 'ORD-20260429-0841', customer_name: '김민지', customer_email: 'minji@email.com', customer_phone: '010-3847-2916', shipping_name: '김민지', shipping_phone: '010-3847-2916', shipping_postal_code: '06234', shipping_address: '서울 강남구 테헤란로 123', shipping_address_detail: '101호', total_amount: 86500,  shipping_cost: 3000, final_amount: 89500,  payment_status: 'pending',   order_status: 'pending',   tracking_number: '', shipping_company: '', admin_memo: '', created_at: '2026-04-29T08:41:00Z' },
+    { id: '2',  order_number: 'ORD-20260429-0723', customer_name: '이서연', customer_email: 'seoyeon@email.com', customer_phone: '010-7231-5084', shipping_name: '이서연', shipping_phone: '010-7231-5084', shipping_postal_code: '04524', shipping_address: '서울 중구 명동길 45', shipping_address_detail: '302호', total_amount: 147200, shipping_cost: 0,    final_amount: 147200, payment_status: 'pending',   order_status: 'pending',   tracking_number: '', shipping_company: '', admin_memo: '', created_at: '2026-04-29T07:23:00Z' },
+    { id: '3',  order_number: 'ORD-20260429-0612', customer_name: '박준혁', customer_email: 'junhyuk@email.com', customer_phone: '010-9563-1728', shipping_name: '박준혁', shipping_phone: '010-9563-1728', shipping_postal_code: '48058', shipping_address: '부산 해운대구 해운대로 200', shipping_address_detail: '', total_amount: 63800,  shipping_cost: 0,    final_amount: 63800,  payment_status: 'pending',   order_status: 'pending',   tracking_number: '', shipping_company: '', admin_memo: '', created_at: '2026-04-29T06:12:00Z' },
+    { id: '4',  order_number: 'ORD-20260428-2247', customer_name: '최유나', customer_email: 'yuna@email.com', customer_phone: '010-4819-6302', shipping_name: '최유나', shipping_phone: '010-4819-6302', shipping_postal_code: '61452', shipping_address: '광주 남구 봉선로 88', shipping_address_detail: '201호', total_amount: 118500, shipping_cost: 0,    final_amount: 118500, payment_status: 'paid',      order_status: 'paid',      tracking_number: '', shipping_company: '', admin_memo: '', created_at: '2026-04-28T22:47:00Z' },
+    { id: '5',  order_number: 'ORD-20260428-1952', customer_name: '정다은', customer_email: 'daeun@email.com', customer_phone: '010-6074-3851', shipping_name: '정다은', shipping_phone: '010-6074-3851', shipping_postal_code: '35233', shipping_address: '대전 유성구 대학로 99', shipping_address_detail: '5층', total_amount: 31900,  shipping_cost: 3000, final_amount: 34900,  payment_status: 'paid',      order_status: 'paid',      tracking_number: '', shipping_company: '', admin_memo: '', created_at: '2026-04-28T19:52:00Z' },
+    { id: '6',  order_number: 'ORD-20260428-1637', customer_name: '한지수', customer_email: 'jisu@email.com', customer_phone: '010-2395-8147', shipping_name: '한지수', shipping_phone: '010-2395-8147', shipping_postal_code: '03048', shipping_address: '서울 종로구 인사동길 12', shipping_address_detail: '302호', total_amount: 156300, shipping_cost: 0,    final_amount: 156300, payment_status: 'paid',      order_status: 'paid',      tracking_number: '', shipping_company: '', admin_memo: '', created_at: '2026-04-28T16:37:00Z' },
+    { id: '7',  order_number: 'ORD-20260428-1423', customer_name: '오승민', customer_email: 'seungmin@email.com', customer_phone: '010-8162-4739', shipping_name: '오승민', shipping_phone: '010-8162-4739', shipping_postal_code: '22344', shipping_address: '인천 연수구 송도대로 300', shipping_address_detail: '', total_amount: 79800,  shipping_cost: 0,    final_amount: 79800,  payment_status: 'preparing', order_status: 'preparing', tracking_number: '', shipping_company: '', admin_memo: '', created_at: '2026-04-28T14:23:00Z' },
+    { id: '8',  order_number: 'ORD-20260428-1124', customer_name: '윤채원', customer_email: 'chaewon@email.com', customer_phone: '010-5927-0483', shipping_name: '윤채원', shipping_phone: '010-5927-0483', shipping_postal_code: '41939', shipping_address: '대구 중구 동성로 55', shipping_address_detail: '4층', total_amount: 95700,  shipping_cost: 0,    final_amount: 95700,  payment_status: 'preparing', order_status: 'preparing', tracking_number: '', shipping_company: '', admin_memo: '', created_at: '2026-04-28T11:24:00Z' },
+    { id: '9',  order_number: 'ORD-20260427-1834', customer_name: '강수아', customer_email: 'sua@email.com', customer_phone: '010-1648-9275', shipping_name: '강수아', shipping_phone: '010-1648-9275', shipping_postal_code: '16480', shipping_address: '경기 수원시 팔달구 인계로 77', shipping_address_detail: '101동 502호', total_amount: 42500,  shipping_cost: 3000, final_amount: 45500,  payment_status: 'shipped',   order_status: 'shipped',   tracking_number: '553928471029', shipping_company: 'CJ대한통운', admin_memo: '', created_at: '2026-04-27T18:34:00Z' },
+    { id: '10', order_number: 'ORD-20260427-1501', customer_name: '임도현', customer_email: 'dohyun@email.com', customer_phone: '010-7483-2061', shipping_name: '임도현', shipping_phone: '010-7483-2061', shipping_postal_code: '14059', shipping_address: '경기 안양시 동안구 평촌대로 120', shipping_address_detail: '', total_amount: 132800, shipping_cost: 0,    final_amount: 132800, payment_status: 'shipped',   order_status: 'shipped',   tracking_number: '662103948201', shipping_company: '롯데택배', admin_memo: '', created_at: '2026-04-27T15:01:00Z' },
+    { id: '11', order_number: 'ORD-20260427-1022', customer_name: '신예린', customer_email: 'yerin@email.com', customer_phone: '010-3056-7814', shipping_name: '신예린', shipping_phone: '010-3056-7814', shipping_postal_code: '07236', shipping_address: '서울 영등포구 여의대로 10', shipping_address_detail: '1102호', total_amount: 88400,  shipping_cost: 0,    final_amount: 88400,  payment_status: 'shipped',   order_status: 'shipped',   tracking_number: '774018293048', shipping_company: '우체국택배', admin_memo: '', created_at: '2026-04-27T10:22:00Z' },
+];
+
+
 
 type Order = {
     id: string;
@@ -37,12 +53,11 @@ type Order = {
 
 export default function OrdersPage() {
     const toast = useToast();
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
+    const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS as Order[]);
+    const [loading, setLoading] = useState<boolean>(false);
     const [filter, setFilter] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-    const [isMounted, setIsMounted] = useState<boolean>(false);
 
     const [confirmModal, setConfirmModal] = useState<{
         show: boolean;
@@ -71,33 +86,15 @@ export default function OrdersPage() {
 
     const [showBulkModal, setShowBulkModal] = useState(false);
 
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    useEffect(() => {
-        if (isMounted) {
-            fetchOrders();
-        }
-    }, [filter, isMounted]);
-
-    const fetchOrders = async () => {
+    // Mock: 새로고침 시 원래 데이터로 복원
+    const fetchOrders = () => {
         setLoading(true);
-        let query = supabase.from("orders").select("*").order("created_at", { ascending: false });
-
-        if (filter !== "all") {
-            query = query.eq("payment_status", filter);
-        }
-
-        const { data, error } = await query;
-
-        if (!error && data) {
-            setOrders(data as Order[]);
-        } else if (error) {
-            console.error("주문 조회 실패:", error);
-            toast.error("주문 목록을 불러오는데 실패했습니다.");
-        }
-        setLoading(false);
+        setTimeout(() => {
+            setOrders(MOCK_ORDERS as Order[]);
+            setSelectedOrders([]);
+            setLoading(false);
+            toast.success("주문 목록을 새로고침했습니다.");
+        }, 500);
     };
 
     const toggleOrderSelection = (orderId: string) => {
@@ -116,134 +113,48 @@ export default function OrdersPage() {
     };
 
     const getFilteredOrders = () => {
-        if (!searchQuery.trim()) return orders;
-
-        const query = searchQuery.toLowerCase();
-        return orders.filter(
+        let result = orders;
+        if (filter !== "all") {
+            result = result.filter(o => o.payment_status === filter);
+        }
+        if (!searchQuery.trim()) return result;
+        const q = searchQuery.toLowerCase();
+        return result.filter(
             (order) =>
-                order.order_number.toLowerCase().includes(query) ||
-                order.customer_name.toLowerCase().includes(query) ||
-                order.shipping_name.toLowerCase().includes(query) ||
-                order.customer_phone.includes(query) ||
-                order.shipping_phone.includes(query)
+                order.order_number.toLowerCase().includes(q) ||
+                order.customer_name.toLowerCase().includes(q) ||
+                order.shipping_name.toLowerCase().includes(q) ||
+                order.customer_phone.includes(q) ||
+                order.shipping_phone.includes(q)
         );
     };
 
-    const updatePaymentStatus = async (orderId: string, status: string) => {
-        const { error } = await supabase
-            .from("orders")
-            .update({ payment_status: status })
-            .eq("id", orderId);
-
-        if (!error) {
-            toast.success("주문 상태가 변경되었습니다.");
-            await fetchOrders();
-            setSelectedOrders([]);
-        } else {
-            console.error("상태 업데이트 실패:", error);
-            toast.error(`상태 업데이트 실패: ${error.message}`);
-        }
-    };
-
-    const bulkPaymentConfirmation = async () => {
-        let success = 0;
-        let fail = 0;
-        const errorMessages: string[] = [];
-
-        for (const id of selectedOrders) {
-            const { error } = await supabase
-                .from("orders")
-                .update({ payment_status: "paid" })
-                .eq("id", id);
-
-            if (error) {
-                fail++;
-                errorMessages.push(`주문 ID (${id.substring(0, 8)}...): ${error.message}`);
-                console.error("입금 확인 실패:", id, error);
-            } else {
-                success++;
-            }
-        }
-
-        if (fail > 0) {
-            console.error("일괄 입금 확인 실패 목록:", errorMessages);
-            toast.warning(`${success}건 성공, ${fail}건 실패했습니다.`);
-        } else {
-            toast.success(`${success}건의 입금 확인이 완료되었습니다.`);
-        }
-
-        await fetchOrders();
+    // Mock: 로컬 state에서 상태 변경
+    const updatePaymentStatus = (orderId: string, status: string) => {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, payment_status: status, order_status: status } : o));
+        toast.success("주문 상태가 변경되었습니다.");
         setSelectedOrders([]);
     };
 
-    const handleTrackingNumberSubmit = async (trackingNumber: string, shippingCompany: string) => {
-        const { error } = await supabase
-            .from("orders")
-            .update({
-                tracking_number: trackingNumber,
-                shipping_company: shippingCompany,
-                payment_status: "shipped",
-            })
-            .eq("id", trackingModal.orderId);
+    const bulkPaymentConfirmation = () => {
+        setOrders(prev => prev.map(o => selectedOrders.includes(o.id) ? { ...o, payment_status: 'paid', order_status: 'paid' } : o));
+        toast.success(`${selectedOrders.length}건의 입금 확인이 완료되었습니다.`);
+        setSelectedOrders([]);
+    };
 
-        if (!error) {
-            toast.success("송장번호가 입력되고 발송완료 상태로 변경되었습니다.");
-            await fetchOrders();
-        } else {
-            console.error("송장 입력 실패:", error);
-            toast.error(`송장 입력 실패: ${error.message}`);
-        }
-
+    const handleTrackingNumberSubmit = (trackingNumber: string, shippingCompany: string) => {
+        setOrders(prev => prev.map(o => o.id === trackingModal.orderId
+            ? { ...o, tracking_number: trackingNumber, shipping_company: shippingCompany, payment_status: 'shipped', order_status: 'shipped' }
+            : o
+        ));
+        toast.success("송장번호가 입력되고 발송완료 상태로 변경되었습니다.");
         setTrackingModal({ show: false, orderId: "", orderNumber: "" });
     };
 
-    const deleteOrder = async (orderId: string) => {
-        try {
-            // 1. 주문 상품 먼저 삭제 시도 (FK 제약 조건 방지)
-            const { error: itemsError } = await supabase
-                .from("order_items")
-                .delete()
-                .eq("order_id", orderId);
-
-            // 아이템 삭제 에러가 있어도 주문 삭제를 시도해봄 (CASCADE가 설정되어 있을 수 있으므로)
-            if (itemsError) {
-                console.warn("주문 상품 삭제 경고 (CASCADE가 처리할 수도 있음):", itemsError);
-            }
-
-            // 2. 주문 삭제
-            const { error: orderError } = await supabase.from("orders").delete().eq("id", orderId);
-            if (orderError) throw orderError;
-
-            return { success: true };
-        } catch (e: any) {
-            console.error("주문 삭제 실패:", e);
-            return { success: false, message: e.message || "알 수 없는 오류" };
-        }
-    };
-
-    const deleteSelectedOrders = async () => {
-        let success = 0;
-        let fail = 0;
-        let lastError = "";
-
-        for (const id of selectedOrders) {
-            const result = await deleteOrder(id);
-            if (result.success) {
-                success++;
-            } else {
-                fail++;
-                lastError = result.message || "알 수 없는 오류";
-            }
-        }
-
-        if (fail > 0) {
-            toast.warning(`${success}건 삭제 완료, ${fail}건 실패. (사유: ${lastError})`);
-        } else {
-            toast.success(`${success}건의 주문이 삭제되었습니다.`);
-        }
-
+    const deleteSelectedOrders = () => {
+        setOrders(prev => prev.filter(o => !selectedOrders.includes(o.id)));
+        toast.success(`${selectedOrders.length}건의 주문이 삭제되었습니다.`);
         setSelectedOrders([]);
-        await fetchOrders();
     };
 
     const exportToExcel = () => {
@@ -273,153 +184,125 @@ export default function OrdersPage() {
         toast.success("엑셀 파일이 다운로드되었습니다.");
     };
 
-    if (!isMounted) return null;
-
     const filteredOrders = getFilteredOrders();
     const pendingCount = orders.filter(order => order.payment_status === 'pending').length;
 
+
+
     return (
         <div>
-            {/* Title Row with Notification and Refresh */}
-            <div className="flex flex-row justify-between items-center mb-6 gap-4">
+            {/* Title Row */}
+            <div className="flex flex-row justify-between items-center mb-8 gap-4">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-3xl font-bold">주문 관리</h1>
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border-2 ${pendingCount > 0
-                        ? 'bg-yellow-50 border-yellow-200'
-                        : 'bg-gray-50 border-gray-200'
-                        }`}>
-                        <span className={`text-sm font-bold ${pendingCount > 0
-                            ? 'text-yellow-700'
-                            : 'text-gray-500'
-                            }`}>
-                            입금대기 {pendingCount}건
-                        </span>
-                    </div>
+                    <h1 className="text-2xl font-black tracking-tight text-gray-900">주문 관리</h1>
+                    {pendingCount > 0 && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-full">
+                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                            <span className="text-xs font-medium">입금대기 {pendingCount}건</span>
+                        </div>
+                    )}
                 </div>
                 <button
                     onClick={fetchOrders}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-500 rounded-xl hover:border-gray-900 hover:text-gray-900 transition-colors text-sm"
                 >
-                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                     새로고침
                 </button>
             </div>
 
-            {/* Action Buttons Row */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
+            {/* Action Buttons */}
+            <div className="flex gap-3 mb-6">
                 <button
                     onClick={exportToExcel}
-                    className="flex items-center justify-center gap-2 px-4 py-3 font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-gray-900 text-white rounded-xl hover:bg-gray-700 transition-colors"
                 >
                     <Download className="w-4 h-4" />
                     엑셀 내보내기
                 </button>
                 <button
                     onClick={() => setShowBulkModal(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-3 font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border border-gray-200 text-gray-600 rounded-xl hover:border-gray-900 hover:text-gray-900 transition-colors"
                 >
                     <Upload className="w-4 h-4" />
                     운송장 일괄 업로드
                 </button>
             </div>
 
-            {/* Search Row */}
-            <div className="mb-8 mt-4">
+            {/* Search */}
+            <div className="mb-5">
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                     <input
                         type="text"
-                        placeholder="주문번호, 고객명, 전화번호로 검색..."
+                        placeholder="주문번호, 고객명, 전화번호로 검색"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-900 transition-colors placeholder:text-gray-300"
                     />
                 </div>
             </div>
 
-            <div className="flex gap-2 mb-6">
-                {["all", "pending", "paid", "preparing", "shipped"].map((status) => (
+            {/* Filter Tabs */}
+            <div className="flex gap-1.5 mb-5">
+                {[
+                    { key: "all",       label: "전체" },
+                    { key: "pending",   label: "입금대기" },
+                    { key: "paid",      label: "입금완료" },
+                    { key: "preparing", label: "상품준비중" },
+                    { key: "shipped",   label: "발송완료" },
+                ].map(({ key, label }) => (
                     <button
-                        key={status}
-                        onClick={() => setFilter(status)}
-                        className={`px-4 py-2 rounded-lg font-bold transition-colors ${filter === status
-                            ? "bg-green-100 text-green-900 border border-green-300"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            }`}
+                        key={key}
+                        onClick={() => setFilter(key)}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                            filter === key
+                                ? "bg-gray-900 text-white shadow-sm"
+                                : "bg-white border border-gray-200 text-gray-500 hover:border-gray-500 hover:text-gray-900"
+                        }`}
                     >
-                        {status === "all" && "전체"}
-                        {status === "pending" && "입금대기"}
-                        {status === "paid" && "입금완료"}
-                        {status === "preparing" && "상품준비중"}
-                        {status === "shipped" && "발송완료"}
+                        {label}
+                        {key !== "all" && (
+                            <span className={`ml-1.5 text-xs ${filter === key ? "text-gray-400" : "text-gray-300"}`}>
+                                {orders.filter(o => o.payment_status === key).length}
+                            </span>
+                        )}
                     </button>
                 ))}
             </div>
 
             {selectedOrders.length > 0 && (
-                <div className="mb-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-semibold text-blue-900">
-                                {selectedOrders.length}개의 주문이 선택되었습니다
-                            </p>
-                            <p className="text-xs text-blue-700 mt-1">
-                                선택된 주문에 대한 일괄 작업을 수행할 수 있습니다
-                            </p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setSelectedOrders([])}
-                                className="px-4 py-2 text-sm bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                            >
-                                선택 해제
-                            </button>
-                            <button
-                                onClick={() =>
-                                    setConfirmModal({
-                                        show: true,
-                                        title: "일괄 입금 확인",
-                                        message: `선택한 ${selectedOrders.length}건의 주문을 입금 완료 처리하시겠습니까?\n\n주문 목록에서 선택된 주문들이 모두 "입금완료" 상태로 변경됩니다.`,
-                                        onConfirm: bulkPaymentConfirmation,
-                                    })
-                                }
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                            >
-                                일괄 입금 확인
-                            </button>
-                            <button
-                                onClick={() =>
-                                    setConfirmModal({
-                                        show: true,
-                                        title: "⚠️ 주문 삭제 경고",
-                                        message: `정말로 선택한 ${selectedOrders.length}건의 주문을 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.\n⚠️ 주문 및 관련된 모든 데이터가 영구적으로 삭제됩니다.`,
-                                        onConfirm: deleteSelectedOrders,
-                                        isDangerous: true,
-                                    })
-                                }
-                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                삭제
-                            </button>
-                        </div>
+                <div className="mb-4 p-4 bg-gray-900 text-white rounded-2xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 bg-white text-gray-900 text-xs font-black rounded-full flex items-center justify-center">{selectedOrders.length}</span>
+                        <p className="text-sm font-medium">건 선택됨</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={() => setSelectedOrders([])} className="px-3 py-1.5 text-xs bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors">선택 해제</button>
+                        <button
+                            onClick={() => setConfirmModal({ show: true, title: "일괄 입금 확인", message: `선택한 ${selectedOrders.length}건을 입금 완료 처리하시겠습니까?`, onConfirm: bulkPaymentConfirmation })}
+                            className="px-3 py-1.5 text-xs bg-white text-gray-900 font-bold rounded-lg hover:bg-gray-100 transition-colors"
+                        >일괄 입금 확인</button>
+                        <button
+                            onClick={() => setConfirmModal({ show: true, title: "주문 삭제", message: `선택한 ${selectedOrders.length}건을 삭제하시겠습니까?`, onConfirm: deleteSelectedOrders, isDangerous: true })}
+                            className="px-3 py-1.5 text-xs bg-white/10 text-white rounded-lg hover:bg-red-500 flex items-center gap-1 transition-colors"
+                        ><Trash2 className="w-3 h-3" />삭제</button>
                     </div>
                 </div>
             )}
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 {loading ? (
-                    <div className="p-12 flex flex-col items-center justify-center text-gray-500">
-                        <Loader2 className="w-8 h-8 animate-spin mb-2 text-green-600" />
-                        <p>주문 내역을 불러오는 중입니다...</p>
+                    <div className="p-16 flex flex-col items-center justify-center text-gray-300">
+                        <RefreshCw className="w-6 h-6 animate-spin mb-3" />
+                        <p className="text-sm">불러오는 중...</p>
                     </div>
                 ) : filteredOrders.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">
+                    <div className="p-16 text-center text-gray-300 text-sm">
                         {searchQuery ? "검색 결과가 없습니다" : "주문 내역이 없습니다"}
                     </div>
                 ) : filter === "preparing" ? (
-                    /* 상품준비중 전용 카드 뷰 */
-                    <div className="p-4 space-y-4">
+                    <div className="p-4 space-y-3">
                         {filteredOrders.map((order) => (
                             <OrderPreparingCard
                                 key={order.id}
@@ -435,260 +318,111 @@ export default function OrdersPage() {
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full hidden md:table">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th className="px-6 py-3 text-left">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
-                                            onChange={toggleSelectAll}
-                                            className="w-4 h-4 text-green-600 border-gray-300 rounded"
-                                        />
+                            <thead>
+                                <tr className="border-b border-gray-100">
+                                    <th className="px-5 py-3.5 text-left w-10">
+                                        <input type="checkbox" checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0} onChange={toggleSelectAll} className="w-4 h-4 accent-gray-900 rounded" />
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">주문번호</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">고객명</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">연락처</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">금액</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">주문일</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">다음 단계</th>
+                                    {["주문번호","고객명","연락처","금액","상태","주문일","처리"].map(h => (
+                                        <th key={h} className="px-5 py-3.5 text-left text-[11px] font-semibold text-gray-400 tracking-wider uppercase">{h}</th>
+                                    ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {filteredOrders.map((order) => (
-                                    <tr key={order.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedOrders.includes(order.id)}
-                                                onChange={() => toggleOrderSelection(order.id)}
-                                                className="w-4 h-4 text-green-600 border-gray-300 rounded"
-                                            />
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{order.order_number}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">{order.shipping_name}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.shipping_phone}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">{order.final_amount.toLocaleString()}원</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                className={`px-2 py-1 text-xs font-semibold rounded-full ${order.payment_status === "shipped"
-                                                    ? "bg-blue-100 text-blue-800"
-                                                    : order.payment_status === "preparing"
-                                                        ? "bg-purple-100 text-purple-800"
-                                                        : order.payment_status === "paid"
-                                                            ? "bg-green-100 text-green-800"
-                                                            : "bg-yellow-100 text-yellow-800"
-                                                    }`}
-                                            >
-                                                {order.payment_status === "pending" && "입금대기"}
-                                                {order.payment_status === "paid" && "입금완료"}
-                                                {order.payment_status === "preparing" && "상품준비중"}
-                                                {order.payment_status === "shipped" && "발송완료"}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {new Date(order.created_at).toLocaleDateString("ko-KR")}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => setDetailModal({ show: true, orderId: order.id })}
-                                                    className="text-blue-600 hover:text-blue-900"
-                                                    title="상세보기"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </button>
-
-                                                {order.payment_status === "pending" && (
-                                                    <button
-                                                        onClick={() =>
-                                                            setConfirmModal({
-                                                                show: true,
-                                                                title: "입금 확인",
-                                                                message: `주문번호: ${order.order_number}\n고객명: ${order.shipping_name}\n금액: ${order.final_amount.toLocaleString()}원\n\n입금을 확인하셨습니까?`,
-                                                                onConfirm: () => updatePaymentStatus(order.id, "paid"),
-                                                            })
-                                                        }
-                                                        className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
-                                                    >
-                                                        입금 확인
+                            <tbody className="divide-y divide-gray-50">
+                                {filteredOrders.map((order) => {
+                                    const stMap: Record<string,{label:string;dot:string}> = {
+                                        pending:   {label:"입금대기",   dot:"bg-gray-300"},
+                                        paid:      {label:"입금완료",   dot:"bg-gray-900"},
+                                        preparing: {label:"상품준비중", dot:"bg-gray-600"},
+                                        shipped:   {label:"발송완료",   dot:"bg-gray-400"},
+                                    };
+                                    const st = stMap[order.payment_status] ?? {label:order.payment_status, dot:"bg-gray-200"};
+                                    return (
+                                        <tr key={order.id} className={`hover:bg-gray-50/60 transition-colors ${selectedOrders.includes(order.id) ? 'bg-gray-50' : ''}`}>
+                                            <td className="px-5 py-4">
+                                                <input type="checkbox" checked={selectedOrders.includes(order.id)} onChange={() => toggleOrderSelection(order.id)} className="w-4 h-4 accent-gray-900 rounded" />
+                                            </td>
+                                            <td className="px-5 py-4 text-xs font-mono text-gray-400 whitespace-nowrap">{order.order_number}</td>
+                                            <td className="px-5 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">{order.shipping_name}</td>
+                                            <td className="px-5 py-4 text-sm text-gray-400 whitespace-nowrap">{order.shipping_phone}</td>
+                                            <td className="px-5 py-4 whitespace-nowrap">
+                                                <span className="text-sm font-bold text-gray-900 tabular-nums">{order.final_amount.toLocaleString()}</span>
+                                                <span className="text-xs text-gray-400">원</span>
+                                            </td>
+                                            <td className="px-5 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+                                                    <span className="text-xs text-gray-600 font-medium">{st.label}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4 text-xs text-gray-400 whitespace-nowrap">{new Date(order.created_at).toLocaleDateString("ko-KR")}</td>
+                                            <td className="px-5 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-1.5">
+                                                    <button onClick={() => setDetailModal({ show: true, orderId: order.id })} className="p-1.5 text-gray-300 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="상세보기">
+                                                        <Eye className="w-3.5 h-3.5" />
                                                     </button>
-                                                )}
-
-                                                {order.payment_status === "paid" && (
-                                                    <button
-                                                        onClick={() =>
-                                                            setConfirmModal({
-                                                                show: true,
-                                                                title: "상품 준비 시작",
-                                                                message: `주문번호: ${order.order_number}\n고객명: ${order.shipping_name}\n\n상품 준비(포장/검수)를 시작하시겠습니까?`,
-                                                                onConfirm: () => updatePaymentStatus(order.id, "preparing"),
-                                                            })
-                                                        }
-                                                        className="text-purple-600 hover:text-purple-900 hover:bg-purple-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
-                                                    >
-                                                        상품준비
-                                                    </button>
-                                                )}
-
-                                                {order.payment_status === "preparing" && (
-                                                    <>
-                                                        <button
-                                                            onClick={() =>
-                                                                setEditModal({
-                                                                    show: true,
-                                                                    orderId: order.id,
-                                                                    orderNumber: order.order_number,
-                                                                })
-                                                            }
-                                                            className="text-orange-600 hover:text-orange-900 hover:bg-orange-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
-                                                        >
-                                                            수정
-                                                        </button>
-                                                        <button
-                                                            onClick={() =>
-                                                                setTrackingModal({
-                                                                    show: true,
-                                                                    orderId: order.id,
-                                                                    orderNumber: order.order_number,
-                                                                })
-                                                            }
-                                                            className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 hover:underline font-medium px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
-                                                        >
-                                                            송장입력
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                    {order.payment_status === "pending" && (
+                                                        <button onClick={() => setConfirmModal({ show: true, title: "입금 확인", message: `주문번호: ${order.order_number}\n고객명: ${order.shipping_name}\n금액: ${order.final_amount.toLocaleString()}원\n\n입금을 확인하셨습니까?`, onConfirm: () => updatePaymentStatus(order.id, "paid") })}
+                                                            className="px-2.5 py-1 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors">입금확인</button>
+                                                    )}
+                                                    {order.payment_status === "paid" && (
+                                                        <button onClick={() => setConfirmModal({ show: true, title: "상품 준비 시작", message: `주문번호: ${order.order_number}\n고객명: ${order.shipping_name}\n\n상품 준비를 시작하시겠습니까?`, onConfirm: () => updatePaymentStatus(order.id, "preparing") })}
+                                                            className="px-2.5 py-1 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors">상품준비</button>
+                                                    )}
+                                                    {order.payment_status === "preparing" && (<>
+                                                        <button onClick={() => setEditModal({ show: true, orderId: order.id, orderNumber: order.order_number })}
+                                                            className="px-2.5 py-1 text-xs font-semibold border border-gray-300 text-gray-600 rounded-lg hover:border-gray-900 hover:text-gray-900 transition-colors">수정</button>
+                                                        <button onClick={() => setTrackingModal({ show: true, orderId: order.id, orderNumber: order.order_number })}
+                                                            className="px-2.5 py-1 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors">송장입력</button>
+                                                    </>)}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
 
                         {/* Mobile Card View */}
-                        <div className="md:hidden divide-y divide-gray-200">
-                            {filteredOrders.map((order) => (
-                                <div key={order.id} className="p-4 bg-white">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedOrders.includes(order.id)}
-                                                onChange={() => toggleOrderSelection(order.id)}
-                                                className="w-4 h-4 text-green-600 border-gray-300 rounded"
-                                            />
-                                            <span className="font-bold text-gray-900">{order.shipping_name}</span>
-                                        </div>
-                                        <span
-                                            className={`px-2 py-1 text-xs font-semibold rounded-full ${order.payment_status === "shipped"
-                                                ? "bg-blue-100 text-blue-800"
-                                                : order.payment_status === "preparing"
-                                                    ? "bg-purple-100 text-purple-800"
-                                                    : order.payment_status === "paid"
-                                                        ? "bg-green-100 text-green-800"
-                                                        : "bg-yellow-100 text-yellow-800"
-                                                }`}
-                                        >
-                                            {order.payment_status === "pending" && "입금대기"}
-                                            {order.payment_status === "paid" && "입금완료"}
-                                            {order.payment_status === "preparing" && "상품준비중"}
-                                            {order.payment_status === "shipped" && "발송완료"}
-                                        </span>
-                                    </div>
-
-                                    <div className="mb-3 text-sm text-gray-600 space-y-1 pl-6">
-                                        <div className="flex justify-between">
-                                            <span>주문번호:</span>
-                                            <span className="font-mono">{order.order_number}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>금액:</span>
-                                            <span className="font-bold text-gray-900">{order.final_amount.toLocaleString()}원</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>주문일:</span>
-                                            <span>{new Date(order.created_at).toLocaleDateString("ko-KR")}</span>
-                                        </div>
-                                        {order.tracking_number && (
-                                            <div className="flex justify-between text-xs text-gray-500">
-                                                <span>송장:</span>
-                                                <span>{order.shipping_company} {order.tracking_number}</span>
+                        <div className="md:hidden divide-y divide-gray-100">
+                            {filteredOrders.map((order) => {
+                                const stMap: Record<string,{label:string;dot:string}> = {
+                                    pending:   {label:"입금대기",   dot:"bg-gray-300"},
+                                    paid:      {label:"입금완료",   dot:"bg-gray-900"},
+                                    preparing: {label:"상품준비중", dot:"bg-gray-600"},
+                                    shipped:   {label:"발송완료",   dot:"bg-gray-400"},
+                                };
+                                const st = stMap[order.payment_status] ?? {label:order.payment_status, dot:"bg-gray-200"};
+                                return (
+                                    <div key={order.id} className="p-4">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <input type="checkbox" checked={selectedOrders.includes(order.id)} onChange={() => toggleOrderSelection(order.id)} className="w-4 h-4 accent-gray-900 rounded" />
+                                                <span className="font-bold text-gray-900">{order.shipping_name}</span>
                                             </div>
-                                        )}
+                                            <div className="flex items-center gap-1.5">
+                                                <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+                                                <span className="text-xs text-gray-500 font-medium">{st.label}</span>
+                                            </div>
+                                        </div>
+                                        <div className="mb-3 space-y-1.5 pl-6 text-sm">
+                                            <div className="flex justify-between"><span className="text-gray-400">주문번호</span><span className="font-mono text-xs text-gray-500">{order.order_number}</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-400">금액</span><span className="font-bold text-gray-900">{order.final_amount.toLocaleString()}원</span></div>
+                                            <div className="flex justify-between"><span className="text-gray-400">주문일</span><span className="text-gray-500">{new Date(order.created_at).toLocaleDateString("ko-KR")}</span></div>
+                                            {order.tracking_number && <div className="flex justify-between text-xs"><span className="text-gray-400">송장</span><span className="text-gray-500">{order.shipping_company} {order.tracking_number}</span></div>}
+                                        </div>
+                                        <div className="flex justify-end gap-2 pl-6">
+                                            <button onClick={() => setDetailModal({ show: true, orderId: order.id })} className="px-3 py-1.5 text-xs border border-gray-200 text-gray-500 rounded-lg hover:border-gray-400 transition-colors">상세보기</button>
+                                            {order.payment_status === "pending" && <button onClick={() => setConfirmModal({ show: true, title: "입금 확인", message: `${order.order_number}\n${order.shipping_name}\n${order.final_amount.toLocaleString()}원\n\n입금을 확인하셨습니까?`, onConfirm: () => updatePaymentStatus(order.id, "paid") })} className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded-lg">입금확인</button>}
+                                            {order.payment_status === "paid" && <button onClick={() => setConfirmModal({ show: true, title: "상품 준비 시작", message: `${order.order_number}\n${order.shipping_name}\n\n상품 준비를 시작하시겠습니까?`, onConfirm: () => updatePaymentStatus(order.id, "preparing") })} className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded-lg">상품준비</button>}
+                                            {order.payment_status === "preparing" && (<>
+                                                <button onClick={() => setEditModal({ show: true, orderId: order.id, orderNumber: order.order_number })} className="px-3 py-1.5 text-xs border border-gray-200 text-gray-600 rounded-lg hover:border-gray-900">수정</button>
+                                                <button onClick={() => setTrackingModal({ show: true, orderId: order.id, orderNumber: order.order_number })} className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded-lg">송장입력</button>
+                                            </>)}
+                                        </div>
                                     </div>
-
-                                    <div className="flex justify-end gap-2 pl-6">
-                                        <button
-                                            onClick={() => setDetailModal({ show: true, orderId: order.id })}
-                                            className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                                        >
-                                            상세보기
-                                        </button>
-
-                                        {order.payment_status === "pending" && (
-                                            <button
-                                                onClick={() =>
-                                                    setConfirmModal({
-                                                        show: true,
-                                                        title: "입금 확인",
-                                                        message: `주문번호: ${order.order_number}\n고객명: ${order.shipping_name}\n금액: ${order.final_amount.toLocaleString()}원\n\n입금을 확인하셨습니까?`,
-                                                        onConfirm: () => updatePaymentStatus(order.id, "paid"),
-                                                    })
-                                                }
-                                                className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
-                                            >
-                                                입금확인
-                                            </button>
-                                        )}
-
-                                        {order.payment_status === "paid" && (
-                                            <button
-                                                onClick={() =>
-                                                    setConfirmModal({
-                                                        show: true,
-                                                        title: "상품 준비 시작",
-                                                        message: `주문번호: ${order.order_number}\n고객명: ${order.shipping_name}\n\n상품 준비(포장/검수)를 시작하시겠습니까?`,
-                                                        onConfirm: () => updatePaymentStatus(order.id, "preparing"),
-                                                    })
-                                                }
-                                                className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
-                                            >
-                                                상품준비
-                                            </button>
-                                        )}
-
-                                        {order.payment_status === "preparing" && (
-                                            <>
-                                                <button
-                                                    onClick={() =>
-                                                        setEditModal({
-                                                            show: true,
-                                                            orderId: order.id,
-                                                            orderNumber: order.order_number,
-                                                        })
-                                                    }
-                                                    className="px-3 py-1.5 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
-                                                >
-                                                    수정
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        setTrackingModal({
-                                                            show: true,
-                                                            orderId: order.id,
-                                                            orderNumber: order.order_number,
-                                                        })
-                                                    }
-                                                    className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 hover:underline transition-all duration-200 hover:scale-105 cursor-pointer hover:shadow-md"
-                                                >
-                                                    송장입력
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}

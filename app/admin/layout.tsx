@@ -61,6 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showShopConfirm, setShowShopConfirm] = useState(false);
     const [counts, setCounts] = useState({ products: 0 });
+    const [forceReady, setForceReady] = useState(false);
 
     // State for collapsible sidebar groups (initially all open)
     const [expandedGroups, setExpandedGroups] = useState<string[]>(['대시보드', '쇼핑몰 관리', '고객 및 마케팅', '시스템']);
@@ -74,6 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
 
     useEffect(() => {
+        if (forceReady) return; // 타임아웃 후엔 리다이렉트 생략
         if (!loading && !permLoading) {
             if (!user) {
                 router.push('/admin-login');
@@ -84,7 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 fetchNotificationCounts();
             }
         }
-    }, [user, loading, permLoading, hasPermission, router]);
+    }, [user, loading, permLoading, hasPermission, router, forceReady]);
 
     const fetchNotificationCounts = async () => {
         try {
@@ -113,11 +115,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/shop');
     };
 
-    if (loading || permLoading) {
+
+    // Supabase 응답이 늦을 경우 3초 후 강제 진입
+    useEffect(() => {
+        const timer = setTimeout(() => setForceReady(true), 3000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    if ((loading || permLoading) && !forceReady) {
         return <AdminShoeLoader />;
     }
 
-    if (!user || permLoading || !hasPermission('dashboard')) {
+    if (!forceReady && (!user || permLoading || !hasPermission('dashboard'))) {
         return null;
     }
 
