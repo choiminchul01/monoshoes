@@ -2,14 +2,13 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { User, RefreshCw } from "lucide-react";
-import Pagination from "@/components/ui/Pagination";
+import { User, RefreshCw, ShoppingBag, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import { fetchRealLeadsAction, fetchAllMembersAction, getMemberTotalCountAction } from "./actions";
 
 // ─── Types ────────────────────────────────────────────────────
 type RealLead = {
-    id: number | string;   // 마케팅DB=number, 가입회원=uuid string
+    id: number | string;
     name: string;
     phone: string;
     birth_date?: string | null;
@@ -18,12 +17,11 @@ type RealLead = {
     address_sigungu?: string | null;
     email?: string;
     created_at: string;
-    // 매칭 후 추가
     isRegistered?: boolean;
     totalOrders?: number;
     totalSpent?: number;
     orders?: Order[];
-    source: "leads" | "member";  // 데이터 출처
+    source: "leads" | "member";
 };
 
 type Order = {
@@ -32,36 +30,40 @@ type Order = {
     shipping_address: string; shipping_address_detail: string;
 };
 
-const PAGE_SIZE = 100;
+const SERVER_PAGE_SIZE = 100; // 서버에서 한 번에 가져오는 수
+const DISPLAY_STEP = 10;      // 화면에 한 번에 보여주는 수
 
 export default function AdminCustomersPage() {
     const toast = useToast();
 
-    // ── 마케팅 DB (is_real=true) ──────────────────────────────
+    // ── 마케팅 DB 데이터 (서버 페이징) ──────────────────────────
     const [leads, setLeads] = useState<RealLead[]>([]);
     const [leadsTotal, setLeadsTotal] = useState(0);
-    const [leadsPage, setLeadsPage] = useState(1);
+    const [serverPage, setServerPage] = useState(1);   // 현재 서버 페이지
 
-    // ── 가입 회원 (검색시 표시용) ─────────────────────────────────
+    // ── 가입 회원 (검색시만 표시) ─────────────────────────────
     const [allMembers, setAllMembers] = useState<RealLead[]>([]);
-    const [memberCount, setMemberCount] = useState(0); // 전체 가입 회원 수 (항상 표시)
+    const [memberCount, setMemberCount] = useState(0);
 
-    const [search, setSearch] = useState("");          // 입력창 텍스트 (즉시 반영)
-    const [appliedSearch, setAppliedSearch] = useState(""); // 실제 조회에 사용된 검색어
+    // ── 화면 표시 수 (더보기) ─────────────────────────────────
+    const [displayCount, setDisplayCount] = useState(DISPLAY_STEP);
+
+    const [search, setSearch] = useState("");
+    const [appliedSearch, setAppliedSearch] = useState("");
     const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [expandedId, setExpandedId] = useState<number | string | null>(null);
 
-    // 주문 매핑 (전화번호 → 주문 목록)
+    // 주문 매핑
     const [orderMap, setOrderMap] = useState<Map<string, Order[]>>(new Map());
 
-    // ── 주문 + 회원 메타 로드 ─────────────────────────────────
+    // ── 주문 메타 로드 ────────────────────────────────────────
     const loadMeta = useCallback(async () => {
         try {
             const { data: orders } = await supabase
                 .from("orders")
                 .select("id, created_at, order_number, final_amount, payment_status, shipping_address, shipping_address_detail, shipping_phone")
                 .order("created_at", { ascending: false });
-
             const oMap = new Map<string, Order[]>();
             orders?.forEach((o: any) => {
                 const ph = o.shipping_phone;
@@ -73,74 +75,64 @@ export default function AdminCustomersPage() {
         } catch (e) { console.error("meta load error", e); }
     }, []);
 
-    // ── 가입 회원 로드 (검색 시 표시, 수는 항상 카운트) ─────────
-    const loadAllMembers = useCallback(async (searchVal: string) => {
-        const res = await fetchAllMembersAction(searchVal || undefined);
-        if (res.success) {
-            const members: RealLead[] = (res.data as any[]).map(u => ({
-                id: u.id,
-                name: u.name,
-                phone: u.phone,
-                email: u.email,
-                created_at: u.created_at,
-                isRegistered: true,
-                source: "member" as const,
-            }));
-            setAllMembers(members);
-        }
-    }, []);
-
-    // ── 가입 회원 수 전체 조회 (상단 카운트 전용, 전화번호 무관) ───────
+    // ── 가입 회원 수 조회 (카운트 전용) ──────────────────────
     const loadMemberCount = useCallback(async () => {
         const res = await getMemberTotalCountAction();
         setMemberCount(res.count);
     }, []);
 
-    // ── 마케팅 DB 리드 로드 (가입 회원 전화번호 제외) ─────────
-    const fetchLeads = useCallback(async (page: number, searchVal: string, excludePhones?: string[]) => {
-        setLoading(true);
+    // ── 가입 회원 목록 조회 (검색 시) ────────────────────────
+    const loadAllMembers = useCallback(async (searchVal: string) => {
+        const res = await fetchAllMembersAction(searchVal || undefined);
+        if (res.success) {
+            setAllMembers((res.data as any[]).map(u => ({
+                id: u.id, name: u.name, phone: u.phone, email: u.email,
+                created_at: u.created_at, isRegistered: true, source: "member" as const,
+            })));
+        }
+    }, []);
+
+    // ── 마케팅 DB 로드 (서버 페이지 append) ──────────────────
+    const fetchLeads = useCallback(async (page: number, searchVal: string, append = false) => {
+        if (append) setLoadingMore(true); else setLoading(true);
         try {
-            const res = await fetchRealLeadsAction({ page, pageSize: PAGE_SIZE, search: searchVal, excludePhones });
+            const res = await fetchRealLeadsAction({ page, pageSize: SERVER_PAGE_SIZE, search: searchVal });
             if (res.success) {
-                setLeads(res.data.map((d: any) => ({ ...d, source: "leads" as const })));
+                const mapped = res.data.map((d: any) => ({ ...d, source: "leads" as const }));
+                setLeads(prev => append ? [...prev, ...mapped] : mapped);
                 setLeadsTotal(res.count);
             }
         } finally {
-            setLoading(false);
+            if (append) setLoadingMore(false); else setLoading(false);
         }
     }, []);
 
     // ── 초기 로드 ─────────────────────────────────────────────
     useEffect(() => {
         loadMeta();
-        loadMemberCount(); // 처음에 회원 수만 맨다 조회 (카운트 전용)
+        loadMemberCount();
         fetchLeads(1, "");
     }, []);
 
-    // ── 조회 실행 (버튼 or Enter) ─────────────────────────────
+    // ── 조회 버튼 / Enter ──────────────────────────────────────
     const handleSearchSubmit = async () => {
-        setLeadsPage(1);
         setAppliedSearch(search);
-        if (search.trim()) {
-            // 검색어가 있을 때만 가입 회원 조회
-            await loadAllMembers(search);
-        } else {
-            setAllMembers([]);
-        }
-        fetchLeads(1, search);
+        setServerPage(1);
+        setDisplayCount(DISPLAY_STEP);
+        setLeads([]);
+        if (search.trim()) await loadAllMembers(search);
+        else setAllMembers([]);
+        fetchLeads(1, search, false);
     };
 
-    // ── 가입 회원 + 마케팅 DB 병합 (가입 회원 상단 고정) ──────
-    // ── 병합: 마케팅 DB 먼저, 가입 회원 하단 (검색시만) ──────
+    // ── 병합 데이터 ────────────────────────────────────────────
     const mergedLeads: RealLead[] = [
-        // 마케팅 DB (실제 데이터)
         ...leads.map(l => ({
             ...l,
             totalOrders: orderMap.get(l.phone)?.length || 0,
             totalSpent: orderMap.get(l.phone)?.filter(o => ["paid","shipped","delivered"].includes(o.payment_status)).reduce((s,o) => s + o.final_amount, 0) || 0,
             orders: orderMap.get(l.phone) || [],
         })),
-        // 검색시에만 하단에 가입 회원 추가
         ...(appliedSearch.trim() ? allMembers.map(m => ({
             ...m,
             totalOrders: orderMap.get(m.phone)?.length || 0,
@@ -149,24 +141,43 @@ export default function AdminCustomersPage() {
         })) : []),
     ];
 
+    // 화면에 보일 슬라이스
+    const visibleLeads = mergedLeads.slice(0, displayCount);
     const totalCount = leadsTotal + memberCount;
-    const totalPages = Math.ceil(leadsTotal / PAGE_SIZE); // 마케팅DB 기준 페이징
+    const hasMoreLocal = displayCount < mergedLeads.length;
+    const hasMoreServer = leads.length < leadsTotal; // 서버에 더 있음
 
+    // ── 더보기 버튼 핸들러 ────────────────────────────────────
+    const handleLoadMore = async () => {
+        const nextDisplay = displayCount + DISPLAY_STEP;
 
-    const handlePageChange = (p: number) => {
-        setLeadsPage(p);
-        fetchLeads(p, appliedSearch);
-        setExpandedId(null);
+        // 로컬 버퍼에 데이터가 충분한 경우
+        if (nextDisplay <= mergedLeads.length) {
+            setDisplayCount(nextDisplay);
+            return;
+        }
+
+        // 서버에서 다음 페이지 가져와야 하는 경우
+        if (hasMoreServer) {
+            const nextPage = serverPage + 1;
+            setServerPage(nextPage);
+            await fetchLeads(nextPage, appliedSearch, true); // append
+        }
+
+        setDisplayCount(nextDisplay);
     };
 
     const handleRefresh = () => {
+        setDisplayCount(DISPLAY_STEP);
+        setServerPage(1);
         loadMeta();
+        loadMemberCount();
         if (appliedSearch.trim()) {
-            loadAllMembers(appliedSearch).then(() => fetchLeads(leadsPage, appliedSearch));
+            loadAllMembers(appliedSearch);
         } else {
             setAllMembers([]);
-            fetchLeads(leadsPage, appliedSearch);
         }
+        fetchLeads(1, appliedSearch, false);
     };
 
     // ── 성별 뱃지 ────────────────────────────────────────────
@@ -227,13 +238,13 @@ export default function AdminCustomersPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
+            <div className="bg-white rounded-lg shadow overflow-hidden mb-4">
                 {loading ? (
                     <div className="p-12 text-center text-gray-400">
                         <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
                         로딩 중...
                     </div>
-                ) : mergedLeads.length === 0 ? (
+                ) : visibleLeads.length === 0 ? (
                     <div className="p-12 text-center text-gray-400">
                         {search ? "검색 결과가 없습니다." : "데이터가 없습니다."}
                     </div>
@@ -250,10 +261,9 @@ export default function AdminCustomersPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {mergedLeads.map((lead) => (
+                                {visibleLeads.map((lead) => (
                                     <React.Fragment key={String(lead.id)}>
                                         <tr className={`hover:bg-gray-50 transition-colors ${expandedId === lead.id ? "bg-gray-50" : ""}`}>
-                                            {/* 이름 */}
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
@@ -265,52 +275,13 @@ export default function AdminCustomersPage() {
                                                     </div>
                                                 </div>
                                             </td>
-                                            {/* 연락처 */}
                                             <td className="px-4 py-3 text-gray-500 font-mono text-xs">{lead.phone}</td>
-                                            {/* 성별 */}
                                             <td className="px-4 py-3">{genderBadge(lead.gender)}</td>
-                                            {/* 생년월일 */}
                                             <td className="px-4 py-3 text-gray-500 text-xs">{lead.birth_date || "-"}</td>
-                                            {/* 지역 */}
                                             <td className="px-4 py-3 text-gray-500 text-xs">
                                                 {[lead.address_sido, lead.address_sigungu].filter(Boolean).join(" ") || "-"}
                                             </td>
                                         </tr>
-
-                                        {/* 주문 상세 펼침 */}
-                                        {expandedId === lead.id && (lead.orders?.length || 0) > 0 && (
-                                            <tr className="bg-gray-50">
-                                                <td colSpan={5} className="px-6 py-4">
-                                                    <div className="bg-white rounded border border-gray-200 p-4">
-                                                        <h4 className="font-bold mb-3 flex items-center gap-2 text-sm">
-                                                            <ShoppingBag className="w-4 h-4" /> 주문 이력
-                                                        </h4>
-                                                        <table className="w-full text-xs">
-                                                            <thead className="bg-gray-50">
-                                                                <tr>
-                                                                    <th className="px-3 py-2 text-left">주문번호</th>
-                                                                    <th className="px-3 py-2 text-left">주문일자</th>
-                                                                    <th className="px-3 py-2 text-left">금액</th>
-                                                                    <th className="px-3 py-2 text-left">상태</th>
-                                                                    <th className="px-3 py-2 text-left">배송지</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-gray-100">
-                                                                {lead.orders!.map(order => (
-                                                                    <tr key={order.id}>
-                                                                        <td className="px-3 py-2 font-mono">{order.order_number}</td>
-                                                                        <td className="px-3 py-2">{new Date(order.created_at).toLocaleDateString("ko-KR")}</td>
-                                                                        <td className="px-3 py-2 font-bold">{order.final_amount.toLocaleString()}원</td>
-                                                                        <td className="px-3 py-2">{statusLabel(order.payment_status)}</td>
-                                                                        <td className="px-3 py-2 text-gray-500 truncate max-w-xs">{order.shipping_address} {order.shipping_address_detail}</td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
                                     </React.Fragment>
                                 ))}
                             </tbody>
@@ -319,9 +290,27 @@ export default function AdminCustomersPage() {
                 )}
             </div>
 
-            {/* 페이지네이션 — 마케팅DB 기준 */}
-            {totalPages > 1 && (
-                <Pagination currentPage={leadsPage} totalPages={totalPages} onPageChange={handlePageChange} />
+            {/* 현재 표시 수 / 더보기 */}
+            {!loading && mergedLeads.length > 0 && (
+                <div className="flex flex-col items-center gap-3 pb-6">
+                    <p className="text-xs text-gray-400">
+                        {Math.min(displayCount, mergedLeads.length).toLocaleString()}명 표시 중
+                        {(hasMoreLocal || hasMoreServer) && ` / 로드된 ${mergedLeads.length.toLocaleString()}명`}
+                    </p>
+                    {(hasMoreLocal || hasMoreServer) && (
+                        <button
+                            onClick={handleLoadMore}
+                            disabled={loadingMore}
+                            className="px-8 py-2.5 bg-white border-2 border-gray-200 text-gray-700 text-sm font-bold rounded-full hover:border-black hover:text-black transition-all disabled:opacity-50"
+                        >
+                            {loadingMore ? (
+                                <span className="flex items-center gap-2">
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> 로딩 중...
+                                </span>
+                            ) : `10명 더보기`}
+                        </button>
+                    )}
+                </div>
             )}
         </div>
     );
