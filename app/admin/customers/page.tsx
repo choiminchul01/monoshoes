@@ -2,95 +2,102 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { User, ShoppingBag, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { User, ShoppingBag, ChevronDown, ChevronUp, RefreshCw, UserCheck } from "lucide-react";
 import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
-import { fetchAllUsersAction, fetchRealLeadsAction } from "./actions";
+import { useToast } from "@/context/ToastContext";
+import { fetchRealLeadsAction, fetchUnmatchedMembersAction } from "./actions";
 
 // ─── Types ────────────────────────────────────────────────────
 type RealLead = {
-    id: number;
+    id: number | string;   // 마케팅DB=number, 가입회원=uuid string
     name: string;
     phone: string;
-    birth_date: string | null;
-    gender: string;
-    address_sido: string | null;
-    address_sigungu: string | null;
-    address_dong: string | null;
-    created_at: string;
-    // 회원/주문 매칭 후 추가
-    isRegistered?: boolean;
+    birth_date?: string | null;
+    gender?: string;
+    address_sido?: string | null;
+    address_sigungu?: string | null;
     email?: string;
+    created_at: string;
+    // 매칭 후 추가
+    isRegistered?: boolean;
     totalOrders?: number;
     totalSpent?: number;
     orders?: Order[];
+    source: "leads" | "member";  // 데이터 출처
 };
 
 type Order = {
-    id: string;
-    created_at: string;
-    order_number: string;
-    final_amount: number;
-    payment_status: string;
-    shipping_address: string;
-    shipping_address_detail: string;
+    id: string; created_at: string; order_number: string;
+    final_amount: number; payment_status: string;
+    shipping_address: string; shipping_address_detail: string;
 };
 
 const PAGE_SIZE = 100;
 
 export default function AdminCustomersPage() {
+    const toast = useToast();
+
+    // ── 마케팅 DB (is_real=true) ──────────────────────────────
     const [leads, setLeads] = useState<RealLead[]>([]);
     const [leadsTotal, setLeadsTotal] = useState(0);
     const [leadsPage, setLeadsPage] = useState(1);
+
+    // ── 미업로드 가입 회원 ─────────────────────────────────────
+    const [unmatchedMembers, setUnmatchedMembers] = useState<RealLead[]>([]);
+
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
-    const [expandedId, setExpandedId] = useState<number | null>(null);
+    const [expandedId, setExpandedId] = useState<number | string | null>(null);
 
-    // 회원/주문 데이터 (전화번호 기반 매칭용, 한 번만 로드)
-    const [memberMap, setMemberMap] = useState<Map<string, { email: string; isRegistered: boolean }>>(new Map());
+    // 주문 매핑 (전화번호 → 주문 목록)
     const [orderMap, setOrderMap] = useState<Map<string, Order[]>>(new Map());
-    const [metaLoaded, setMetaLoaded] = useState(false);
+    const [memberPhones, setMemberPhones] = useState<Set<string>>(new Set());
 
-    // ── 회원 + 주문 메타 데이터 로드 (한 번) ──────────────────
+    // ── 주문 + 회원 메타 로드 ─────────────────────────────────
     const loadMeta = useCallback(async () => {
         try {
-            const [usersResult, { data: orders }] = await Promise.all([
-                fetchAllUsersAction(),
-                supabase.from("orders").select("id, created_at, order_number, final_amount, payment_status, shipping_address, shipping_address_detail, shipping_phone, customer_email").order("created_at", { ascending: false }),
-            ]);
+            const { data: orders } = await supabase
+                .from("orders")
+                .select("id, created_at, order_number, final_amount, payment_status, shipping_address, shipping_address_detail, shipping_phone")
+                .order("created_at", { ascending: false });
 
-            // 전화번호 → 회원 매핑
-            const mMap = new Map<string, { email: string; isRegistered: boolean }>();
-            if (usersResult.success) {
-                usersResult.users.forEach((u: any) => {
-                    if (u.phone) mMap.set(u.phone, { email: u.email || "", isRegistered: true });
-                });
-            }
-            setMemberMap(mMap);
-
-            // 전화번호 → 주문 목록 매핑
             const oMap = new Map<string, Order[]>();
-            orders?.forEach((order: any) => {
-                const phone = order.shipping_phone;
-                if (!phone) return;
-                if (!oMap.has(phone)) oMap.set(phone, []);
-                oMap.get(phone)!.push(order);
+            orders?.forEach((o: any) => {
+                const ph = o.shipping_phone;
+                if (!ph) return;
+                if (!oMap.has(ph)) oMap.set(ph, []);
+                oMap.get(ph)!.push(o);
             });
             setOrderMap(oMap);
-            setMetaLoaded(true);
-        } catch (e) {
-            console.error("meta load error", e);
-            setMetaLoaded(true);
+        } catch (e) { console.error("meta load error", e); }
+    }, []);
+
+    // ── 미업로드 가입 회원 로드 ───────────────────────────────
+    const loadUnmatched = useCallback(async (searchVal: string) => {
+        const res = await fetchUnmatchedMembersAction(searchVal || undefined);
+        if (res.success) {
+            const members: RealLead[] = (res.data as any[]).map(u => ({
+                id: u.id,
+                name: u.name,
+                phone: u.phone,
+                email: u.email,
+                created_at: u.created_at,
+                isRegistered: true,
+                source: "member" as const,
+            }));
+            setUnmatchedMembers(members);
+            setMemberPhones(new Set(members.map(m => m.phone)));
         }
     }, []);
 
-    // ── 리드 데이터 로드 (페이지/검색 변경 시) ────────────────
+    // ── 마케팅 DB 리드 로드 ───────────────────────────────────
     const fetchLeads = useCallback(async (page: number, searchVal: string) => {
         setLoading(true);
         try {
             const res = await fetchRealLeadsAction({ page, pageSize: PAGE_SIZE, search: searchVal });
             if (res.success) {
-                setLeads(res.data as RealLead[]);
+                setLeads(res.data.map((d: any) => ({ ...d, source: "leads" as const })));
                 setLeadsTotal(res.count);
             }
         } finally {
@@ -98,32 +105,41 @@ export default function AdminCustomersPage() {
         }
     }, []);
 
+    // ── 초기 로드 ─────────────────────────────────────────────
     useEffect(() => {
         loadMeta();
         fetchLeads(1, "");
+        loadUnmatched("");
     }, []);
 
-    // ── 리드에 회원/주문 정보 병합 ────────────────────────────
-    const mergedLeads: RealLead[] = leads.map(lead => {
-        const member = memberMap.get(lead.phone);
-        const orders = orderMap.get(lead.phone) || [];
-        const totalSpent = orders.filter(o => ["paid", "shipped", "delivered"].includes(o.payment_status)).reduce((s, o) => s + o.final_amount, 0);
-        return {
-            ...lead,
-            isRegistered: !!member,
-            email: member?.email || "",
-            totalOrders: orders.length,
-            totalSpent,
-            orders,
-        };
-    });
+    // ── 리드 + 미업로드 회원 병합 ─────────────────────────────
+    // 미업로드 회원 중 검색어 필터는 서버에서 처리됨
+    const mergedLeads: RealLead[] = [
+        // 미업로드 가입 회원을 상단에 표시
+        ...unmatchedMembers.map(m => ({
+            ...m,
+            totalOrders: orderMap.get(m.phone)?.length || 0,
+            totalSpent: orderMap.get(m.phone)?.filter(o => ["paid","shipped","delivered"].includes(o.payment_status)).reduce((s,o) => s + o.final_amount, 0) || 0,
+            orders: orderMap.get(m.phone) || [],
+        })),
+        // 마케팅 DB (is_real=true)
+        ...leads.map(l => ({
+            ...l,
+            isRegistered: memberPhones.has(l.phone),
+            totalOrders: orderMap.get(l.phone)?.length || 0,
+            totalSpent: orderMap.get(l.phone)?.filter(o => ["paid","shipped","delivered"].includes(o.payment_status)).reduce((s,o) => s + o.final_amount, 0) || 0,
+            orders: orderMap.get(l.phone) || [],
+        })),
+    ];
 
-    const totalPages = Math.ceil(leadsTotal / PAGE_SIZE);
+    const totalCount = leadsTotal + unmatchedMembers.length;
+    const totalPages = Math.ceil(leadsTotal / PAGE_SIZE); // 마케팅DB 기준 페이징
 
     const handleSearch = (val: string) => {
         setSearch(val);
         setLeadsPage(1);
         fetchLeads(1, val);
+        loadUnmatched(val);
     };
 
     const handlePageChange = (p: number) => {
@@ -133,13 +149,13 @@ export default function AdminCustomersPage() {
     };
 
     const handleRefresh = () => {
-        setMetaLoaded(false);
         loadMeta();
         fetchLeads(leadsPage, search);
+        loadUnmatched(search);
     };
 
     // ── 성별 뱃지 ────────────────────────────────────────────
-    const genderBadge = (g: string) => {
+    const genderBadge = (g?: string) => {
         if (g === "M") return <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded border border-blue-200">남</span>;
         if (g === "F") return <span className="text-[10px] px-1.5 py-0.5 bg-pink-100 text-pink-700 rounded border border-pink-200">여</span>;
         return <span className="text-[10px] text-gray-300">-</span>;
@@ -162,27 +178,24 @@ export default function AdminCustomersPage() {
         <div>
             {/* Header */}
             <div className="flex flex-row justify-between items-center mb-6 gap-4">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     <h1 className="text-3xl font-bold">고객 관리</h1>
-                    <span className="text-sm text-gray-400 font-medium">
-                        총 {leadsTotal.toLocaleString()}명
-                    </span>
+                    <span className="text-sm text-gray-400 font-medium">총 {totalCount.toLocaleString()}명</span>
+                    {unmatchedMembers.length > 0 && (
+                        <span className="flex items-center gap-1 text-xs px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full font-medium">
+                            <UserCheck className="w-3 h-3" />
+                            가입 회원 {unmatchedMembers.length}명 포함
+                        </span>
+                    )}
                 </div>
-                <button
-                    onClick={handleRefresh}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
+                <button onClick={handleRefresh} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                     <RefreshCw className="w-4 h-4" /> 새로고침
                 </button>
             </div>
 
             {/* Search */}
             <div className="mb-6">
-                <AdminSearch
-                    value={search}
-                    onChange={handleSearch}
-                    placeholder="이름, 전화번호 검색..."
-                />
+                <AdminSearch value={search} onChange={handleSearch} placeholder="이름, 전화번호 검색..." />
             </div>
 
             {/* Table */}
@@ -214,13 +227,13 @@ export default function AdminCustomersPage() {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {mergedLeads.map((lead) => (
-                                    <React.Fragment key={lead.id}>
-                                        <tr className={`hover:bg-gray-50 transition-colors ${expandedId === lead.id ? "bg-gray-50" : ""}`}>
+                                    <React.Fragment key={String(lead.id)}>
+                                        <tr className={`hover:bg-gray-50 transition-colors ${lead.source === "member" ? "bg-green-50/40" : ""} ${expandedId === lead.id ? "bg-gray-50" : ""}`}>
                                             {/* 이름 */}
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                                                        <User className="w-3.5 h-3.5 text-gray-500" />
+                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${lead.source === "member" ? "bg-green-100" : "bg-gray-100"}`}>
+                                                        <User className={`w-3.5 h-3.5 ${lead.source === "member" ? "text-green-600" : "text-gray-500"}`} />
                                                     </div>
                                                     <div>
                                                         <div className="font-medium">{lead.name}</div>
@@ -254,7 +267,10 @@ export default function AdminCustomersPage() {
                                             </td>
                                             {/* 결제금액 */}
                                             <td className="px-4 py-3 font-bold text-sm">
-                                                {(lead.totalSpent || 0) > 0 ? `${lead.totalSpent!.toLocaleString()}원` : <span className="text-gray-300 font-normal text-xs">-</span>}
+                                                {(lead.totalSpent || 0) > 0
+                                                    ? `${lead.totalSpent!.toLocaleString()}원`
+                                                    : <span className="text-gray-300 font-normal text-xs">-</span>
+                                                }
                                             </td>
                                             {/* 주문 상세 토글 */}
                                             <td className="px-4 py-3 text-gray-400 cursor-pointer" onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}>
@@ -307,6 +323,7 @@ export default function AdminCustomersPage() {
                 )}
             </div>
 
+            {/* 페이지네이션 — 마케팅DB 기준 */}
             {totalPages > 1 && (
                 <Pagination currentPage={leadsPage} totalPages={totalPages} onPageChange={handlePageChange} />
             )}
