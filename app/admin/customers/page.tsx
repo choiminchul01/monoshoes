@@ -42,9 +42,9 @@ export default function AdminCustomersPage() {
     const [leadsTotal, setLeadsTotal] = useState(0);
     const [leadsPage, setLeadsPage] = useState(1);
 
-    // ── 가입 회원 (전체, 상단 고정) ───────────────────────────
+    // ── 가입 회원 (검색시 표시용) ─────────────────────────────────
     const [allMembers, setAllMembers] = useState<RealLead[]>([]);
-    const [memberPhoneSet, setMemberPhoneSet] = useState<Set<string>>(new Set());
+    const [memberCount, setMemberCount] = useState(0); // 전체 가입 회원 수 (항상 표시)
 
     const [search, setSearch] = useState("");          // 입력창 텍스트 (즉시 반영)
     const [appliedSearch, setAppliedSearch] = useState(""); // 실제 조회에 사용된 검색어
@@ -73,7 +73,7 @@ export default function AdminCustomersPage() {
         } catch (e) { console.error("meta load error", e); }
     }, []);
 
-    // ── 가입 회원 전체 로드 (상단 고정 표시) ─────────────────
+    // ── 가입 회원 로드 (검색 시 표시, 수는 항상 카운트) ─────────
     const loadAllMembers = useCallback(async (searchVal: string) => {
         const res = await fetchAllMembersAction(searchVal || undefined);
         if (res.success) {
@@ -87,8 +87,13 @@ export default function AdminCustomersPage() {
                 source: "member" as const,
             }));
             setAllMembers(members);
-            setMemberPhoneSet(new Set(members.map(m => m.phone)));
         }
+    }, []);
+
+    // ── 가입 회원 수 전체 조회 (상단 카운트 전용) ─────────────
+    const loadMemberCount = useCallback(async () => {
+        const res = await fetchAllMembersAction();
+        if (res.success) setMemberCount(res.data.length);
     }, []);
 
     // ── 마케팅 DB 리드 로드 (가입 회원 전화번호 제외) ─────────
@@ -108,7 +113,8 @@ export default function AdminCustomersPage() {
     // ── 초기 로드 ─────────────────────────────────────────────
     useEffect(() => {
         loadMeta();
-        fetchLeads(1, ""); // 초기에는 마케팅 DB만 로드, 가입 회원 제외
+        loadMemberCount(); // 처음에 회원 수만 맨다 조회 (카운트 전용)
+        fetchLeads(1, "");
     }, []);
 
     // ── 조회 실행 (버튼 or Enter) ─────────────────────────────
@@ -143,9 +149,7 @@ export default function AdminCustomersPage() {
         })) : []),
     ];
 
-    const totalCount = appliedSearch.trim()
-        ? leadsTotal + allMembers.length
-        : leadsTotal;
+    const totalCount = leadsTotal + memberCount;
     const totalPages = Math.ceil(leadsTotal / PAGE_SIZE); // 마케팅DB 기준 페이징
 
 
