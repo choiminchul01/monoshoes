@@ -53,7 +53,7 @@ export default function PartnerSection() {
                 </div>
 
                 {/* 제휴사 그리드 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-16 max-w-7xl mx-auto">
                     {PARTNERS.map((partner, index) => (
                         <motion.div
                             key={partner.name}
