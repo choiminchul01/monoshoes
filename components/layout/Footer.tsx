@@ -136,6 +136,9 @@ export function Footer() {
                     <div className="flex flex-col items-end gap-6">
                         {/* Navigation Links */}
                         <div className="flex gap-6 text-sm">
+                            <a href="http://pf.kakao.com/_HzsTX" target="_blank" rel="noopener noreferrer" className="hover:text-black font-bold transition-colors">
+                                KAKAOTALK
+                            </a>
                             <Link href="/privacy" className="hover:text-black font-bold transition-colors">
                                 PRIVACY POLICY
                             </Link>

@@ -6,7 +6,7 @@ import { MessageSquareMore, ArrowUp } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export function KakaoButton() {
-    const [kakaoUrl, setKakaoUrl] = useState<string>("https://open.kakao.com/o/placeholder");
+    const [kakaoUrl, setKakaoUrl] = useState<string>("http://pf.kakao.com/_HzsTX/chat");
     const pathname = usePathname();
 
     // 상품상세 페이지인지 확인 (/shop/[id] 패턴)
