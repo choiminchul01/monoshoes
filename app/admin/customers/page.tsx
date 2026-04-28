@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { User, ShoppingBag, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { User, RefreshCw } from "lucide-react";
 import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
@@ -213,10 +213,6 @@ export default function AdminCustomersPage() {
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">성별</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">생년월일</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">지역</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">회원</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">주문</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">결제금액</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">상세</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -245,40 +241,12 @@ export default function AdminCustomersPage() {
                                             <td className="px-4 py-3 text-gray-500 text-xs">
                                                 {[lead.address_sido, lead.address_sigungu].filter(Boolean).join(" ") || "-"}
                                             </td>
-                                            {/* 회원 여부 */}
-                                            <td className="px-4 py-3">
-                                                {lead.isRegistered
-                                                    ? <span className="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded border border-green-200">회원</span>
-                                                    : <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded border border-gray-200">비회원</span>
-                                                }
-                                            </td>
-                                            {/* 주문 수 */}
-                                            <td className="px-4 py-3">
-                                                {(lead.totalOrders || 0) > 0
-                                                    ? <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">{lead.totalOrders}건</span>
-                                                    : <span className="text-gray-300 text-xs">-</span>
-                                                }
-                                            </td>
-                                            {/* 결제금액 */}
-                                            <td className="px-4 py-3 font-bold text-sm">
-                                                {(lead.totalSpent || 0) > 0
-                                                    ? `${lead.totalSpent!.toLocaleString()}원`
-                                                    : <span className="text-gray-300 font-normal text-xs">-</span>
-                                                }
-                                            </td>
-                                            {/* 주문 상세 토글 */}
-                                            <td className="px-4 py-3 text-gray-400 cursor-pointer" onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}>
-                                                {(lead.orders?.length || 0) > 0
-                                                    ? (expandedId === lead.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)
-                                                    : <span className="text-[10px] text-gray-200">-</span>
-                                                }
-                                            </td>
                                         </tr>
 
                                         {/* 주문 상세 펼침 */}
                                         {expandedId === lead.id && (lead.orders?.length || 0) > 0 && (
                                             <tr className="bg-gray-50">
-                                                <td colSpan={9} className="px-6 py-4">
+                                                <td colSpan={5} className="px-6 py-4">
                                                     <div className="bg-white rounded border border-gray-200 p-4">
                                                         <h4 className="font-bold mb-3 flex items-center gap-2 text-sm">
                                                             <ShoppingBag className="w-4 h-4" /> 주문 이력
