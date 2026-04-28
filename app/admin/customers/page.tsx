@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { User, RefreshCw, ShoppingBag, ChevronDown, ChevronUp } from "lucide-react";
+import { User, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import { fetchRealLeadsAction, fetchAllMembersAction, getMemberTotalCountAction } from "./actions";
 
@@ -18,8 +18,6 @@ type RealLead = {
     email?: string;
     created_at: string;
     isRegistered?: boolean;
-    totalOrders?: number;
-    totalSpent?: number;
     orders?: Order[];
     source: "leads" | "member";
 };
@@ -30,34 +28,86 @@ type Order = {
     shipping_address: string; shipping_address_detail: string;
 };
 
-const SERVER_PAGE_SIZE = 100; // 서버에서 한 번에 가져오는 수
-const DISPLAY_STEP = 10;      // 화면에 한 번에 보여주는 수
+const PAGE_SIZE = 100;       // 1페이지 = 100건
+const PAGE_GROUP = 10;       // 페이지 번호 한 번에 10개 표시
 
+// ─── 페이지네이션 컴포넌트 ────────────────────────────────────
+function Paginator({
+    currentPage,
+    totalPages,
+    onPageChange,
+}: {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (p: number) => void;
+}) {
+    // 현재 페이지가 속한 그룹
+    const groupIndex = Math.floor((currentPage - 1) / PAGE_GROUP);
+    const groupStart = groupIndex * PAGE_GROUP + 1;
+    const groupEnd   = Math.min(groupStart + PAGE_GROUP - 1, totalPages);
+
+    const pages = Array.from({ length: groupEnd - groupStart + 1 }, (_, i) => groupStart + i);
+
+    const hasPrevGroup = groupStart > 1;
+    const hasNextGroup = groupEnd < totalPages;
+
+    return (
+        <div className="flex items-center justify-center gap-1 py-4">
+            {/* 이전 그룹 */}
+            <button
+                onClick={() => onPageChange(groupStart - 1)}
+                disabled={!hasPrevGroup}
+                className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+                <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* 페이지 번호 */}
+            {pages.map(p => (
+                <button
+                    key={p}
+                    onClick={() => onPageChange(p)}
+                    className={`w-8 h-8 text-sm rounded font-medium transition-colors
+                        ${p === currentPage
+                            ? "bg-black text-white"
+                            : "hover:bg-gray-100 text-gray-600"
+                        }`}
+                >
+                    {p}
+                </button>
+            ))}
+
+            {/* 다음 그룹 */}
+            <button
+                onClick={() => onPageChange(groupEnd + 1)}
+                disabled={!hasNextGroup}
+                className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+                <ChevronRight className="w-4 h-4" />
+            </button>
+        </div>
+    );
+}
+
+// ─── 메인 페이지 ─────────────────────────────────────────────
 export default function AdminCustomersPage() {
     const toast = useToast();
 
-    // ── 마케팅 DB 데이터 (서버 페이징) ──────────────────────────
-    const [leads, setLeads] = useState<RealLead[]>([]);
+    const [leads, setLeads]         = useState<RealLead[]>([]);
     const [leadsTotal, setLeadsTotal] = useState(0);
-    const [serverPage, setServerPage] = useState(1);   // 현재 서버 페이지
+    const [currentPage, setCurrentPage] = useState(1);
 
-    // ── 가입 회원 (검색시만 표시) ─────────────────────────────
     const [allMembers, setAllMembers] = useState<RealLead[]>([]);
     const [memberCount, setMemberCount] = useState(0);
 
-    // ── 화면 표시 수 (더보기) ─────────────────────────────────
-    const [displayCount, setDisplayCount] = useState(DISPLAY_STEP);
-
-    const [search, setSearch] = useState("");
+    const [search, setSearch]               = useState("");
     const [appliedSearch, setAppliedSearch] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [expandedId, setExpandedId] = useState<number | string | null>(null);
+    const [loading, setLoading]             = useState(false);
+    const [expandedId, setExpandedId]       = useState<number | string | null>(null);
 
-    // 주문 매핑
     const [orderMap, setOrderMap] = useState<Map<string, Order[]>>(new Map());
 
-    // ── 주문 메타 로드 ────────────────────────────────────────
+    // ── 주문 메타 ────────────────────────────────────────────
     const loadMeta = useCallback(async () => {
         try {
             const { data: orders } = await supabase
@@ -75,13 +125,13 @@ export default function AdminCustomersPage() {
         } catch (e) { console.error("meta load error", e); }
     }, []);
 
-    // ── 가입 회원 수 조회 (카운트 전용) ──────────────────────
+    // ── 가입 회원 수 ─────────────────────────────────────────
     const loadMemberCount = useCallback(async () => {
         const res = await getMemberTotalCountAction();
         setMemberCount(res.count);
     }, []);
 
-    // ── 가입 회원 목록 조회 (검색 시) ────────────────────────
+    // ── 가입 회원 목록 (검색 시) ──────────────────────────────
     const loadAllMembers = useCallback(async (searchVal: string) => {
         const res = await fetchAllMembersAction(searchVal || undefined);
         if (res.success) {
@@ -92,93 +142,67 @@ export default function AdminCustomersPage() {
         }
     }, []);
 
-    // ── 마케팅 DB 로드 (서버 페이지 append) ──────────────────
-    const fetchLeads = useCallback(async (page: number, searchVal: string, append = false) => {
-        if (append) setLoadingMore(true); else setLoading(true);
+    // ── 마케팅 DB 조회 ────────────────────────────────────────
+    const fetchLeads = useCallback(async (page: number, searchVal: string) => {
+        setLoading(true);
         try {
-            const res = await fetchRealLeadsAction({ page, pageSize: SERVER_PAGE_SIZE, search: searchVal });
+            const res = await fetchRealLeadsAction({ page, pageSize: PAGE_SIZE, search: searchVal });
             if (res.success) {
-                const mapped = res.data.map((d: any) => ({ ...d, source: "leads" as const }));
-                setLeads(prev => append ? [...prev, ...mapped] : mapped);
+                setLeads(res.data.map((d: any) => ({ ...d, source: "leads" as const })));
                 setLeadsTotal(res.count);
             }
         } finally {
-            if (append) setLoadingMore(false); else setLoading(false);
+            setLoading(false);
         }
     }, []);
 
-    // ── 초기 로드 ─────────────────────────────────────────────
+    // ── 초기 로드 ────────────────────────────────────────────
     useEffect(() => {
         loadMeta();
         loadMemberCount();
         fetchLeads(1, "");
     }, []);
 
-    // ── 조회 버튼 / Enter ──────────────────────────────────────
+    // ── 검색 조회 ────────────────────────────────────────────
     const handleSearchSubmit = async () => {
+        setCurrentPage(1);
         setAppliedSearch(search);
-        setServerPage(1);
-        setDisplayCount(DISPLAY_STEP);
-        setLeads([]);
         if (search.trim()) await loadAllMembers(search);
         else setAllMembers([]);
-        fetchLeads(1, search, false);
+        fetchLeads(1, search);
     };
 
-    // ── 병합 데이터 ────────────────────────────────────────────
-    const mergedLeads: RealLead[] = [
+    // ── 페이지 변경 ──────────────────────────────────────────
+    const handlePageChange = (p: number) => {
+        setCurrentPage(p);
+        setExpandedId(null);
+        fetchLeads(p, appliedSearch);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    // ── 새로고침 ─────────────────────────────────────────────
+    const handleRefresh = () => {
+        loadMeta();
+        loadMemberCount();
+        if (appliedSearch.trim()) loadAllMembers(appliedSearch);
+        else setAllMembers([]);
+        fetchLeads(currentPage, appliedSearch);
+    };
+
+    // ── 병합 (현재 페이지 리드 + 검색 시 회원) ───────────────
+    const visibleLeads: RealLead[] = [
         ...leads.map(l => ({
             ...l,
-            totalOrders: orderMap.get(l.phone)?.length || 0,
-            totalSpent: orderMap.get(l.phone)?.filter(o => ["paid","shipped","delivered"].includes(o.payment_status)).reduce((s,o) => s + o.final_amount, 0) || 0,
             orders: orderMap.get(l.phone) || [],
         })),
         ...(appliedSearch.trim() ? allMembers.map(m => ({
             ...m,
-            totalOrders: orderMap.get(m.phone)?.length || 0,
-            totalSpent: orderMap.get(m.phone)?.filter(o => ["paid","shipped","delivered"].includes(o.payment_status)).reduce((s,o) => s + o.final_amount, 0) || 0,
             orders: orderMap.get(m.phone) || [],
         })) : []),
     ];
 
-    // 화면에 보일 슬라이스
-    const visibleLeads = mergedLeads.slice(0, displayCount);
     const totalCount = leadsTotal + memberCount;
-    const hasMoreLocal = displayCount < mergedLeads.length;
-    const hasMoreServer = leads.length < leadsTotal; // 서버에 더 있음
-
-    // ── 더보기 버튼 핸들러 ────────────────────────────────────
-    const handleLoadMore = async () => {
-        const nextDisplay = displayCount + DISPLAY_STEP;
-
-        // 로컬 버퍼에 데이터가 충분한 경우
-        if (nextDisplay <= mergedLeads.length) {
-            setDisplayCount(nextDisplay);
-            return;
-        }
-
-        // 서버에서 다음 페이지 가져와야 하는 경우
-        if (hasMoreServer) {
-            const nextPage = serverPage + 1;
-            setServerPage(nextPage);
-            await fetchLeads(nextPage, appliedSearch, true); // append
-        }
-
-        setDisplayCount(nextDisplay);
-    };
-
-    const handleRefresh = () => {
-        setDisplayCount(DISPLAY_STEP);
-        setServerPage(1);
-        loadMeta();
-        loadMemberCount();
-        if (appliedSearch.trim()) {
-            loadAllMembers(appliedSearch);
-        } else {
-            setAllMembers([]);
-        }
-        fetchLeads(1, appliedSearch, false);
-    };
+    const totalPages = Math.ceil(leadsTotal / PAGE_SIZE);
 
     // ── 성별 뱃지 ────────────────────────────────────────────
     const genderBadge = (g?: string) => {
@@ -187,19 +211,7 @@ export default function AdminCustomersPage() {
         return <span className="text-[10px] text-gray-300">-</span>;
     };
 
-    const statusLabel = (s: string) => {
-        const map: Record<string, { label: string; cls: string }> = {
-            paid:      { label: "입금완료", cls: "bg-green-100 text-green-800" },
-            shipped:   { label: "배송중",   cls: "bg-purple-100 text-purple-800" },
-            delivered: { label: "배송완료", cls: "bg-blue-100 text-blue-800" },
-            pending:   { label: "입금대기", cls: "bg-yellow-100 text-yellow-800" },
-            cancelled: { label: "취소",     cls: "bg-red-100 text-red-700" },
-        };
-        const m = map[s] || { label: s, cls: "bg-gray-100 text-gray-600" };
-        return <span className={`px-2 py-0.5 rounded text-xs ${m.cls}`}>{m.label}</span>;
-    };
-
-    // ─────────────────────────────────────────────────────────
+    // ── 렌더 ─────────────────────────────────────────────────
     return (
         <div>
             {/* Header */}
@@ -238,7 +250,7 @@ export default function AdminCustomersPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden mb-4">
+            <div className="bg-white rounded-lg shadow overflow-hidden mb-2">
                 {loading ? (
                     <div className="p-12 text-center text-gray-400">
                         <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
@@ -246,7 +258,7 @@ export default function AdminCustomersPage() {
                     </div>
                 ) : visibleLeads.length === 0 ? (
                     <div className="p-12 text-center text-gray-400">
-                        {search ? "검색 결과가 없습니다." : "데이터가 없습니다."}
+                        {appliedSearch ? "검색 결과가 없습니다." : "데이터가 없습니다."}
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -262,27 +274,25 @@ export default function AdminCustomersPage() {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {visibleLeads.map((lead) => (
-                                    <React.Fragment key={String(lead.id)}>
-                                        <tr className={`hover:bg-gray-50 transition-colors ${expandedId === lead.id ? "bg-gray-50" : ""}`}>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                                                        <User className="w-3.5 h-3.5 text-gray-500" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-medium">{lead.name}</div>
-                                                        {lead.email && <div className="text-[11px] text-gray-400">{lead.email}</div>}
-                                                    </div>
+                                    <tr key={String(lead.id)} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                                                    <User className="w-3.5 h-3.5 text-gray-500" />
                                                 </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-500 font-mono text-xs">{lead.phone}</td>
-                                            <td className="px-4 py-3">{genderBadge(lead.gender)}</td>
-                                            <td className="px-4 py-3 text-gray-500 text-xs">{lead.birth_date || "-"}</td>
-                                            <td className="px-4 py-3 text-gray-500 text-xs">
-                                                {[lead.address_sido, lead.address_sigungu].filter(Boolean).join(" ") || "-"}
-                                            </td>
-                                        </tr>
-                                    </React.Fragment>
+                                                <div>
+                                                    <div className="font-medium">{lead.name}</div>
+                                                    {lead.email && <div className="text-[11px] text-gray-400">{lead.email}</div>}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-500 font-mono text-xs">{lead.phone}</td>
+                                        <td className="px-4 py-3">{genderBadge(lead.gender)}</td>
+                                        <td className="px-4 py-3 text-gray-500 text-xs">{lead.birth_date || "-"}</td>
+                                        <td className="px-4 py-3 text-gray-500 text-xs">
+                                            {[lead.address_sido, lead.address_sigungu].filter(Boolean).join(" ") || "-"}
+                                        </td>
+                                    </tr>
                                 ))}
                             </tbody>
                         </table>
@@ -290,26 +300,18 @@ export default function AdminCustomersPage() {
                 )}
             </div>
 
-            {/* 현재 표시 수 / 더보기 */}
-            {!loading && mergedLeads.length > 0 && (
-                <div className="flex flex-col items-center gap-3 pb-6">
-                    <p className="text-xs text-gray-400">
-                        {Math.min(displayCount, mergedLeads.length).toLocaleString()}명 표시 중
-                        {(hasMoreLocal || hasMoreServer) && ` / 로드된 ${mergedLeads.length.toLocaleString()}명`}
+            {/* 페이지 정보 + 페이지네이션 */}
+            {!loading && totalPages > 1 && (
+                <div className="text-center">
+                    <p className="text-xs text-gray-400 mb-1">
+                        {currentPage}페이지 / 전체 {totalPages.toLocaleString()}페이지
+                        &nbsp;(페이지당 100건)
                     </p>
-                    {(hasMoreLocal || hasMoreServer) && (
-                        <button
-                            onClick={handleLoadMore}
-                            disabled={loadingMore}
-                            className="px-8 py-2.5 bg-white border-2 border-gray-200 text-gray-700 text-sm font-bold rounded-full hover:border-black hover:text-black transition-all disabled:opacity-50"
-                        >
-                            {loadingMore ? (
-                                <span className="flex items-center gap-2">
-                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> 로딩 중...
-                                </span>
-                            ) : `10명 더보기`}
-                        </button>
-                    )}
+                    <Paginator
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                    />
                 </div>
             )}
         </div>
