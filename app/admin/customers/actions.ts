@@ -34,17 +34,51 @@ export async function fetchAllUsersAction() {
 }
 
 // ============================================================
+// 전체 가입 회원 조회 (검색 지원) - 고객 관리 상단 고정 표시용
+// ============================================================
+export async function fetchAllMembersAction(search?: string) {
+    try {
+        const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
+        if (error) return { success: false, data: [], error: error.message };
+
+        let members = users.map(user => {
+            const meta = user.user_metadata || {};
+            return {
+                id: user.id,
+                email: user.email || "",
+                name: meta.full_name || meta.name || "이름 없음",
+                phone: (meta.phone || "").replace(/\D/g, ""),
+                created_at: user.created_at,
+            };
+        }).filter(u => u.phone); // 전화번호 없는 유저 제외
+
+        if (search) {
+            const s = search.toLowerCase();
+            members = members.filter(u =>
+                u.name.toLowerCase().includes(s) || u.phone.includes(s)
+            );
+        }
+
+        return { success: true, data: members };
+    } catch (e: any) {
+        return { success: false, data: [], error: e.message };
+    }
+}
+
+// ============================================================
 // 자사몰 유입 고객 (marketing_leads, is_real=true) 서버사이드 페이징 조회
+// excludePhones: 가입 회원 전화번호 - 상단에 이미 표시되므로 마케팅DB에서 제외
 // ============================================================
 export async function fetchRealLeadsAction(params: {
     page: number;
     pageSize: number;
     search?: string;
+    excludePhones?: string[];
 }) {
     const cookieStore = await cookies();
     const supabase = createServerActionClient({ cookies: () => cookieStore });
 
-    const { page, pageSize, search } = params;
+    const { page, pageSize, search, excludePhones } = params;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
@@ -56,6 +90,11 @@ export async function fetchRealLeadsAction(params: {
 
     if (search) {
         query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
+    }
+
+    // 가입 회원 전화번호 제외 (이미 상단에 표시되므로 중복 방지)
+    if (excludePhones && excludePhones.length > 0) {
+        query = query.not("phone", "in", `(${excludePhones.join(",")})`);
     }
 
     const { data, error, count } = await query.range(from, to);
@@ -79,55 +118,5 @@ export async function getRealLeadsCountAction() {
     return { count: error ? 0 : (count || 0) };
 }
 
-// ============================================================
-// marketing_leads에 없는 가입 회원 조회 (전화번호 기준)
-// 회원이 마케팅 DB에 미업로드된 경우 고객 목록에 포함시키기 위함
-// ============================================================
-export async function fetchUnmatchedMembersAction(search?: string) {
-    try {
-        const cookieStore = await cookies();
-        const supabase = createServerActionClient({ cookies: () => cookieStore });
-
-        // 1. 전체 가입 회원 조회
-        const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
-        if (usersError) return { success: false, data: [], error: usersError.message };
-
-        const mappedUsers = users.map(user => {
-            const meta = user.user_metadata || {};
-            return {
-                id: user.id,
-                email: user.email || "",
-                name: meta.full_name || meta.name || "이름 없음",
-                phone: (meta.phone || "").replace(/\D/g, ""), // 숫자만 추출
-                created_at: user.created_at,
-            };
-        }).filter(u => u.phone); // 전화번호 없는 유저 제외
-
-        if (mappedUsers.length === 0) return { success: true, data: [] };
-
-        // 2. marketing_leads에서 위 전화번호들이 존재하는지 확인
-        const phones = mappedUsers.map(u => u.phone);
-        const { data: existingLeads } = await supabase
-            .from("marketing_leads")
-            .select("phone")
-            .eq("is_real", true)
-            .in("phone", phones);
-
-        const existingPhones = new Set((existingLeads || []).map((l: any) => l.phone));
-
-        // 3. 마케팅 DB에 없는 회원만 필터
-        let unmatched = mappedUsers.filter(u => !existingPhones.has(u.phone));
-
-        // 4. 검색어 적용
-        if (search) {
-            const s = search.toLowerCase();
-            unmatched = unmatched.filter(u =>
-                u.name.toLowerCase().includes(s) || u.phone.includes(s)
-            );
-        }
-
-        return { success: true, data: unmatched };
-    } catch (e: any) {
-        return { success: false, data: [], error: e.message };
-    }
-}
+// 이하 호환성 유지 (다른 곳에서 참조 가능)
+export { fetchAllMembersAction as fetchUnmatchedMembersAction };

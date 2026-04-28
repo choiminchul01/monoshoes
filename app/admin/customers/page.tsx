@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { User, RefreshCw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
-import { fetchRealLeadsAction, fetchUnmatchedMembersAction } from "./actions";
+import { fetchRealLeadsAction, fetchAllMembersAction } from "./actions";
 
 // ─── Types ────────────────────────────────────────────────────
 type RealLead = {
@@ -42,8 +42,9 @@ export default function AdminCustomersPage() {
     const [leadsTotal, setLeadsTotal] = useState(0);
     const [leadsPage, setLeadsPage] = useState(1);
 
-    // ── 미업로드 가입 회원 ─────────────────────────────────────
-    const [unmatchedMembers, setUnmatchedMembers] = useState<RealLead[]>([]);
+    // ── 가입 회원 (전체, 상단 고정) ───────────────────────────
+    const [allMembers, setAllMembers] = useState<RealLead[]>([]);
+    const [memberPhoneSet, setMemberPhoneSet] = useState<Set<string>>(new Set());
 
     const [search, setSearch] = useState("");          // 입력창 텍스트 (즉시 반영)
     const [appliedSearch, setAppliedSearch] = useState(""); // 실제 조회에 사용된 검색어
@@ -52,7 +53,6 @@ export default function AdminCustomersPage() {
 
     // 주문 매핑 (전화번호 → 주문 목록)
     const [orderMap, setOrderMap] = useState<Map<string, Order[]>>(new Map());
-    const [memberPhones, setMemberPhones] = useState<Set<string>>(new Set());
 
     // ── 주문 + 회원 메타 로드 ─────────────────────────────────
     const loadMeta = useCallback(async () => {
@@ -73,9 +73,9 @@ export default function AdminCustomersPage() {
         } catch (e) { console.error("meta load error", e); }
     }, []);
 
-    // ── 미업로드 가입 회원 로드 ───────────────────────────────
-    const loadUnmatched = useCallback(async (searchVal: string) => {
-        const res = await fetchUnmatchedMembersAction(searchVal || undefined);
+    // ── 가입 회원 전체 로드 (상단 고정 표시) ─────────────────
+    const loadAllMembers = useCallback(async (searchVal: string) => {
+        const res = await fetchAllMembersAction(searchVal || undefined);
         if (res.success) {
             const members: RealLead[] = (res.data as any[]).map(u => ({
                 id: u.id,
@@ -86,16 +86,16 @@ export default function AdminCustomersPage() {
                 isRegistered: true,
                 source: "member" as const,
             }));
-            setUnmatchedMembers(members);
-            setMemberPhones(new Set(members.map(m => m.phone)));
+            setAllMembers(members);
+            setMemberPhoneSet(new Set(members.map(m => m.phone)));
         }
     }, []);
 
-    // ── 마케팅 DB 리드 로드 ───────────────────────────────────
-    const fetchLeads = useCallback(async (page: number, searchVal: string) => {
+    // ── 마케팅 DB 리드 로드 (가입 회원 전화번호 제외) ─────────
+    const fetchLeads = useCallback(async (page: number, searchVal: string, excludePhones?: string[]) => {
         setLoading(true);
         try {
-            const res = await fetchRealLeadsAction({ page, pageSize: PAGE_SIZE, search: searchVal });
+            const res = await fetchRealLeadsAction({ page, pageSize: PAGE_SIZE, search: searchVal, excludePhones });
             if (res.success) {
                 setLeads(res.data.map((d: any) => ({ ...d, source: "leads" as const })));
                 setLeadsTotal(res.count);
@@ -108,23 +108,24 @@ export default function AdminCustomersPage() {
     // ── 초기 로드 ─────────────────────────────────────────────
     useEffect(() => {
         loadMeta();
-        fetchLeads(1, "");
-        loadUnmatched("");
+        loadAllMembers("").then(() => {
+            // 회원 로드 후 전화번호 목록으로 마케팅 DB 조회
+            fetchLeads(1, "");
+        });
     }, []);
 
     // ── 조회 실행 (버튼 or Enter) ─────────────────────────────
-    const handleSearchSubmit = () => {
+    const handleSearchSubmit = async () => {
         setLeadsPage(1);
         setAppliedSearch(search);
+        await loadAllMembers(search);
         fetchLeads(1, search);
-        loadUnmatched(search);
     };
 
-    // ── 리드 + 미업로드 회원 병합 ─────────────────────────────
-    // 미업로드 회원 중 검색어 필터는 서버에서 처리됨
+    // ── 가입 회원 + 마케팅 DB 병합 (가입 회원 상단 고정) ──────
     const mergedLeads: RealLead[] = [
-        // 미업로드 가입 회원을 상단에 표시
-        ...unmatchedMembers.map(m => ({
+        // 가입 회원 전원 상단 고정
+        ...allMembers.map(m => ({
             ...m,
             totalOrders: orderMap.get(m.phone)?.length || 0,
             totalSpent: orderMap.get(m.phone)?.filter(o => ["paid","shipped","delivered"].includes(o.payment_status)).reduce((s,o) => s + o.final_amount, 0) || 0,
@@ -140,7 +141,7 @@ export default function AdminCustomersPage() {
         })),
     ];
 
-    const totalCount = leadsTotal + unmatchedMembers.length;
+    const totalCount = leadsTotal + allMembers.length;
     const totalPages = Math.ceil(leadsTotal / PAGE_SIZE); // 마케팅DB 기준 페이징
 
     const handleSearch = (val: string) => {
@@ -158,8 +159,7 @@ export default function AdminCustomersPage() {
 
     const handleRefresh = () => {
         loadMeta();
-        fetchLeads(leadsPage, appliedSearch);
-        loadUnmatched(appliedSearch);
+        loadAllMembers(appliedSearch).then(() => fetchLeads(leadsPage, appliedSearch));
     };
 
     // ── 성별 뱃지 ────────────────────────────────────────────
