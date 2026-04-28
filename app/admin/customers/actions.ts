@@ -1,5 +1,7 @@
 "use server";
 
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -8,15 +10,9 @@ import { supabaseAdmin } from "@/lib/supabase";
  */
 export async function fetchAllUsersAction() {
     try {
-        // Supabase Auth Admin API를 사용하여 전체 유저 목록 조회
         const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
+        if (error) return { success: false, error: error.message };
 
-        if (error) {
-            console.error("Error listing users from auth:", error);
-            return { success: false, error: error.message };
-        }
-
-        // 유저 정보 가공 (이름, 전화번호, 주소 등 메타데이터 추출)
         const mappedUsers = users.map(user => {
             const metadata = user.user_metadata || {};
             return {
@@ -33,7 +29,52 @@ export async function fetchAllUsersAction() {
 
         return { success: true, users: mappedUsers };
     } catch (error: any) {
-        console.error("Unexpected error in fetchAllUsersAction:", error);
-        return { success: false, error: error.message || "알 수 없는 오류가 발생했습니다." };
+        return { success: false, error: error.message || "알 수 없는 오류" };
     }
+}
+
+// ============================================================
+// 자사몰 유입 고객 (marketing_leads, is_real=true) 서버사이드 페이징 조회
+// ============================================================
+export async function fetchRealLeadsAction(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+}) {
+    const cookieStore = await cookies();
+    const supabase = createServerActionClient({ cookies: () => cookieStore });
+
+    const { page, pageSize, search } = params;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+        .from("marketing_leads")
+        .select("id, name, phone, birth_date, gender, address_sido, address_sigungu, address_dong, created_at", { count: "exact" })
+        .eq("is_real", true)
+        .order("id", { ascending: false });
+
+    if (search) {
+        query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
+    }
+
+    const { data, error, count } = await query.range(from, to);
+
+    if (error) {
+        return { success: false, error: error.message, data: [], count: 0 };
+    }
+    return { success: true, data: data || [], count: count || 0 };
+}
+
+// 자사몰 유입 고객 총 수 조회
+export async function getRealLeadsCountAction() {
+    const cookieStore = await cookies();
+    const supabase = createServerActionClient({ cookies: () => cookieStore });
+
+    const { count, error } = await supabase
+        .from("marketing_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("is_real", true);
+
+    return { count: error ? 0 : (count || 0) };
 }
