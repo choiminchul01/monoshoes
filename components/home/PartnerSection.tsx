@@ -6,9 +6,9 @@ import { motion } from "framer-motion";
 const PARTNERS = [
     {
         name: "에니스 컴퍼니",
-        engName: "ENIS COMPANY",
+        engName: "ANISE COMPANY",
         description: "데이터 기반의 전략적 마케팅 솔루션을 제공하는 디지털 광고 전문 기업",
-        logo: "/images/partners/enis.png"
+        logo: "/images/partners/anise.png"
     },
     {
         name: "주식회사 하이솔루션",
