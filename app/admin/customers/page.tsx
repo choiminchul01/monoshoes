@@ -108,48 +108,46 @@ export default function AdminCustomersPage() {
     // ── 초기 로드 ─────────────────────────────────────────────
     useEffect(() => {
         loadMeta();
-        loadAllMembers("").then(() => {
-            // 회원 로드 후 전화번호 목록으로 마케팅 DB 조회
-            fetchLeads(1, "");
-        });
+        fetchLeads(1, ""); // 초기에는 마케팅 DB만 로드, 가입 회원 제외
     }, []);
 
     // ── 조회 실행 (버튼 or Enter) ─────────────────────────────
     const handleSearchSubmit = async () => {
         setLeadsPage(1);
         setAppliedSearch(search);
-        await loadAllMembers(search);
+        if (search.trim()) {
+            // 검색어가 있을 때만 가입 회원 조회
+            await loadAllMembers(search);
+        } else {
+            setAllMembers([]);
+        }
         fetchLeads(1, search);
     };
 
     // ── 가입 회원 + 마케팅 DB 병합 (가입 회원 상단 고정) ──────
+    // ── 병합: 마케팅 DB 먼저, 가입 회원 하단 (검색시만) ──────
     const mergedLeads: RealLead[] = [
-        // 가입 회원 전원 상단 고정
-        ...allMembers.map(m => ({
-            ...m,
-            totalOrders: orderMap.get(m.phone)?.length || 0,
-            totalSpent: orderMap.get(m.phone)?.filter(o => ["paid","shipped","delivered"].includes(o.payment_status)).reduce((s,o) => s + o.final_amount, 0) || 0,
-            orders: orderMap.get(m.phone) || [],
-        })),
-        // 마케팅 DB (is_real=true)
+        // 마케팅 DB (실제 데이터)
         ...leads.map(l => ({
             ...l,
-            isRegistered: memberPhones.has(l.phone),
             totalOrders: orderMap.get(l.phone)?.length || 0,
             totalSpent: orderMap.get(l.phone)?.filter(o => ["paid","shipped","delivered"].includes(o.payment_status)).reduce((s,o) => s + o.final_amount, 0) || 0,
             orders: orderMap.get(l.phone) || [],
         })),
+        // 검색시에만 하단에 가입 회원 추가
+        ...(appliedSearch.trim() ? allMembers.map(m => ({
+            ...m,
+            totalOrders: orderMap.get(m.phone)?.length || 0,
+            totalSpent: orderMap.get(m.phone)?.filter(o => ["paid","shipped","delivered"].includes(o.payment_status)).reduce((s,o) => s + o.final_amount, 0) || 0,
+            orders: orderMap.get(m.phone) || [],
+        })) : []),
     ];
 
-    const totalCount = leadsTotal + allMembers.length;
+    const totalCount = appliedSearch.trim()
+        ? leadsTotal + allMembers.length
+        : leadsTotal;
     const totalPages = Math.ceil(leadsTotal / PAGE_SIZE); // 마케팅DB 기준 페이징
 
-    const handleSearch = (val: string) => {
-        setSearch(val);
-        setLeadsPage(1);
-        fetchLeads(1, val);
-        loadUnmatched(val);
-    };
 
     const handlePageChange = (p: number) => {
         setLeadsPage(p);
@@ -159,7 +157,12 @@ export default function AdminCustomersPage() {
 
     const handleRefresh = () => {
         loadMeta();
-        loadAllMembers(appliedSearch).then(() => fetchLeads(leadsPage, appliedSearch));
+        if (appliedSearch.trim()) {
+            loadAllMembers(appliedSearch).then(() => fetchLeads(leadsPage, appliedSearch));
+        } else {
+            setAllMembers([]);
+            fetchLeads(leadsPage, appliedSearch);
+        }
     };
 
     // ── 성별 뱃지 ────────────────────────────────────────────
