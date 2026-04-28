@@ -62,7 +62,7 @@ export default function PartnerSection() {
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.1 }}
                             whileHover={{ y: -10 }}
-                            className="group relative bg-white border border-gray-100 p-10 rounded-2xl transition-all duration-500 hover:shadow-xl"
+                            className="group relative bg-white p-10 rounded-2xl transition-all duration-500 hover:shadow-xl"
                         >
                             {/* 로고 영역 (개별 이미지 사용) */}
                             <div className="relative w-full h-40 mb-8 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-500">
@@ -84,11 +84,6 @@ export default function PartnerSection() {
                                 <p className="text-sm text-gray-500 leading-relaxed font-light break-keep">
                                     {partner.description}
                                 </p>
-                            </div>
-
-                            {/* 배경 장식 */}
-                            <div className="absolute top-0 right-0 p-4 opacity-5 text-[40px] font-black pointer-events-none group-hover:opacity-10 transition-opacity">
-                                0{index + 1}
                             </div>
                         </motion.div>
                     ))}
