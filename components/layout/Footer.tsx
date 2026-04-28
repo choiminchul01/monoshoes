@@ -139,6 +139,9 @@ export function Footer() {
                             <a href="http://pf.kakao.com/_HzsTX" target="_blank" rel="noopener noreferrer" className="hover:text-black font-bold transition-colors">
                                 KAKAOTALK
                             </a>
+                            <Link href="/terms" className="hover:text-black font-bold transition-colors">
+                                TERMS OF USE
+                            </Link>
                             <Link href="/privacy" className="hover:text-black font-bold transition-colors">
                                 PRIVACY POLICY
                             </Link>
