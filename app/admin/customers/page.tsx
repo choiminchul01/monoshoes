@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { User, RefreshCw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
-import { fetchRealLeadsAction, fetchAllMembersAction } from "./actions";
+import { fetchRealLeadsAction, fetchAllMembersAction, getMemberTotalCountAction } from "./actions";
 
 // ─── Types ────────────────────────────────────────────────────
 type RealLead = {
@@ -90,10 +90,10 @@ export default function AdminCustomersPage() {
         }
     }, []);
 
-    // ── 가입 회원 수 전체 조회 (상단 카운트 전용) ─────────────
+    // ── 가입 회원 수 전체 조회 (상단 카운트 전용, 전화번호 무관) ───────
     const loadMemberCount = useCallback(async () => {
-        const res = await fetchAllMembersAction();
-        if (res.success) setMemberCount(res.data.length);
+        const res = await getMemberTotalCountAction();
+        setMemberCount(res.count);
     }, []);
 
     // ── 마케팅 DB 리드 로드 (가입 회원 전화번호 제외) ─────────

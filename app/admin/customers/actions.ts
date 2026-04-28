@@ -50,7 +50,7 @@ export async function fetchAllMembersAction(search?: string) {
                 phone: (meta.phone || "").replace(/\D/g, ""),
                 created_at: user.created_at,
             };
-        }).filter(u => u.phone); // 전화번호 없는 유저 제외
+        }).filter(u => u.phone); // 전화번호 있는 경우만 (매칭/표시용)
 
         if (search) {
             const s = search.toLowerCase();
@@ -62,6 +62,17 @@ export async function fetchAllMembersAction(search?: string) {
         return { success: true, data: members };
     } catch (e: any) {
         return { success: false, data: [], error: e.message };
+    }
+}
+
+// 전체 가입 회원 수 조회 (전화번호 유무 무관, 카운트 전용)
+export async function getMemberTotalCountAction() {
+    try {
+        const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
+        if (error) return { count: 0 };
+        return { count: users.length };
+    } catch {
+        return { count: 0 };
     }
 }
 
