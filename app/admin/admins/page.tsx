@@ -318,28 +318,71 @@ export default function AdminAccountsPage() {
                             {/* Permissions */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">접근 가능 메뉴</label>
-                                <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                                    {[
-                                        { key: 'dashboard' as keyof AdminPermissions, label: '대시보드' },
-                                        { key: 'customers' as keyof AdminPermissions, label: '고객 관리' },
-                                        { key: 'orders' as keyof AdminPermissions, label: '주문 관리' },
-                                        { key: 'products' as keyof AdminPermissions, label: '상품 관리' },
-                                        { key: 'reviews' as keyof AdminPermissions, label: '리뷰 관리' },
-                                        { key: 'inquiries' as keyof AdminPermissions, label: '문의 관리' },
-                                        { key: 'settings' as keyof AdminPermissions, label: '설정' }
-                                    ].map(({ key, label }) => (
-                                        <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.permissions[key]}
-                                                onChange={() => togglePermission(key)}
-                                                className="w-4 h-4 text-[#00704A] border-gray-300 rounded focus:ring-[#00704A]"
-                                            />
-                                            <span className="text-sm">{label}</span>
+                                <div className="border border-gray-200 rounded-lg overflow-hidden text-sm">
+
+                                    {/* 대시보드 */}
+                                    <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">대시보드</p>
+                                    </div>
+                                    <div className="px-3 py-2 border-b border-gray-100">
+                                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                            <input type="checkbox" checked={formData.permissions['dashboard']} onChange={() => togglePermission('dashboard')} className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black" />
+                                            <span>대시보드</span>
                                         </label>
-                                    ))}
+                                    </div>
+
+                                    {/* 쇼핑몰 관리 */}
+                                    <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">쇼핑몰 관리</p>
+                                    </div>
+                                    <div className="px-3 py-2 border-b border-gray-100 space-y-1">
+                                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                            <input type="checkbox" checked={formData.permissions['products']} onChange={() => togglePermission('products')} className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black" />
+                                            <span>상품 관리</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                            <input type="checkbox" checked={formData.permissions['board']} onChange={() => togglePermission('board')} className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black" />
+                                            <span>이벤트/팝업 관리</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                            <input type="checkbox" checked={formData.permissions['reviews']} onChange={() => togglePermission('reviews')} className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black" />
+                                            <span>리뷰 관리</span>
+                                        </label>
+                                    </div>
+
+                                    {/* 고객 및 마케팅 */}
+                                    <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">고객 및 마케팅</p>
+                                    </div>
+                                    <div className="px-3 py-2 border-b border-gray-100 space-y-1">
+                                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                            <input type="checkbox" checked={formData.permissions['customers']} onChange={() => togglePermission('customers')} className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black" />
+                                            <span>고객 관리 + 고객 DB (마케팅)</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                            <input type="checkbox" checked={formData.permissions['inquiries']} onChange={() => togglePermission('inquiries')} className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black" />
+                                            <span>문의 관리</span>
+                                        </label>
+                                    </div>
+
+                                    {/* 시스템 */}
+                                    <div className="bg-gray-50 px-3 py-1.5 border-b border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">시스템</p>
+                                    </div>
+                                    <div className="px-3 py-2 space-y-1">
+                                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                                            <input type="checkbox" checked={formData.permissions['settings']} onChange={() => togglePermission('settings')} className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black" />
+                                            <span>설정</span>
+                                        </label>
+                                        <div className="flex items-center gap-2 p-1.5 rounded opacity-40 cursor-not-allowed select-none">
+                                            <input type="checkbox" disabled checked className="w-4 h-4 border-gray-300 rounded" />
+                                            <span>관리자 계정</span>
+                                            <span className="text-[10px] text-purple-500 ml-auto font-bold">마스터 전용</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
 
                             {/* Buttons */}
                             <div className="flex gap-3 pt-4">
