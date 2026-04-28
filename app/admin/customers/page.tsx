@@ -7,6 +7,8 @@ import AdminSearch from "@/components/admin/AdminSearch";
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
 
+import { fetchAllUsersAction } from "./actions";
+
 type Order = {
     id: string;
     created_at: string;
@@ -17,10 +19,13 @@ type Order = {
     shipping_phone: string;
     shipping_address: string;
     shipping_address_detail: string;
+    customer_email?: string;
+    user_id?: string;
 };
 
 type Customer = {
     id: string;
+    email: string;
     name: string;
     phone: string;
     address: string;
@@ -28,6 +33,7 @@ type Customer = {
     totalSpent: number;
     lastOrderDate: string;
     orders: Order[];
+    isRegistered: boolean;
 };
 
 export default function AdminCustomersPage() {
@@ -48,63 +54,98 @@ export default function AdminCustomersPage() {
     const fetchCustomers = async () => {
         setLoading(true);
         try {
-            // 블랙리스트 조회
-            const { data: blacklist } = await supabase
-                .from("blacklisted_customers")
-                .select("phone");
+            // 1. 전체 가입 유저 가져오기 (서버 액션)
+            const usersResult = await fetchAllUsersAction();
+            const allRegisteredUsers = usersResult.success ? usersResult.users : [];
 
-            const blacklistedPhones = new Set(blacklist?.map(b => b.phone) || []);
-
-            const { data: orders, error } = await supabase
+            // 2. 전체 주문 데이터 가져오기
+            const { data: orders, error: ordersError } = await supabase
                 .from("orders")
                 .select("*")
                 .order("created_at", { ascending: false });
 
-            if (error) {
-                console.error("Error fetching customers:", error.message);
-                setCustomers([]);
-                return;
-            }
+            if (ordersError) throw ordersError;
 
-            if (!orders || orders.length === 0) {
-                setCustomers([]);
-                return;
-            }
+            // 3. 블랙리스트 조회
+            const { data: blacklist } = await supabase
+                .from("blacklisted_customers")
+                .select("phone");
+            const blacklistedPhones = new Set(blacklist?.map(b => b.phone) || []);
 
             const customerMap = new Map<string, Customer>();
 
-            orders.forEach((order: Order) => {
-                const key = order.shipping_phone;
-                if (!key) return;
+            // 가입 유저 먼저 맵에 등록 (주문이 없어도 보이게 함)
+            allRegisteredUsers?.forEach(user => {
+                // 블랙리스트 제외
+                if (user.phone && blacklistedPhones.has(user.phone)) return;
+
+                customerMap.set(user.email, {
+                    id: user.id,
+                    email: user.email || "",
+                    name: user.name,
+                    phone: user.phone,
+                    address: user.address ? `${user.address} ${user.address_detail}` : "",
+                    totalOrders: 0,
+                    totalSpent: 0,
+                    lastOrderDate: user.created_at, // 가입일로 초기화
+                    orders: [],
+                    isRegistered: true
+                });
+            });
+
+            // 주문 데이터를 가입 유저에게 매칭하거나 비회원으로 추가
+            orders?.forEach((order: any) => {
+                const emailKey = order.customer_email;
+                const phoneKey = order.shipping_phone;
 
                 // 블랙리스트 고객 제외
-                if (blacklistedPhones.has(key)) return;
+                if (phoneKey && blacklistedPhones.has(phoneKey)) return;
 
-                if (!customerMap.has(key)) {
-                    customerMap.set(key, {
-                        id: key,
-                        name: order.shipping_name,
-                        phone: order.shipping_phone,
-                        address: `${order.shipping_address} ${order.shipping_address_detail}`,
-                        totalOrders: 0,
-                        totalSpent: 0,
-                        lastOrderDate: order.created_at,
-                        orders: []
-                    });
+                let customer: Customer | undefined;
+
+                // 1차: 이메일로 매칭 (회원)
+                if (emailKey && customerMap.has(emailKey)) {
+                    customer = customerMap.get(emailKey);
+                } 
+                // 2차: 이메일이 없거나 못 찾았으면 전화번호로 찾기 (비회원 또는 정보 불일치 회원)
+                else if (phoneKey) {
+                    // 이미 다른 이메일로 등록된 폰번호가 있는지 확인
+                    const existingByPhone = Array.from(customerMap.values()).find(c => c.phone === phoneKey);
+                    if (existingByPhone) {
+                        customer = existingByPhone;
+                    } else {
+                        // 완전히 새로운 비회원 고객 생성
+                        customer = {
+                            id: phoneKey, // 비회원은 전화번호를 ID로 사용
+                            email: emailKey || "",
+                            name: order.shipping_name,
+                            phone: phoneKey,
+                            address: `${order.shipping_address} ${order.shipping_address_detail}`,
+                            totalOrders: 0,
+                            totalSpent: 0,
+                            lastOrderDate: order.created_at,
+                            orders: [],
+                            isRegistered: false
+                        };
+                        customerMap.set(phoneKey, customer);
+                    }
                 }
 
-                const customer = customerMap.get(key)!;
-                customer.totalOrders += 1;
-                if (['paid', 'shipped', 'delivered'].includes(order.payment_status)) {
-                    customer.totalSpent += order.final_amount;
-                }
-                customer.orders.push(order);
+                if (customer) {
+                    customer.totalOrders += 1;
+                    if (['paid', 'shipped', 'delivered'].includes(order.payment_status)) {
+                        customer.totalSpent += order.final_amount;
+                    }
+                    customer.orders.push(order);
 
-                if (new Date(order.created_at) > new Date(customer.lastOrderDate)) {
-                    customer.lastOrderDate = order.created_at;
+                    // 최근 활동일 업데이트
+                    if (new Date(order.created_at) > new Date(customer.lastOrderDate)) {
+                        customer.lastOrderDate = order.created_at;
+                    }
                 }
             });
 
+            // 정렬: 최근 활동(가입 또는 주문) 순
             const customerList = Array.from(customerMap.values()).sort((a, b) =>
                 new Date(b.lastOrderDate).getTime() - new Date(a.lastOrderDate).getTime()
             );
@@ -259,6 +300,11 @@ export default function AdminCustomersPage() {
                                                 <h3 className="font-bold text-lg flex items-center gap-2">
                                                     <User className="w-4 h-4 text-gray-500" />
                                                     {customer.name}
+                                                    {customer.isRegistered ? (
+                                                        <span className="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded border border-green-200">회원</span>
+                                                    ) : (
+                                                        <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded border border-gray-200">비회원</span>
+                                                    )}
                                                 </h3>
                                                 <p className="text-sm text-gray-500 mt-1">{customer.phone}</p>
                                             </div>
@@ -358,7 +404,17 @@ export default function AdminCustomersPage() {
                                                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
                                                     <User className="w-4 h-4" />
                                                 </div>
-                                                {customer.name}
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2">
+                                                        {customer.name}
+                                                        {customer.isRegistered ? (
+                                                            <span className="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded border border-green-200">회원</span>
+                                                        ) : (
+                                                            <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded border border-gray-200">비회원</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-xs text-gray-400 font-normal">{customer.email}</div>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-gray-500">{customer.phone}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-gray-500">
