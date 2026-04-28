@@ -627,10 +627,24 @@ export async function getLeadsRegionsAction(level: "sido" | "sigungu" | "dong", 
 
 
 
-// 테스트 데이터 임의 생성 (010 전용, 최대 10,000건)
-// ============================================================
-const SURNAMES = ["김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "신", "권", "황", "안", "송", "류", "전"];
-const GIVEN_NAMES = ["민준", "서연", "지호", "수아", "현우", "지우", "서준", "하은", "도윤", "지유", "예은", "민서", "준혁", "수빈", "재원", "나연", "태양", "유진", "성민", "보람"];
+// 실제 빈도 기반 성씨 (통계청 기준 가중치)
+const SURNAMES_WEIGHTED = [
+    ...Array(21).fill("김"), ...Array(14).fill("이"), ...Array(8).fill("박"),
+    ...Array(4).fill("최"), ...Array(4).fill("정"), ...Array(2).fill("강"),
+    ...Array(2).fill("조"), ...Array(2).fill("윤"), ...Array(2).fill("장"),
+    ...Array(2).fill("임"), "한", "오", "서", "신", "권", "황", "안", "송",
+    "류", "전", "홍", "고", "문", "양", "손", "배", "백", "허", "유", "남",
+    "심", "노", "하", "경", "성", "차", "주", "우", "구", "민", "나", "진",
+];
+// 1940~1969년생 이름
+const GIVEN_MALE_OLD = ["영수","철수","성수","병철","영철","종철","기철","성철","영호","성호","병호","기호","종호","영식","병식","기식","종식","영길","병길","기길","종길","영근","성근","기근","종근","영태","병태","기태","종태","창수","창호","창식","창길","창근","창태","동수","동철","동호","동식","동길","재호","덕수","경수","훈수","오호","문수","동혁","동재","종혁","민호"];
+const GIVEN_FEMALE_OLD = ["순자","영자","순례","정자","명자","점순","복순","말순","옥순","갑순","영순","정순","춘자","말자","봉자","귀순","순분","예분","말분","분이","정희","영희","순희","명희","복희","성희","분희","귀희","숙희","춘희","말희","옥희","갑희","정례","순례","명례","복례","영례","귀례","숙례","은자","미자","하자","나자","가자","세자","화자","두나","세단","속자"];
+// 1970~1989년생 이름
+const GIVEN_MALE_MID = ["성민","성호","성준","성진","성훈","영민","영호","영준","영진","영훈","재민","재호","재준","재진","재훈","현민","현호","현준","현진","현훈","정민","정호","정준","정진","정훈","동민","동호","동준","동진","동훈","민철","성철","재철","현철","정철","민수","성수","재수","현수","정수","재문","재구","연호","성경","민기","재가","영기","정아","형준","예표"];
+const GIVEN_FEMALE_MID = ["미영","영미","정미","혜미","지미","미현","영현","정현","혜현","지현","미진","영진","정진","혜진","지진","미선","영선","정선","혜선","지선","미숙","영숙","정숙","혜숙","지숙","미경","영경","정경","혜경","지경","미란","영란","정란","혜란","지란","은미","은영","은정","은혜","은지","소희","수정","아영","나영","세영","미래","수연","예연","지연","미신"];
+// 1990~2005년생 이름
+const GIVEN_MALE_NEW = ["민준","지호","현우","도윤","서준","예준","주원","준서","준혁","재원","시우","지훈","우진","건우","유준","연우","정우","선우","은우","민재","현준","지원","태양","이준","수호","민성","태준","승현","찬우","진우"];
+const GIVEN_FEMALE_NEW = ["서연","수아","지우","하은","지유","예은","민서","수빈","나연","유진","지아","서아","하린","예린","채원","지민","아린","나은","가은","하늘","예나","지나","은서","소연","지연","예원","채린","다은","수연","아름"];
 
 function randomInt(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -640,10 +654,35 @@ function pad(n: number, len = 2) {
     return String(n).padStart(len, "0");
 }
 
+// 출생연도 + 성별 → 시대별 이름 선택
+function pickGivenName(birthYear: number, isMale: boolean): string {
+    if (birthYear < 1970) {
+        const pool = isMale ? GIVEN_MALE_OLD : GIVEN_FEMALE_OLD;
+        return pool[randomInt(0, pool.length - 1)];
+    } else if (birthYear < 1990) {
+        const pool = isMale ? GIVEN_MALE_MID : GIVEN_FEMALE_MID;
+        return pool[randomInt(0, pool.length - 1)];
+    } else {
+        const pool = isMale ? GIVEN_MALE_NEW : GIVEN_FEMALE_NEW;
+        return pool[randomInt(0, pool.length - 1)];
+    }
+}
+
 function generateFakeLead(batchId: string) {
-    const surname = SURNAMES[randomInt(0, SURNAMES.length - 1)];
-    const given = GIVEN_NAMES[randomInt(0, GIVEN_NAMES.length - 1)];
-    const name = surname + given;
+    const surname = SURNAMES_WEIGHTED[randomInt(0, SURNAMES_WEIGHTED.length - 1)];
+
+    // 010 전용 (중간 번호는 0, 1로 시작할 수 없음 -> 2000~9999 범위 사용)
+    const phone = `010${randomInt(2000, 9999)}${pad(randomInt(0, 9999), 4)}`;
+
+    // 생년월일: 1940~2005
+    const birthYear = randomInt(1940, 2005);
+    const birthMonth = randomInt(1, 12);
+    const birthDay = randomInt(1, 28);
+    const birth_date = `${birthYear}-${pad(birthMonth)}-${pad(birthDay)}`;
+
+    // 성별 결정 후 시대에 맞는 이름 선택
+    const isMale = Math.random() > 0.5;
+    const name = surname + pickGivenName(birthYear, isMale);
 
     // 010 전용 (중간 번호는 0, 1로 시작할 수 없음 -> 2000~9999 범위 사용)
     const phone = `010${randomInt(2000, 9999)}${pad(randomInt(0, 9999), 4)}`;
