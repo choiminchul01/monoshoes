@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Upload, Download, Filter, Users, TrendingUp, X, RefreshCw, ChevronLeft, ChevronRight, Database, ShieldCheck, ShieldAlert, Trash2 } from "lucide-react";
-import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction, deleteAllRealLeadsAction, deleteLeadAction, deleteLeadsByRangeAction, resetAllLeadsAction } from "./actions";
+import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, generateRealLeadsAction, deleteFakeLeadsAction, deleteAllRealLeadsAction, deleteLeadAction, deleteLeadsByRangeAction, resetAllLeadsAction } from "./actions";
 import { useAdminPermissions } from "@/lib/useAdminPermissions";
 
 type Lead = {
@@ -64,7 +64,7 @@ export default function AdminLeadsPage() {
     // UI 상태
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
-    const [uploadIsReal, setUploadIsReal] = useState(true);
+    const [uploadIsReal, setUploadIsReal] = useState(false);   // 기본값: 외부 유입(F)
     const [uploadIgnoreDuplicates, setUploadIgnoreDuplicates] = useState(true);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadResult, setUploadResult] = useState<{ uploaded: number; skipped: number; failed: number; total: number } | null>(null);
@@ -267,6 +267,24 @@ export default function AdminLeadsPage() {
         }
     };
 
+    const handleGenerateReal = async () => {
+        if (!confirm("자사몰 유입 고객 임의 데이터(1만건)를 생성하시겠습니까?\n(is_real = T 로 분류됩니다)")) return;
+        setIsGenerating(true);
+        try {
+            const res = await generateRealLeadsAction(10000);
+            if (res.success) {
+                alert(`자사몰 유입 고객 ${res.inserted.toLocaleString()}건 생성 완료!`);
+                setPage(1);
+                fetchData(1);
+                getLeadsStatsAction().then(setStats);
+            } else {
+                alert("생성 중 오류가 발생했습니다.");
+            }
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     const handleDeleteFakeData = async () => {
         if (!confirm("주의! 모든 '외부 유입 고객(F)' 데이터가 삭제됩니다. 계속하시겠습니까?\n(자사몰 유입 고객 데이터는 유지됩니다)")) return;
         
@@ -405,6 +423,7 @@ export default function AdminLeadsPage() {
                                 className="w-4 h-4 text-black rounded border-gray-300 focus:ring-black"
                             />
                             업로드하는 데이터를 '자사몰 유입 고객(T)'으로 분류
+                            <span className="ml-1 text-[10px] font-normal text-gray-400">(체크 해제 시 외부 유입(F)으로 분류)</span>
                         </label>
                         <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">중복 데이터 처리 (전화번호 기준)</p>
@@ -480,6 +499,14 @@ export default function AdminLeadsPage() {
                             >
                                 <Database className="w-4 h-4" />
                                 외부 유입 고객 임의 생성(1만건)
+                            </button>
+                            <button
+                                onClick={handleGenerateReal}
+                                disabled={isGenerating || isUploading}
+                                className="w-full py-2.5 bg-gray-800 hover:bg-black text-white text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                <Database className="w-4 h-4" />
+                                자사몰 유입 고객 임의 생성(1만건)
                             </button>
                         </div>
                         )}

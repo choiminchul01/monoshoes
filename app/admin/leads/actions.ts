@@ -729,3 +729,38 @@ export async function generateFakeLeadsAction(count: number) {
 
     return { success: true, inserted, failed, total: safeCount, batchId };
 }
+
+// ============================================================
+// 자사몰 유입 고객 임의 생성 (is_real: true)
+// ============================================================
+export async function generateRealLeadsAction(count: number) {
+    const safeCount = Math.min(Math.max(count, 1), 10000);
+    const cookieStore = await cookies();
+    const supabase = createServerActionClient({ cookies: () => cookieStore });
+    const batchId = `real_${Date.now()}`;
+    const BATCH_SIZE = 1000;
+
+    let inserted = 0;
+    let failed = 0;
+
+    for (let i = 0; i < safeCount; i += BATCH_SIZE) {
+        const chunk = Array.from({ length: Math.min(BATCH_SIZE, safeCount - i) }, () => ({
+            ...generateFakeLead(batchId),
+            is_real: true,          // 자사몰 유입으로 분류
+            batch_id: batchId,
+        }));
+
+        const { error } = await supabase
+            .from("marketing_leads")
+            .upsert(chunk, { onConflict: "phone" });
+
+        if (error) {
+            console.error("Real leads insert error:", error);
+            failed += chunk.length;
+        } else {
+            inserted += chunk.length;
+        }
+    }
+
+    return { success: true, inserted, failed, total: safeCount, batchId };
+}
