@@ -1,18 +1,17 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
 /**
  * Q&A 답변을 저장하는 서버 액션
- * service_role 권한을 사용하여 RLS 정책을 우회합니다.
+ * supabaseAdmin(service_role)을 사용하여 RLS 정책을 우회합니다.
  */
 export async function submitAnswerAction(id: string, type: 'inquiry' | 'product_qna', answer: string) {
-    const supabase = await createClient(); // 서버 클라이언트 생성
-
     const tableName = type === 'inquiry' ? 'general_qna' : 'product_qna';
     
-    const { data, error } = await supabase
+    // supabaseAdmin을 사용하여 직접 업데이트
+    const { data, error } = await supabaseAdmin
         .from(tableName)
         .update({
             answer: answer,
