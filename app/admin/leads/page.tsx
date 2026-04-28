@@ -675,51 +675,52 @@ export default function AdminLeadsPage() {
                         />
                     </div>
 
-                    <div className="flex gap-2">
+                    {/* 1행: 조회 + 초기화 */}
+                    <div className="flex gap-2 mb-2">
                         <button
                             onClick={handleSearch}
                             disabled={isLoading}
-                            className="flex-1 bg-black text-white py-2.5 rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="flex-1 bg-gray-900 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Filter className="w-4 h-4" />}
                             조회
                         </button>
                         <button
                             onClick={handleReset}
-                            className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 transition-colors flex items-center gap-1"
+                            className="px-5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-500 hover:border-gray-400 hover:text-gray-900 transition-colors flex items-center gap-1.5"
                         >
                             <X className="w-4 h-4" /> 초기화
                         </button>
-                        <div className="flex flex-wrap gap-2">
-                            {numChunks <= 1 ? (
-                                <button
-                                    onClick={() => handleDownload(0)}
-                                    disabled={isDownloading || totalCount === 0}
-                                    className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {isDownloading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                                    CSV 다운로드
-                                </button>
-                            ) : (
-                                <div className="flex flex-col gap-2 w-full">
-                                    <p className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-1 rounded">대용량 데이터 분할 다운로드 (5만건 단위)</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {Array.from({ length: numChunks }).map((_, i) => (
-                                            <button
-                                                key={i}
-                                                onClick={() => handleDownload(i)}
-                                                disabled={isDownloading}
-                                                className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1"
-                                            >
-                                                <Download className="w-3 h-3" />
-                                                파트 {i + 1}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
                     </div>
+
+                    {/* 2행: CSV 다운로드 */}
+                    {numChunks <= 1 ? (
+                        <button
+                            onClick={() => handleDownload(0)}
+                            disabled={isDownloading || totalCount === 0}
+                            className="w-full py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:border-gray-900 hover:text-gray-900 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                        >
+                            {isDownloading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            CSV 다운로드
+                        </button>
+                    ) : (
+                        <div className="space-y-2">
+                            <p className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase">대용량 분할 다운로드 (5만건 단위)</p>
+                            <div className="flex flex-wrap gap-2">
+                                {Array.from({ length: numChunks }).map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleDownload(i)}
+                                        disabled={isDownloading}
+                                        className="px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg text-xs font-semibold hover:border-gray-900 hover:text-gray-900 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                    >
+                                        <Download className="w-3 h-3" />
+                                        파트 {i + 1}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
