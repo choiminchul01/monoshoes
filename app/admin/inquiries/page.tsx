@@ -6,6 +6,7 @@ import { Search, MessageCircle, CheckCircle, Clock, X, Send, ShoppingBag, HelpCi
 import Pagination from "@/components/ui/Pagination";
 import { useToast } from "@/context/ToastContext";
 import Image from "next/image";
+import { submitAnswerAction } from "./actions";
 
 type Inquiry = {
     id: string;
@@ -180,39 +181,29 @@ export default function AdminInquiriesPage() {
 
         setIsSubmitting(true);
         try {
-            if (activeTab === 'inquiry' && selectedInquiry) {
-                // Update the actual table, not the view
-                const { error } = await supabase
-                    .from("general_qna")
-                    .update({
-                        answer: answerText,
-                        is_answered: true,
-                        answered_at: new Date().toISOString()
-                    })
-                    .eq("id", selectedInquiry.id);
+            const id = activeTab === 'inquiry' ? selectedInquiry?.id : selectedQnA?.id;
+            const type = activeTab === 'inquiry' ? 'inquiry' : 'product_qna';
 
-                if (error) throw error;
-                toast.success("답변이 등록되었습니다.");
-                setSelectedInquiry(null);
+            if (!id) throw new Error("ID를 찾을 수 없습니다.");
+
+            const result = await submitAnswerAction(id, type, answerText);
+
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+
+            toast.success("답변이 등록되었습니다.");
+            setSelectedInquiry(null);
+            setSelectedQnA(null);
+            
+            if (activeTab === 'inquiry') {
                 fetchInquiries();
-            } else if (activeTab === 'product_qna' && selectedQnA) {
-                const { error } = await supabase
-                    .from("product_qna")
-                    .update({
-                        answer: answerText,
-                        is_answered: true,
-                        answered_at: new Date().toISOString()
-                    })
-                    .eq("id", selectedQnA.id);
-
-                if (error) throw error;
-                toast.success("답변이 등록되었습니다.");
-                setSelectedQnA(null);
+            } else {
                 fetchProductQnAs();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error submitting answer:", error);
-            toast.error("답변 등록 중 오류가 발생했습니다.");
+            toast.error(error.message || "답변 등록 중 오류가 발생했습니다.");
         } finally {
             setIsSubmitting(false);
         }
