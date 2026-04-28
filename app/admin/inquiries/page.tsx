@@ -185,8 +185,9 @@ export default function AdminInquiriesPage() {
                     .update({
                         answer: answerText,
                         is_answered: true,
+                        status: 'answered', // 상태 컬럼 업데이트 추가
                         answered_at: new Date().toISOString()
-                    })
+                    } as any)
                     .eq("id", selectedInquiry.id);
 
                 if (error) throw error;
@@ -199,8 +200,9 @@ export default function AdminInquiriesPage() {
                     .update({
                         answer: answerText,
                         is_answered: true,
+                        status: 'answered', // 상태 컬럼 업데이트 추가 (있을 경우 대비)
                         answered_at: new Date().toISOString()
-                    })
+                    } as any)
                     .eq("id", selectedQnA.id);
 
                 if (error) throw error;
