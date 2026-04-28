@@ -208,6 +208,31 @@ export async function deleteFakeLeadsAction() {
     return { success: true };
 }
 
+// ============================================================
+// DB 전체 초기화 및 번호 리셋 (TRUNCATE 호출)
+// ============================================================
+export async function resetAllLeadsAction() {
+    const cookieStore = await cookies();
+    const supabase = createServerActionClient({ cookies: () => cookieStore });
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const { data: adminUser } = await supabase
+        .from("admin_roles").select("id").eq("user_id", user.id).single();
+    if (!adminUser) return { success: false, error: "Admin only" };
+
+    // SQL Editor에서 만든 함수 호출
+    const { error } = await supabase.rpc("truncate_marketing_leads_and_reset");
+
+    if (error) {
+        console.error("=== [resetAllLeadsAction] Error ===", error);
+        return { success: false, error: error.message };
+    }
+
+    return { success: true };
+}
+
 export async function deleteLeadAction(id: number) {
     const cookieStore = await cookies();
     const supabase = createServerActionClient({ cookies: () => cookieStore });

@@ -50,28 +50,24 @@ function getHeaderMap(headers: string[]) {
         if (clean.includes("주소")) map.address = i;
         if (clean.includes("성별")) map.gender = i;
         if (clean.includes("비고") || clean.includes("DB구분")) map.remark = i;
-        if (clean.includes("순번") && !clean.includes("DB")) map.seq = i;
     });
     return map;
 }
 
 function parseLeadRow(cols: string[], headerMap: Record<string, number>, defaultIsReal: boolean, batchId: string): object | null {
     try {
-        // 매핑된 인덱스가 있으면 사용, 없으면 기존 기본값 사용
         const phoneIdx = headerMap.phone ?? 1;
         const nameIdx = headerMap.name ?? 2;
         const birthIdx = headerMap.birth ?? 3;
         const addressIdx = headerMap.address ?? 4;
         const remarkIdx = headerMap.remark ?? 5;
-        const seqIdx = headerMap.seq ?? 0;
 
         const phone = (cols[phoneIdx] || "").trim().replace(/[-\s]/g, "");
         const name = (cols[nameIdx] || "").trim();
-        if (!phone || !name || phone.length < 5) return null; // 유효하지 않은 전화번호(예: DB순번) 필터링
+        if (!phone || !name || phone.length < 5) return null;
 
         const { birthDate, gender: parsedGender } = parseBirthAndGender(cols[birthIdx] || "");
         
-        // 다운로드 파일 대응: 성별 칸이 따로 있는 경우
         let finalGender = parsedGender;
         if (headerMap.gender !== undefined) {
             const gRaw = (cols[headerMap.gender] || "").trim();
@@ -85,10 +81,9 @@ function parseLeadRow(cols: string[], headerMap: Record<string, number>, default
                        remarkRaw === "F" || remarkRaw.includes("테스트") || remarkRaw.includes("가짜") ? false : 
                        defaultIsReal;
         
-        const seqRaw = parseInt(cols[seqIdx]);
-
+        // id는 DB에서 자동 생성(IDENTITY)하므로 rows 객체에 포함하지 않음
+        // 이렇게 해야 1, 2, 3... 순서대로 빈틈없이 들어감
         return {
-            seq: isNaN(seqRaw) ? null : seqRaw,
             phone,
             name,
             birth_date: birthDate,

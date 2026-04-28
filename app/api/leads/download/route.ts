@@ -100,21 +100,16 @@ export async function GET(request: NextRequest) {
         );
     }
 
-    // CSV 생성
-    const headers = ["순번", "DB순번", "연락처", "이름", "생년월일", "성별", "주소", "시/도", "시/군/구", "읍/면/동", "DB구분", "등록일시"];
+    // CSV 생성 (업로드 양식과 동일하게 7개 컬럼으로 통일)
+    const headers = ["순번", "연락처", "이름", "생년월일", "성별", "주소", "DB구분"];
     const rows = (data || []).map((row: any) => [
-        row.seq || "",
-        row.id,
+        row.id, // 진짜 DB 순번을 "순번" 칸에 넣음
         row.phone,
         row.name,
         row.birth_date || "",
         row.gender === "M" ? "남성" : row.gender === "F" ? "여성" : "미확인",
         row.address || "",
-        row.address_sido || "",
-        row.address_sigungu || "",
-        row.address_dong || "",
         row.is_real ? "T" : "F",
-        row.created_at ? new Date(row.created_at).toLocaleDateString("ko-KR") : "",
     ]);
 
     const csvContent = [

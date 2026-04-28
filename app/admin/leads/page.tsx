@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Upload, Download, Filter, Users, TrendingUp, X, RefreshCw, ChevronLeft, ChevronRight, Database, ShieldCheck, ShieldAlert, Trash2 } from "lucide-react";
-import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction, deleteAllRealLeadsAction, deleteLeadAction, deleteLeadsByRangeAction } from "./actions";
+import { fetchLeadsAction, getLeadsStatsAction, getLeadsRegionsAction, generateFakeLeadsAction, deleteFakeLeadsAction, deleteAllRealLeadsAction, deleteLeadAction, deleteLeadsByRangeAction, resetAllLeadsAction } from "./actions";
 
 type Lead = {
     id: number;
@@ -285,6 +285,25 @@ export default function AdminLeadsPage() {
         }
     };
 
+    const handleMasterReset = async () => {
+        if (!confirm("!!! 경고 !!!\n모든 데이터(실제+테스트)가 삭제되고 번호표 기계가 1번으로 리셋됩니다.\n정말로 초기화하시겠습니까?")) return;
+        
+        setIsLoading(true);
+        try {
+            const res = await resetAllLeadsAction();
+            if (res.success) {
+                alert("데이터베이스가 완전히 초기화되었습니다. 이제 1번부터 시작합니다.");
+                setPage(1);
+                fetchData(1);
+                getLeadsStatsAction().then(setStats);
+            } else {
+                alert("초기화 실패: " + res.error);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const DOWNLOAD_CHUNK_SIZE = 50000;
     const numChunks = Math.ceil(totalCount / DOWNLOAD_CHUNK_SIZE);
 
@@ -449,56 +468,96 @@ export default function AdminLeadsPage() {
                         />
                     </label>
 
-                    <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-2">
-                        <button
-                            onClick={handleGenerateFake}
-                            disabled={isGenerating || isUploading}
-                            className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                            <Database className="w-4 h-4" />
-                            테스트용 데이터(1만건) 생성
-                        </button>
-                        <button
-                            onClick={handleDeleteFakeData}
-                            disabled={isGenerating || isUploading || isLoading}
-                            className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            테스트 데이터 전체 삭제
-                        </button>
+                    <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-4">
+                        {/* 1. 데이터 추가 그룹 */}
+                        <div className="space-y-2">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">데이터 생성</p>
+                            <button
+                                onClick={handleGenerateFake}
+                                disabled={isGenerating || isUploading}
+                                className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                <Database className="w-4 h-4" />
+                                테스트용 데이터(1만건) 생성
+                            </button>
+                        </div>
 
-                        <div className="mt-2 p-3 bg-red-50/30 border border-red-100 rounded-lg">
-                            <p className="text-[10px] font-bold text-red-700 mb-2 flex items-center gap-1">
-                                <ShieldAlert className="w-3 h-3" /> 임의 번호 범위 삭제
+                        {/* 2. 데이터 관리 (위험 구역) */}
+                        <div className="p-4 bg-white border-2 border-red-500 rounded-xl space-y-4">
+                            <p className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-1">
+                                <ShieldAlert className="w-3.5 h-3.5" /> 데이터 관리 및 위험 작업
                             </p>
-                            <div className="flex gap-2 items-center">
-                                <input 
-                                    type="number" 
-                                    placeholder="시작ID" 
-                                    value={rangeDeleteStart}
-                                    onChange={e => setRangeDeleteStart(e.target.value)}
-                                    className="w-full px-2 py-1.5 text-xs border border-red-100 rounded focus:outline-none focus:border-red-300"
-                                />
-                                <span className="text-gray-400">~</span>
-                                <input 
-                                    type="number" 
-                                    placeholder="끝ID" 
-                                    value={rangeDeleteEnd}
-                                    onChange={e => setRangeDeleteEnd(e.target.value)}
-                                    className="w-full px-2 py-1.5 text-xs border border-red-100 rounded focus:outline-none focus:border-red-300"
-                                />
+                            
+                            <div className="space-y-3">
+                                {/* 1번: 임의 번호 범위 삭제 */}
+                                <div className="p-3 bg-white border border-red-200 rounded-lg">
+                                    <p className="text-[10px] font-bold text-red-500 mb-2 flex items-center gap-1">
+                                        <span className="w-4 h-4 flex items-center justify-center bg-red-500 text-white rounded-full text-[9px]">1</span>
+                                        임의 번호 범위 삭제
+                                    </p>
+                                    <div className="flex gap-2 items-center">
+                                        <input 
+                                            type="number" 
+                                            placeholder="시작ID" 
+                                            value={rangeDeleteStart}
+                                            onChange={e => setRangeDeleteStart(e.target.value)}
+                                            className="w-full px-2 py-1.5 text-xs border border-red-100 rounded focus:outline-none focus:border-red-400"
+                                        />
+                                        <span className="text-red-200">~</span>
+                                        <input 
+                                            type="number" 
+                                            placeholder="끝ID" 
+                                            value={rangeDeleteEnd}
+                                            onChange={e => setRangeDeleteEnd(e.target.value)}
+                                            className="w-full px-2 py-1.5 text-xs border border-red-100 rounded focus:outline-none focus:border-red-400"
+                                        />
+                                        <button
+                                            onClick={handleRangeDelete}
+                                            disabled={isLoading}
+                                            className="px-4 py-1.5 bg-white border border-red-500 text-red-600 text-xs font-bold rounded hover:bg-red-50 transition-colors shrink-0 disabled:opacity-50"
+                                        >
+                                            삭제
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 2번: 테스트 데이터(F) 전체 삭제 */}
                                 <button
-                                    onClick={handleRangeDelete}
-                                    disabled={isLoading}
-                                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 transition-colors shrink-0 disabled:opacity-50"
+                                    onClick={handleDeleteFakeData}
+                                    disabled={isGenerating || isUploading || isLoading}
+                                    className="w-full py-2.5 bg-white border border-red-500 text-red-600 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 hover:bg-red-50 disabled:opacity-50"
                                 >
-                                    삭제
+                                    <span className="w-4 h-4 flex items-center justify-center bg-red-500 text-white rounded-full text-[9px]">2</span>
+                                    테스트 데이터(F) 전체 삭제
                                 </button>
+
+                                {/* 3번: 실제 고객 데이터(T) 전체 삭제 */}
+                                <button
+                                    onClick={handleDeleteReal}
+                                    disabled={isGenerating || isUploading || isLoading}
+                                    className="w-full py-2.5 bg-white border border-red-500 text-red-600 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 hover:bg-red-50 disabled:opacity-50"
+                                >
+                                    <span className="w-4 h-4 flex items-center justify-center bg-red-500 text-white rounded-full text-[9px]">3</span>
+                                    실제 고객 데이터(T) 전체 삭제
+                                </button>
+
+                                {/* 4번: DB 전체 초기화 (번호 리셋) */}
+                                <div className="pt-2 border-t border-red-100">
+                                    <button
+                                        onClick={handleMasterReset}
+                                        disabled={isGenerating || isUploading || isLoading}
+                                        className="w-full py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-black rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-md shadow-red-200"
+                                    >
+                                        <RefreshCw className="w-4 h-4" />
+                                        <span className="w-5 h-5 flex items-center justify-center bg-white text-red-600 rounded-full text-[10px] font-bold">4</span>
+                                        DB 전체 초기화 (번호 리셋)
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         {uploadResult && (
-                            <div className="mt-3 p-3 bg-green-50 rounded-xl border border-green-100">
+                            <div className="p-3 bg-green-50 rounded-xl border border-green-100">
                                 <p className="text-xs font-bold text-green-700">업로드 결과</p>
                                 <p className="text-[10px] text-green-600 mt-1">
                                     성공 {uploadResult.uploaded.toLocaleString()}건 / 
@@ -507,14 +566,6 @@ export default function AdminLeadsPage() {
                                 </p>
                             </div>
                         )}
-                        <button
-                            onClick={handleDeleteReal}
-                            disabled={isGenerating || isUploading || isLoading}
-                            className="w-full py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 border border-blue-200"
-                        >
-                            <ShieldAlert className="w-4 h-4" />
-                            실제 고객 데이터(T) 전체 삭제
-                        </button>
                     </div>
 
                 </div>
