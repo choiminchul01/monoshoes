@@ -65,8 +65,8 @@ export default function PartnerSection() {
                             className="group relative bg-gray-50 border border-gray-100 p-10 rounded-2xl transition-all duration-500 hover:shadow-2xl hover:bg-white"
                         >
                             {/* 로고 영역 (개별 이미지 사용) */}
-                            <div className="relative w-full h-24 mb-8 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-500">
-                                <div className="relative w-20 h-20">
+                            <div className="relative w-full h-40 mb-8 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-500">
+                                <div className="relative w-40 h-40">
                                     <Image
                                         src={partner.logo}
                                         alt={partner.name}
