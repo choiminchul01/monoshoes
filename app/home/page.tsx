@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { ProductCardSkeleton } from "@/components/ui/Skeleton";
 import EventPopup from "@/components/home/EventPopup";
 import ReviewSlider from "@/components/shop/ReviewSlider";
+import PartnerSection from "@/components/home/PartnerSection";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Product = {
@@ -277,6 +278,7 @@ export default function Home() {
         )}
       </div>
       <ReviewSlider />
+      <PartnerSection />
       <EventPopup />
     </>
   );
