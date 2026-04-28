@@ -85,7 +85,7 @@ function useParticleAnimation(canvasRef: React.RefObject<HTMLCanvasElement | nul
 function LoginContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const redirectTo = searchParams.get('redirectTo') || '/';
+    const redirectTo = searchParams.get('redirectTo') || '/mypage';
     const canvasRef = useRef<HTMLCanvasElement>(null);
     useParticleAnimation(canvasRef);
 
@@ -110,7 +110,13 @@ function LoginContent() {
             router.push(redirectTo);
             router.refresh();
         } catch (err: any) {
-            setError(err.message);
+            if (err.message === 'Email not confirmed') {
+                setError("이메일 인증이 완료되지 않았습니다. 가입하신 이메일함을 확인해 주세요.");
+            } else if (err.message === 'Invalid login credentials') {
+                setError("이메일 또는 비밀번호가 일치하지 않습니다.");
+            } else {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }

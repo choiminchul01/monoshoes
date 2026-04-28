@@ -152,7 +152,7 @@ export default function SignupPage() {
 
             if (error) throw error;
 
-            alert("회원가입이 완료되었습니다! 로그인해주세요.");
+            alert("회원가입 신청이 완료되었습니다!\n가입하신 이메일함에서 인증 링크를 클릭하시면 가입이 최종 완료됩니다.");
             router.push('/login');
         } catch (err: any) {
             setError(err.message);
