@@ -77,10 +77,9 @@ function parseBirthAndGender(raw: string): { birthDate: string | null; gender: s
 // ============================================================
 export async function getLeadsStatsAction() {
     // supabaseAdmin(service_role)으로 RLS 우회 - 관리자 전용
-    const [totalRes, maleRes, femaleRes, realRes, fakeRes, batchRes] = await Promise.all([
+    // UI에서 미사용하는 성별 통계 제거 및 count: "estimated" 사용 시도(지원 안되면 exact)
+    const [totalRes, realRes, fakeRes, batchRes] = await Promise.all([
         supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }).eq("gender", "M"),
-        supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }).eq("gender", "F"),
         supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }).eq("is_real", true),
         supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }).eq("is_real", false),
         supabaseAdmin.from("marketing_leads").select("batch_id, created_at").order("created_at", { ascending: false }).limit(10),
@@ -88,8 +87,8 @@ export async function getLeadsStatsAction() {
 
     return {
         total: totalRes.count || 0,
-        male: maleRes.count || 0,
-        female: femaleRes.count || 0,
+        male: 0, // 미사용
+        female: 0, // 미사용
         realCount: realRes.count || 0,
         fakeCount: fakeRes.count || 0,
         recentBatches: batchRes.data || [],
@@ -118,43 +117,51 @@ export async function fetchLeadsAction(filters: {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabaseAdmin.from("marketing_leads").select("*", { count: "exact" });
+    // 1. 쿼리 빌더 헬퍼
+    const applyFilters = (q: any) => {
+        let query = q;
+        if (filters.sido) query = query.eq("address_sido", filters.sido);
+        if (filters.sigungu) query = query.eq("address_sigungu", filters.sigungu);
+        if (filters.dong) query = query.ilike("address_dong", `%${filters.dong}%`);
+        if (filters.gender) query = query.eq("gender", filters.gender);
+        if (filters.isReal === "T") query = query.eq("is_real", true);
+        if (filters.isReal === "F") query = query.eq("is_real", false);
 
-    if (filters.sido) query = query.eq("address_sido", filters.sido);
-    if (filters.sigungu) query = query.eq("address_sigungu", filters.sigungu);
-    if (filters.dong) query = query.ilike("address_dong", `%${filters.dong}%`);
-    if (filters.gender) query = query.eq("gender", filters.gender);
-    if (filters.isReal === "T") query = query.eq("is_real", true);
-    if (filters.isReal === "F") query = query.eq("is_real", false);
-
-    if (filters.ageGroup) {
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const ageMap: Record<string, [number, number]> = {
-            "10s": [10, 19], "20s": [20, 29], "30s": [30, 39],
-            "40s": [40, 49], "50s": [50, 59], "60s": [60, 69], "70s+": [70, 120],
-        };
-        const range = ageMap[filters.ageGroup];
-        if (range) {
-            const maxBirth = `${currentYear - range[0]}-12-31`;
-            const minBirth = `${currentYear - range[1]}-01-01`;
-            query = query.gte("birth_date", minBirth).lte("birth_date", maxBirth);
+        if (filters.ageGroup) {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const ageMap: Record<string, [number, number]> = {
+                "10s": [10, 19], "20s": [20, 29], "30s": [30, 39],
+                "40s": [40, 49], "50s": [50, 59], "60s": [60, 69], "70s+": [70, 120],
+            };
+            const range = ageMap[filters.ageGroup];
+            if (range) {
+                const maxBirth = `${currentYear - range[0]}-12-31`;
+                const minBirth = `${currentYear - range[1]}-01-01`;
+                query = query.gte("birth_date", minBirth).lte("birth_date", maxBirth);
+            }
         }
+
+        if (filters.idStart !== undefined) query = query.gte("id", filters.idStart);
+        if (filters.idEnd !== undefined) query = query.lte("id", filters.idEnd);
+        if (filters.search) {
+            query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
+        }
+        return query;
+    };
+
+    // 2. Count와 Data를 병렬 분리 (타임아웃 방지)
+    const countQuery = applyFilters(supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }));
+    const dataQuery = applyFilters(supabaseAdmin.from("marketing_leads").select("*")).order("id", { ascending: false }).range(from, to);
+
+    const [countRes, dataRes] = await Promise.all([countQuery, dataQuery]);
+
+    if (dataRes.error) {
+        console.error("=== [fetchLeadsAction] Error ===", dataRes.error);
+        return { success: false, error: dataRes.error.message, data: [], count: 0 };
     }
 
-    if (filters.idStart !== undefined) query = query.gte("id", filters.idStart);
-    if (filters.idEnd !== undefined) query = query.lte("id", filters.idEnd);
-    if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
-    }
-
-    const { data, error, count } = await query.order("id", { ascending: true }).range(from, to);
-
-    if (error) {
-        console.error("=== [fetchLeadsAction] Error ===", error);
-        return { success: false, error: error.message, data: [], count: 0 };
-    }
-    return { success: true, data: data || [], count: count || 0 };
+    return { success: true, data: dataRes.data || [], count: countRes.count || 0 };
 }
 
 // 실제 고객 데이터 전체 삭제 (is_real = true)
