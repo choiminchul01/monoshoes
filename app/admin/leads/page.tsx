@@ -45,6 +45,8 @@ export default function AdminLeadsPage() {
     const [page, setPage] = useState(1);
     const PAGE_SIZE = 100;
     const { isMaster } = useAdminPermissions();
+    const [isStatsLoading, setIsStatsLoading] = useState(true); // 통계 전용 로딩
+    const [hasQueried, setHasQueried] = useState(false);        // 조회 버튼 누른 적 있는지
 
     // 필터 상태
     const [sido, setSido] = useState("");
@@ -73,10 +75,17 @@ export default function AdminLeadsPage() {
     const [rangeDeleteStart, setRangeDeleteStart] = useState("");
     const [rangeDeleteEnd, setRangeDeleteEnd] = useState("");
 
-    // 통계 로드
+    // 통계 로드 (페이지 진입 시 수치만 먼저 빠르게)
     useEffect(() => {
-        getLeadsStatsAction().then(setStats);
-        getLeadsRegionsAction("sido").then(setSidoList);
+        setIsStatsLoading(true);
+        Promise.all([
+            getLeadsStatsAction(),
+            getLeadsRegionsAction("sido"),
+        ]).then(([statsData, sidoData]) => {
+            setStats(statsData);
+            setSidoList(sidoData);
+            setIsStatsLoading(false);
+        });
     }, []);
 
     // 시/도 변경 시 시/군/구 로드
@@ -92,8 +101,9 @@ export default function AdminLeadsPage() {
         }
     }, [sido]);
 
-    // 드롭다운 필터 변경 시 자동 조회
+    // 드롭다운 필터 변경 시 자동 조회 (한 번이라도 조회한 경우에만)
     useEffect(() => {
+        if (!hasQueried) return;
         setPage(1);
         fetchData(1);
     }, [sido, sigungu, dong, gender, ageGroup, isRealFilter]);
@@ -101,6 +111,7 @@ export default function AdminLeadsPage() {
     // 데이터 조회
     const fetchData = useCallback(async (p = 1) => {
         setIsLoading(true);
+        setHasQueried(true);
         const result = await fetchLeadsAction({
             sido: sido || undefined,
             sigungu: sigungu || undefined,
@@ -121,12 +132,7 @@ export default function AdminLeadsPage() {
         setIsLoading(false);
     }, [sido, sigungu, dong, gender, ageGroup, isRealFilter, idStart, idEnd, searchTerm]);
 
-    // 드롭다운 필터 변경 시 자동 조회 (텍스트 입력 시엔 자동조회 막음)
-    useEffect(() => {
-        setPage(1);
-        fetchData(1);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sido, sigungu, dong, gender, ageGroup, isRealFilter]);
+    // (중복 useEffect 제거됨 - 위에서 통합 처리)
 
     const handleSearch = () => {
         setPage(1);
@@ -389,6 +395,15 @@ export default function AdminLeadsPage() {
                 <p className="text-sm text-gray-500">마케팅 리드 데이터 업로드 · 조회 · 다운로드</p>
             </div>
 
+            {/* 데이터 로딩 배너 */}
+            {isLoading && (
+                <div className="flex items-center gap-3 mb-4 px-4 py-3 bg-gray-900 text-white rounded-xl text-sm font-medium animate-pulse">
+                    <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                    <span>데이터를 가져오는 중입니다... 잠시만 기다려주세요.</span>
+                    <span className="ml-auto text-gray-400 text-xs">100건씩 페이지 조회</span>
+                </div>
+            )}
+
             {/* 통계 카드 */}
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {[
@@ -402,7 +417,11 @@ export default function AdminLeadsPage() {
                             <stat.icon className={`w-4 h-4 ${stat.color}`} />
                             <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
                         </div>
-                        <p className="text-2xl font-black">{stat.value}</p>
+                        {isStatsLoading ? (
+                            <div className="h-8 w-24 bg-gray-200 rounded animate-pulse mt-1" />
+                        ) : (
+                            <p className="text-2xl font-black">{stat.value}</p>
+                        )}
                     </div>
                 ))}
             </div>
@@ -725,6 +744,39 @@ export default function AdminLeadsPage() {
             </div>
 
             {/* 데이터 테이블 */}
+            {/* 스켈레톤: 로딩 중이고 아직 데이터 없을 때 */}
+            {isLoading && leads.length === 0 && (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                        <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
+                        <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                    </div>
+                    <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                {["순번", "종류", "연락처", "이름", "생년월일", "성별", "시/도", "시/군/구", "읍/면/동"].map(h => (
+                                    <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500">{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {Array.from({ length: 10 }).map((_, i) => (
+                                <tr key={i}>
+                                    {Array.from({ length: 9 }).map((_, j) => (
+                                        <td key={j} className="px-4 py-3">
+                                            <div className="h-3 bg-gray-100 rounded animate-pulse" style={{ width: `${60 + (j * 7) % 40}%` }} />
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    <div className="px-6 py-4 text-center text-xs text-gray-400 border-t border-gray-100">
+                        120만여 건 중 100건씩 표시 · 페이지 이동으로 순차 조회
+                    </div>
+                </div>
+            )}
+
             {leads.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -796,11 +848,18 @@ export default function AdminLeadsPage() {
                 </div>
             )}
 
-            {leads.length === 0 && !isLoading && totalCount === 0 && (
-                <div className="text-center py-20 text-gray-400">
+            {leads.length === 0 && !isLoading && !hasQueried && (
+                <div className="text-center py-20 text-gray-400 bg-white border border-gray-200 rounded-xl">
+                    <Database className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p className="font-bold text-gray-600">필터를 설정하고 조회 버튼을 누르세요</p>
+                    <p className="text-sm mt-2">전체 DB: <span className="font-bold text-gray-800">{stats.total.toLocaleString()}건</span> · 100건씩 페이지 표시</p>
+                </div>
+            )}
+            {leads.length === 0 && !isLoading && hasQueried && totalCount === 0 && (
+                <div className="text-center py-20 text-gray-400 bg-white border border-gray-200 rounded-xl">
                     <Users className="w-12 h-12 mx-auto mb-4 opacity-30" />
                     <p className="font-medium">조회된 데이터가 없습니다.</p>
-                    <p className="text-sm mt-1">CSV 업로드 후 조회 버튼을 누르세요.</p>
+                    <p className="text-sm mt-1">필터 조건을 변경해보세요.</p>
                 </div>
             )}
         </div>

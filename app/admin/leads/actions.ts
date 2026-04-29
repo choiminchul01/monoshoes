@@ -2,6 +2,7 @@
 
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import { supabaseAdmin } from "@/lib/supabase";
 
 // ============================================================
 // 성별 자동 판별 (주민번호 뒷자리 시작번호)
@@ -75,16 +76,14 @@ function parseBirthAndGender(raw: string): { birthDate: string | null; gender: s
 // 통계 대시보드 (실제/테스트 건수 포함)
 // ============================================================
 export async function getLeadsStatsAction() {
-    const cookieStore = await cookies();
-    const supabase = createServerActionClient({ cookies: () => cookieStore });
-
+    // supabaseAdmin(service_role)으로 RLS 우회 - 관리자 전용
     const [totalRes, maleRes, femaleRes, realRes, fakeRes, batchRes] = await Promise.all([
-        supabase.from("marketing_leads").select("id", { count: "exact", head: true }),
-        supabase.from("marketing_leads").select("id", { count: "exact", head: true }).eq("gender", "M"),
-        supabase.from("marketing_leads").select("id", { count: "exact", head: true }).eq("gender", "F"),
-        supabase.from("marketing_leads").select("id", { count: "exact", head: true }).eq("is_real", true),
-        supabase.from("marketing_leads").select("id", { count: "exact", head: true }).eq("is_real", false),
-        supabase.from("marketing_leads").select("batch_id, created_at").order("created_at", { ascending: false }).limit(10),
+        supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }),
+        supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }).eq("gender", "M"),
+        supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }).eq("gender", "F"),
+        supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }).eq("is_real", true),
+        supabaseAdmin.from("marketing_leads").select("id", { count: "exact", head: true }).eq("is_real", false),
+        supabaseAdmin.from("marketing_leads").select("batch_id, created_at").order("created_at", { ascending: false }).limit(10),
     ]);
 
     return {
@@ -113,18 +112,13 @@ export async function fetchLeadsAction(filters: {
     page?: number;
     pageSize?: number;
 }) {
-    const cookieStore = await cookies();
-    const supabase = createServerActionClient({ cookies: () => cookieStore });
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log("=== [DEBUG] fetchLeadsAction ===");
-    console.log("Session User ID:", session?.user?.id);
-
+    // supabaseAdmin(service_role)으로 RLS 우회 - 관리자 전용
     const page = filters.page || 1;
     const pageSize = filters.pageSize || 100;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabase.from("marketing_leads").select("*", { count: "exact" });
+    let query = supabaseAdmin.from("marketing_leads").select("*", { count: "exact" });
 
     if (filters.sido) query = query.eq("address_sido", filters.sido);
     if (filters.sigungu) query = query.eq("address_sigungu", filters.sigungu);
@@ -157,7 +151,7 @@ export async function fetchLeadsAction(filters: {
     const { data, error, count } = await query.order("id", { ascending: true }).range(from, to);
 
     if (error) {
-        console.error("=== [DEBUG] Query Error ===", error);
+        console.error("=== [fetchLeadsAction] Error ===", error);
         return { success: false, error: error.message, data: [], count: 0 };
     }
     return { success: true, data: data || [], count: count || 0 };

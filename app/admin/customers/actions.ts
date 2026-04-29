@@ -1,7 +1,5 @@
 "use server";
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -86,14 +84,12 @@ export async function fetchRealLeadsAction(params: {
     search?: string;
     excludePhones?: string[];
 }) {
-    const cookieStore = await cookies();
-    const supabase = createServerActionClient({ cookies: () => cookieStore });
-
+    // supabaseAdmin(service_role)으로 RLS 우회 - 관리자 서버 액션 전용
     const { page, pageSize, search, excludePhones } = params;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabase
+    let query = supabaseAdmin
         .from("marketing_leads")
         .select("id, name, phone, birth_date, gender, address_sido, address_sigungu, address_dong, created_at", { count: "exact" })
         .eq("is_real", true)
@@ -111,6 +107,7 @@ export async function fetchRealLeadsAction(params: {
     const { data, error, count } = await query.range(from, to);
 
     if (error) {
+        console.error("[fetchRealLeadsAction] Error:", error);
         return { success: false, error: error.message, data: [], count: 0 };
     }
     return { success: true, data: data || [], count: count || 0 };
@@ -118,10 +115,8 @@ export async function fetchRealLeadsAction(params: {
 
 // 자사몰 유입 고객 총 수 조회
 export async function getRealLeadsCountAction() {
-    const cookieStore = await cookies();
-    const supabase = createServerActionClient({ cookies: () => cookieStore });
-
-    const { count, error } = await supabase
+    // supabaseAdmin(service_role)으로 RLS 우회
+    const { count, error } = await supabaseAdmin
         .from("marketing_leads")
         .select("id", { count: "exact", head: true })
         .eq("is_real", true);
