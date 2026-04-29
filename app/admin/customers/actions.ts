@@ -89,9 +89,10 @@ export async function fetchRealLeadsAction(params: {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
+    // count: "exact"를 제거하여 타임아웃 방지 - 실제 데이터 100건만 조회
     let query = supabaseAdmin
         .from("marketing_leads")
-        .select("id, name, phone, birth_date, gender, address_sido, address_sigungu, address_dong, created_at", { count: "exact" })
+        .select("id, name, phone, birth_date, gender, address_sido, address_sigungu, address_dong, created_at")
         .eq("is_real", true)
         .order("id", { ascending: false });
 
@@ -99,18 +100,17 @@ export async function fetchRealLeadsAction(params: {
         query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
     }
 
-    // 가입 회원 전화번호 제외 (이미 상단에 표시되므로 중복 방지)
     if (excludePhones && excludePhones.length > 0) {
         query = query.not("phone", "in", `(${excludePhones.join(",")})`);
     }
 
-    const { data, error, count } = await query.range(from, to);
+    const { data, error } = await query.range(from, to);
 
     if (error) {
         console.error("[fetchRealLeadsAction] Error:", error);
         return { success: false, error: error.message, data: [], count: 0 };
     }
-    return { success: true, data: data || [], count: count || 0 };
+    return { success: true, data: data || [], count: 0 };
 }
 
 // 자사몰 유입 고객 총 수 조회

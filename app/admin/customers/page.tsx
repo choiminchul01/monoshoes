@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { User, RefreshCw, ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { fetchRealLeadsAction, fetchAllMembersAction } from "./actions";
+import { fetchRealLeadsAction, getRealLeadsCountAction } from "./actions";
 
 type Customer = {
     id: number | string;
@@ -12,9 +12,7 @@ type Customer = {
     gender?: string;
     address_sido?: string | null;
     address_sigungu?: string | null;
-    email?: string;
     created_at: string;
-    isRegistered?: boolean;
 };
 
 const PAGE_SIZE = 100;
@@ -56,51 +54,38 @@ function SkeletonRows() {
                 <td className="px-4 py-3"><div className="h-3 w-6 bg-gray-100 rounded animate-pulse" /></td>
                 <td className="px-4 py-3"><div className="h-3 w-20 bg-gray-100 rounded animate-pulse" /></td>
                 <td className="px-4 py-3"><div className="h-3 w-24 bg-gray-100 rounded animate-pulse" /></td>
-                <td className="px-4 py-3"><div className="h-3 w-14 bg-gray-100 rounded animate-pulse" /></td>
             </tr>
         ))}
     </>;
 }
 
 export default function AdminCustomersPage() {
-    const [members, setMembers] = useState<Customer[]>([]);
     const [leads, setLeads] = useState<Customer[]>([]);
-    const [leadsTotal, setLeadsTotal] = useState(0);
-    const [leadsPage, setLeadsPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const [search, setSearch] = useState("");
     const [appliedSearch, setAppliedSearch] = useState("");
 
     const [isLoading, setIsLoading] = useState(false);
-    const [hasQueried, setHasQueried] = useState(false); // 조회 버튼 누른 적 있는지
+    const [hasQueried, setHasQueried] = useState(false);
 
-    // ── 데이터 로드 핵심 함수 ─────────────────────────────────
+    // ── 데이터 로드 (is_real=true 마케팅 리드만) ─────────────
     const loadData = useCallback(async (page: number, searchVal?: string) => {
         setIsLoading(true);
         try {
-            // 가입회원 + DB고객 병렬 로드
-            const [memberRes, leadsRes] = await Promise.all([
-                fetchAllMembersAction(searchVal || undefined),
+            // count(HEAD)와 데이터(range)를 병렬 분리 → 타임아웃 방지
+            const [countRes, dataRes] = await Promise.all([
+                getRealLeadsCountAction(),
                 fetchRealLeadsAction({ page, pageSize: PAGE_SIZE, search: searchVal || undefined }),
             ]);
-
-            const loadedMembers: Customer[] = memberRes.success
-                ? (memberRes.data as any[]).map(u => ({
-                    id: u.id, name: u.name, phone: u.phone, email: u.email,
-                    created_at: u.created_at, isRegistered: true,
-                }))
-                : [];
-
-            // 가입회원 전화번호 중복 제거
-            const memberPhones = new Set(loadedMembers.map(m => m.phone).filter(Boolean));
-
-            const loadedLeads: Customer[] = leadsRes.success
-                ? (leadsRes.data as any[]).filter(d => !memberPhones.has(d.phone))
-                : [];
-
-            setMembers(loadedMembers);
-            setLeads(loadedLeads);
-            setLeadsTotal(leadsRes.count ?? 0);
+            if (dataRes.success) {
+                setLeads(dataRes.data as Customer[]);
+                setTotalCount(countRes.count);
+            } else {
+                setLeads([]);
+                setTotalCount(0);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -109,14 +94,14 @@ export default function AdminCustomersPage() {
     // ── 조회 버튼 ────────────────────────────────────────────
     const handleSearch = async () => {
         setHasQueried(true);
-        setLeadsPage(1);
+        setCurrentPage(1);
         setAppliedSearch(search);
         await loadData(1, search || undefined);
     };
 
     // ── 페이지 변경 ──────────────────────────────────────────
     const handlePageChange = async (p: number) => {
-        setLeadsPage(p);
+        setCurrentPage(p);
         await loadData(p, appliedSearch || undefined);
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -124,13 +109,10 @@ export default function AdminCustomersPage() {
     // ── 새로고침 ─────────────────────────────────────────────
     const handleRefresh = () => {
         if (!hasQueried) return;
-        loadData(leadsPage, appliedSearch || undefined);
+        loadData(currentPage, appliedSearch || undefined);
     };
 
-    // DB고객 먼저, 가입회원 맨 마지막
-    const visibleList: Customer[] = [...leads, ...members];
-    const totalCount = members.length + leadsTotal;
-    const leadsTotalPages = Math.ceil(leadsTotal / PAGE_SIZE);
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
     return (
         <div>
@@ -181,7 +163,7 @@ export default function AdminCustomersPage() {
                 </button>
             </div>
 
-            {/* 초기 상태: 조회 전 안내 */}
+            {/* 초기 상태: 조회 전 */}
             {!hasQueried && (
                 <div className="flex flex-col items-center justify-center py-24 text-gray-400">
                     <Search className="w-12 h-12 mb-4 opacity-20" />
@@ -190,20 +172,15 @@ export default function AdminCustomersPage() {
                 </div>
             )}
 
-            {/* Table — 조회 후에만 표시 */}
+            {/* Table */}
             {hasQueried && (
                 <div className="bg-white rounded-lg shadow overflow-hidden mb-2">
-                    {/* 테이블 상단 info */}
-                    {!isLoading && visibleList.length > 0 && (
-                        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between text-xs text-gray-400">
+                    {!isLoading && leads.length > 0 && (
+                        <div className="px-5 py-3 border-b border-gray-100 text-xs text-gray-400 flex items-center justify-between">
                             <span>
                                 {appliedSearch
                                     ? `"${appliedSearch}" 검색 결과 · 총 ${totalCount.toLocaleString()}명`
-                                    : `전체 ${totalCount.toLocaleString()}명 · ${leadsPage}/${leadsTotalPages || 1}페이지`}
-                            </span>
-                            <span className="flex items-center gap-2">
-                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-black inline-block" /> 가입완료</span>
-                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-300 inline-block" /> DB고객</span>
+                                    : `전체 ${totalCount.toLocaleString()}명 · ${currentPage}/${totalPages}페이지`}
                             </span>
                         </div>
                     )}
@@ -216,30 +193,26 @@ export default function AdminCustomersPage() {
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">성별</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">생년월일</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">지역</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">구분</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {isLoading ? (
                                 <SkeletonRows />
-                            ) : visibleList.length === 0 ? (
+                            ) : leads.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-4 py-14 text-center text-gray-400 text-sm">
+                                    <td colSpan={5} className="px-4 py-14 text-center text-gray-400 text-sm">
                                         {appliedSearch ? `"${appliedSearch}" 검색 결과가 없습니다.` : "자사몰 유입 고객 데이터가 없습니다."}
                                     </td>
                                 </tr>
                             ) : (
-                                visibleList.map((c) => (
+                                leads.map((c) => (
                                     <tr key={String(c.id)} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
-                                                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${c.isRegistered ? "bg-gray-900" : "bg-gray-100"}`}>
-                                                    <User className={`w-3.5 h-3.5 ${c.isRegistered ? "text-white" : "text-gray-500"}`} />
+                                                <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                                                    <User className="w-3.5 h-3.5 text-gray-500" />
                                                 </div>
-                                                <div>
-                                                    <div className="font-medium">{c.name}</div>
-                                                    {c.email && <div className="text-[11px] text-gray-400">{c.email}</div>}
-                                                </div>
+                                                <span className="font-medium">{c.name}</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 text-gray-500 font-mono text-xs">{c.phone || "-"}</td>
@@ -254,22 +227,16 @@ export default function AdminCustomersPage() {
                                         <td className="px-4 py-3 text-gray-500 text-xs">
                                             {[c.address_sido, c.address_sigungu].filter(Boolean).join(" ") || "-"}
                                         </td>
-                                        <td className="px-4 py-3">
-                                            {c.isRegistered
-                                                ? <span className="text-[10px] px-2 py-0.5 bg-gray-900 text-white rounded-full font-bold">가입완료</span>
-                                                : <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">DB고객</span>}
-                                        </td>
                                     </tr>
                                 ))
                             )}
                         </tbody>
                     </table>
 
-                    {/* 페이지네이션 */}
-                    {!isLoading && leadsTotalPages > 1 && (
+                    {!isLoading && totalPages > 1 && (
                         <div className="border-t border-gray-100 text-center">
-                            <p className="text-xs text-gray-400 pt-3">페이지당 100건 · 가입회원은 마지막 페이지 하단에 표시</p>
-                            <Paginator currentPage={leadsPage} totalPages={leadsTotalPages} onPageChange={handlePageChange} />
+                            <p className="text-xs text-gray-400 pt-3">페이지당 100건</p>
+                            <Paginator currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                         </div>
                     )}
                 </div>
