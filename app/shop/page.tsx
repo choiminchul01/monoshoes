@@ -219,7 +219,7 @@ function ShopContent() {
 
     return (
         <div className="container mx-auto px-4 py-12">
-            <div className="flex flex-col md:flex-row gap-12 items-start">
+            <div className="flex flex-col md:flex-row gap-12 md:items-start">
                 {/* 데스크탑 사이드바 — 특가/베스트/신상품 페이지에서는 숨김 */}
                 {!isSpecialFilterView && (
                     <div className="hidden md:block sticky top-24 self-start flex-shrink-0">
@@ -257,7 +257,7 @@ function ShopContent() {
                     )}
                 </AnimatePresence>
 
-                <div className="flex-1">
+                <div className="flex-1 w-full min-w-0">
                     <div className="flex flex-wrap items-center gap-4 mb-8">
                         {/* Mobile Filter Button */}
                         {!isSpecialFilterView && (
