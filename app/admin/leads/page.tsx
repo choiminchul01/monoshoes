@@ -407,20 +407,23 @@ export default function AdminLeadsPage() {
             {/* 통계 카드 */}
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {[
-                    { label: "전체 DB", value: stats.total.toLocaleString(), icon: Database, color: "text-black" },
-                    { label: "자사몰 유입 고객(T)", value: stats.realCount.toLocaleString(), icon: ShieldCheck, color: "text-green-600" },
-                    { label: "외부 유입 고객(F)", value: stats.fakeCount.toLocaleString(), icon: ShieldAlert, color: "text-orange-500" },
-                    { label: "조회 결과", value: totalCount > 0 ? totalCount.toLocaleString() : "-", icon: Filter, color: "text-purple-600" },
+                    { label: "전체 DB", value: stats.total.toLocaleString(), icon: Database, color: "text-black", loading: isStatsLoading },
+                    { label: "자사몰 유입 고객(T)", value: stats.realCount.toLocaleString(), icon: ShieldCheck, color: "text-green-600", loading: isStatsLoading },
+                    { label: "외부 유입 고객(F)", value: stats.fakeCount.toLocaleString(), icon: ShieldAlert, color: "text-orange-500", loading: isStatsLoading },
+                    { label: "조회 결과", value: totalCount > 0 ? totalCount.toLocaleString() : "-", icon: Filter, color: "text-purple-600", loading: isLoading },
                 ].map((stat) => (
                     <div key={stat.label} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                         <div className="flex items-center gap-2 mb-1">
                             <stat.icon className={`w-4 h-4 ${stat.color}`} />
                             <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
                         </div>
-                        {isStatsLoading ? (
-                            <div className="h-8 w-24 bg-gray-200 rounded animate-pulse mt-1" />
+                        {stat.loading ? (
+                            <div className="flex items-center gap-2 mt-2 h-8">
+                                <RefreshCw className={`w-4 h-4 animate-spin ${stat.color}`} />
+                                <span className="text-xs text-gray-400 font-medium animate-pulse">데이터 통신중...</span>
+                            </div>
                         ) : (
-                            <p className="text-2xl font-black">{stat.value}</p>
+                            <p className="text-2xl font-black mt-1">{stat.value}</p>
                         )}
                     </div>
                 ))}
