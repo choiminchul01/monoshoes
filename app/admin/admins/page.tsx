@@ -7,6 +7,19 @@ import { useToast } from "@/context/ToastContext";
 import { Plus, Edit2, Trash2, X, Save, Shield, User, Users } from "lucide-react";
 import { saveAdminAction, deleteAdminAction } from "./actions";
 
+// 스태프 고정 권한: 상품등록 + 고객관리 + 고객DB(마케팅) 만 허용
+const STAFF_FIXED_PERMISSIONS: AdminPermissions = {
+    dashboard: true,
+    customers: true,
+    orders: false,
+    products: true,
+    reviews: false,
+    board: false,
+    coupons: false,
+    inquiries: false,
+    settings: false
+};
+
 export default function AdminAccountsPage() {
     const toast = useToast();
     const { isMaster, loading: permLoading } = useAdminPermissions();
@@ -67,17 +80,7 @@ export default function AdminAccountsPage() {
             setFormData({
                 email: "",
                 role: "staff",
-                permissions: {
-                    dashboard: true,
-                    customers: false,
-                    orders: false,
-                    products: false,
-                    reviews: false,
-                    board: false,
-                    coupons: false,
-                    inquiries: false,
-                    settings: false
-                }
+                permissions: { ...STAFF_FIXED_PERMISSIONS }
             });
         }
         setIsModalOpen(true);
@@ -306,18 +309,28 @@ export default function AdminAccountsPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">역할</label>
                                 <select
                                     value={formData.role}
-                                    onChange={(e) => setFormData({ ...formData, role: e.target.value as AdminRole })}
+                                    onChange={(e) => {
+                                        const newRole = e.target.value as AdminRole;
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            role: newRole,
+                                            permissions: newRole === 'staff' ? { ...STAFF_FIXED_PERMISSIONS } : prev.permissions
+                                        }));
+                                    }}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00704A]"
                                 >
                                     <option value="staff">스태프 (Staff)</option>
                                     <option value="manager">매니저 (Manager)</option>
                                     <option value="partner">파트너 (Partner)</option>
                                 </select>
+                                {formData.role === 'staff' && (
+                                    <p className="mt-1 text-xs text-amber-600">⚠ 스태프는 상품관리·고객관리·고객DB 권한만 부여됩니다.</p>
+                                )}
                             </div>
 
                             {/* Permissions */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">접근 가능 메뉴</label>
+                            <div className={formData.role === 'staff' ? 'opacity-60 pointer-events-none' : ''}>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">접근 가능 메뉴 {formData.role === 'staff' && <span className="text-xs text-amber-600 ml-1">(스태프 고정)</span>}</label>
                                 <div className="border border-gray-200 rounded-lg overflow-hidden text-sm">
 
                                     {/* 대시보드 */}
