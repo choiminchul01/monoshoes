@@ -124,5 +124,31 @@ export async function getRealLeadsCountAction() {
     return { count: error ? 0 : (count || 0) };
 }
 
+// ============================================================
+// 관리자(마스터) 전용: 회원 비밀번호 강제 변경
+// ============================================================
+export async function resetUserPasswordAction(userId: string, newPassword: string) {
+    try {
+        if (!newPassword || newPassword.length < 6) {
+            return { success: false, error: "비밀번호는 최소 6자 이상이어야 합니다." };
+        }
+
+        const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
+            userId,
+            { password: newPassword }
+        );
+
+        if (error) {
+            console.error("[resetUserPasswordAction] Error:", error);
+            return { success: false, error: error.message };
+        }
+
+        return { success: true };
+    } catch (e: any) {
+        console.error("[resetUserPasswordAction] Exception:", e);
+        return { success: false, error: e.message || "알 수 없는 오류" };
+    }
+}
+
 // 이하 호환성 유지 (다른 곳에서 참조 가능)
 export { fetchAllMembersAction as fetchUnmatchedMembersAction };

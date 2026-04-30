@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { Package, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, Megaphone, Handshake, ChevronDown, LayoutDashboard } from 'lucide-react';
+import { Package, Users, Settings, Home, Store, LogOut, MessageSquare, HelpCircle, FileText, Shield, Ticket, Megaphone, Handshake, ChevronDown, LayoutDashboard, KeyRound, Eye, EyeOff, X } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { ToastProvider } from '@/context/ToastContext';
 import { useAdminPermissions } from '@/lib/useAdminPermissions';
@@ -52,6 +52,77 @@ function AdminShoeLoader() {
 
 // Admin validation now uses admin_roles table via useAdminPermissions hook
 
+// ─── Password Change Modal ────────────────────────────────────────────
+function PasswordChangeModal({ supabase, onClose }: { supabase: any; onClose: () => void }) {
+    const [newPw, setNewPw] = useState('');
+    const [confirmPw, setConfirmPw] = useState('');
+    const [showPw, setShowPw] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setResult(null);
+        if (newPw.length < 6) { setResult({ ok: false, msg: '비밀번호는 최소 6자 이상이어야 합니다.' }); return; }
+        if (newPw !== confirmPw) { setResult({ ok: false, msg: '비밀번호가 일치하지 않습니다.' }); return; }
+
+        setSaving(true);
+        const { error } = await supabase.auth.updateUser({ password: newPw });
+        setSaving(false);
+
+        if (error) { setResult({ ok: false, msg: error.message }); }
+        else { setResult({ ok: true, msg: '비밀번호가 성공적으로 변경되었습니다.' }); setNewPw(''); setConfirmPw(''); }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center gap-2">
+                        <KeyRound className="w-5 h-5 text-gray-700" />
+                        <h2 className="text-lg font-bold">내 비밀번호 변경</h2>
+                    </div>
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                        <X className="w-5 h-5 text-gray-400" />
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">새 비밀번호</label>
+                        <div className="relative">
+                            <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)}
+                                placeholder="최소 6자 이상" required minLength={6}
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm" />
+                            <button type="button" onClick={() => setShowPw(!showPw)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600">
+                                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호 확인</label>
+                        <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)}
+                            placeholder="비밀번호 재입력" required minLength={6}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm" />
+                    </div>
+                    {result && (
+                        <div className={`text-sm px-3 py-2 rounded-lg ${result.ok ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                            {result.msg}
+                        </div>
+                    )}
+                    <div className="flex gap-3 pt-2">
+                        <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">취소</button>
+                        <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-bold disabled:opacity-50">
+                            {saving ? '변경 중...' : '비밀번호 변경'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+// ──────────────────────────────────────────────────────────────────────
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -60,6 +131,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const supabase = createClientComponentClient();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showShopConfirm, setShowShopConfirm] = useState(false);
+    const [showPasswordChange, setShowPasswordChange] = useState(false);
     const [counts, setCounts] = useState({ products: 0 });
     const [forceReady, setForceReady] = useState(false);
 
@@ -190,6 +262,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <Store className="w-4 h-4" />
                             <span>쇼핑몰</span>
                         </button>
+                        <button onClick={() => setShowPasswordChange(true)} className="p-2 text-gray-500 hover:text-gray-700 transition-colors" title="비밀번호 변경">
+                            <KeyRound className="w-5 h-5" />
+                        </button>
                         <button onClick={() => setShowLogoutConfirm(true)} className="p-2 text-gray-500 hover:text-red-600 transition-colors" title="로그아웃">
                             <LogOut className="w-5 h-5" />
                         </button>
@@ -303,6 +378,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <span>쇼핑몰로 이동</span>
                         </button>
                         <button
+                            onClick={() => setShowPasswordChange(true)}
+                            className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors w-full"
+                        >
+                            <KeyRound className="w-4 h-4" />
+                            <span>비밀번호 변경</span>
+                        </button>
+                        <button
                             onClick={() => setShowLogoutConfirm(true)}
                             className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full"
                         >
@@ -375,6 +457,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </div>
                     </div>
                 )}
+
+                {/* Password Change Modal */}
+                {showPasswordChange && <PasswordChangeModal supabase={supabase} onClose={() => setShowPasswordChange(false)} />}
             </div>
         </ToastProvider>
     );
