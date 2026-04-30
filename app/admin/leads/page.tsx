@@ -720,7 +720,7 @@ export default function AdminLeadsPage() {
                     </div>
 
                     {/* 2행: CSV 다운로드 — 스태프는 숨김 */}
-                    {canManageData && numChunks <= 1 ? (
+                    {canManageData && numChunks <= 1 && (
                         <button
                             onClick={() => handleDownload(0)}
                             disabled={isDownloading || totalCount === 0}
