@@ -44,7 +44,9 @@ export default function AdminLeadsPage() {
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
     const PAGE_SIZE = 100;
-    const { isMaster, isStaff } = useAdminPermissions();
+    const { isMaster, isStaff, loading: permLoading } = useAdminPermissions();
+    // 스태프는 데이터 추가/CSV다운로드 불가, 권한 로딩중에도 숨김
+    const canManageData = !permLoading && !isStaff;
     const [isStatsLoading, setIsStatsLoading] = useState(true); // 통계 전용 로딩
     const [hasQueried, setHasQueried] = useState(false);        // 조회 버튼 누른 적 있는지
 
@@ -431,7 +433,7 @@ export default function AdminLeadsPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 {/* 업로드/생성 패널 — 스태프는 숨김 */}
-                {!isStaff && (
+                {canManageData && (
                 <div className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col h-full">
                     <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
                         <Upload className="w-5 h-5" /> 데이터 추가
@@ -626,7 +628,7 @@ export default function AdminLeadsPage() {
                 )}
 
                 {/* 필터 패널 */}
-                <div className={`${isStaff ? 'lg:col-span-3' : 'lg:col-span-2'} bg-white border border-gray-200 rounded-xl p-6`}>
+                <div className={`${!canManageData ? 'lg:col-span-3' : 'lg:col-span-2'} bg-white border border-gray-200 rounded-xl p-6`}>
                     <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
                         <Filter className="w-5 h-5" /> 필터 설정
                     </h2>
@@ -718,7 +720,7 @@ export default function AdminLeadsPage() {
                     </div>
 
                     {/* 2행: CSV 다운로드 — 스태프는 숨김 */}
-                    {!isStaff && numChunks <= 1 ? (
+                    {canManageData && numChunks <= 1 ? (
                         <button
                             onClick={() => handleDownload(0)}
                             disabled={isDownloading || totalCount === 0}
@@ -728,7 +730,7 @@ export default function AdminLeadsPage() {
                             CSV 다운로드
                         </button>
                     )}
-                    {!isStaff && numChunks > 1 && (
+                    {canManageData && numChunks > 1 && (
                         <div className="space-y-2">
                             <p className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase">대용량 분할 다운로드 (5만건 단위)</p>
                             <div className="flex flex-wrap gap-2">
